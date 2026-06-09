@@ -1,0 +1,704 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useRef, useEffect } from 'react';
+import { PageId, IncidentReport, ReportCategory } from '../types';
+import { 
+  Trash2, Droplets, Wind, Search, MapPin, Target, Send, Image as ImageIcon,
+  CheckCircle, Loader2, Compass
+} from 'lucide-react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+const SUGGESTIONS = [
+  {
+    address: 'Calle Querétaro 112, Col. Roma Norte, Alcaldía Cuauhtémoc, C.P. 06700, CDMX',
+    coordinates: '19.4150 N, 99.1620 W',
+    title: 'Colonia Roma Norte / Calle Querétaro',
+    coords: [19.4150, -99.1620] as [number, number],
+  },
+  {
+    address: 'Av. Coyoacán 1450, Col. Del Valle Centro, Alcaldía Benito Juárez, C.P. 03100, CDMX',
+    coordinates: '19.3800 N, 99.1700 W',
+    title: 'Colonia Del Valle Centro / Av. Coyoacán',
+    coords: [19.3800, -99.1700] as [number, number],
+  },
+  {
+    address: 'Calz. de Guadalupe 410, Col. Industrial, Alcaldía Gustavo A. Madero, C.P. 07800, CDMX',
+    coordinates: '19.4750 N, 99.1250 W',
+    title: 'Colonia Industrial / Calzada de Guadalupe',
+    coords: [19.4750, -99.1250] as [number, number],
+  },
+  {
+    address: 'Av. Horacio 1500, Col. Polanco, Alcaldía Miguel Hidalgo, C.P. 11560, CDMX',
+    coordinates: '19.4329 N, 99.2010 W',
+    title: 'Colonia Polanco / Avenida Horacio',
+    coords: [19.4329, -99.2010] as [number, number],
+  },
+  {
+    address: 'Plaza de la Constitución S/N, Col. Centro, Alcaldía Cuauhtémoc, C.P. 06000, CDMX',
+    coordinates: '19.4326 N, 99.1332 W',
+    title: 'Centro Histórico / Plaza de la Constitución',
+    coords: [19.4326, -99.1332] as [number, number],
+  },
+  {
+    address: 'Paseo de la Reforma 222, Col. Juárez, Alcaldía Cuauhtémoc, C.P. 06600, CDMX',
+    coordinates: '19.4273 N, 99.1676 W',
+    title: 'Paseo de la Reforma / El Ángel',
+    coords: [19.4273, -99.1676] as [number, number],
+  },
+  {
+    address: 'Av. Universidad 3000, Coyoacán, Ciudad Universitaria, C.P. 04510, CDMX',
+    coordinates: '19.3328 N, 99.1856 W',
+    title: 'Ciudad Universitaria / UNAM Coyoacán',
+    coords: [19.3328, -99.1856] as [number, number],
+  }
+];
+
+interface ReportFormScreenProps {
+  onAddReport: (newReport: IncidentReport) => void;
+  setCurrentPage: (page: PageId) => void;
+  onSelectReportId: (id: string) => void;
+  currentUser: {
+    name: string;
+    avatar: string;
+    role: string;
+  };
+  prefilledLocation?: { address: string; coordinates: string } | null;
+  onClearPrefilledLocation?: () => void;
+}
+
+export default function ReportFormScreen({
+  onAddReport,
+  setCurrentPage,
+  onSelectReportId,
+  currentUser,
+  prefilledLocation,
+  onClearPrefilledLocation,
+}: ReportFormScreenProps) {
+  const [category, setCategory] = useState<ReportCategory>('Residuos');
+  const [address, setAddress] = useState(prefilledLocation?.address || '');
+  const [description, setDescription] = useState('');
+  const [localCoordinates, setLocalCoordinates] = useState(prefilledLocation?.coordinates || '19.4150 N, 99.1620 W');
+  const [isLocating, setIsLocating] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [dynamicSuggestions, setDynamicSuggestions] = useState<typeof SUGGESTIONS>([]);
+  const [isSearchingSuggestions, setIsSearchingSuggestions] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
+
+  const categories: { id: ReportCategory; label: string; icon: React.ReactNode; desc: string }[] = [
+    { 
+      id: 'Residuos', 
+      label: 'Residuos', 
+      icon: <Trash2 className="w-6 h-6" />, 
+      desc: 'Basura acumulada, vertederos clandestinos, residuos tóxicos.' 
+    },
+    { 
+      id: 'Agua Contaminada', 
+      label: 'Agua Contaminada', 
+      icon: <Droplets className="w-6 h-6" />, 
+      desc: 'Fugas de agua potable, vertidos industriales en ríos, espuma, aguas negras.' 
+    },
+    { 
+      id: 'Calidad del Aire', 
+      label: 'Calidad del Aire', 
+      icon: <Wind className="w-6 h-6" />, 
+      desc: 'Emisiones de humo negro, gases tóxicos, polvo olores nocivos persistentes.' 
+    },
+  ];
+
+  const parseCoordinatesStr = (str: string): [number, number] => {
+    try {
+      const cleaned = str.replace(/[^\d.-]/g, ' ').trim().split(/\s+/);
+      const lat = parseFloat(cleaned[0]);
+      let lng = parseFloat(cleaned[1]);
+      if (str.toLowerCase().includes('w')) {
+        lng = -Math.abs(lng);
+      }
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return [lat, lng];
+      }
+    } catch (e) {
+      // Ignore
+    }
+    return [19.4150, -99.1620];
+  };
+
+  // Sync Prefilled from Explorer Map Searched Pin
+  useEffect(() => {
+    if (prefilledLocation) {
+      setAddress(prefilledLocation.address);
+      setLocalCoordinates(prefilledLocation.coordinates);
+      
+      if (onClearPrefilledLocation) {
+        onClearPrefilledLocation();
+      }
+    }
+  }, [prefilledLocation]);
+
+  // Map Initialization inside creation screen
+  useEffect(() => {
+    if (!mapContainerRef.current || mapInstanceRef.current) return;
+
+    const initialCoords = parseCoordinatesStr(localCoordinates);
+    const map = L.map(mapContainerRef.current, {
+      center: initialCoords,
+      zoom: 14,
+      zoomControl: false,
+      attributionControl: false
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+    }).addTo(map);
+
+    const needleHtml = `
+      <div class="relative w-10 h-10 flex items-center justify-center">
+        <div class="absolute -inset-1 rounded-full bg-[#EA4335]/25 animate-ping" style="animation-duration: 2s;"></div>
+        <div class="w-8 h-8 rounded-full bg-[#EA4335] shadow-lg flex items-center justify-center border-2 border-white">
+          <span class="text-white text-xs select-none">📍</span>
+        </div>
+        <div class="absolute left-1/2 -bottom-0.5 -translate-x-1/2 w-0 h-0 border-l-[3.5px] border-l-transparent border-r-[3.5px] border-r-transparent border-t-[5px] border-t-[#EA4335]"></div>
+      </div>
+    `;
+
+    const customPinIcon = L.divIcon({
+      html: needleHtml,
+      className: 'form-google-marker-class',
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+    });
+
+    const marker = L.marker(initialCoords, { 
+      icon: customPinIcon,
+      draggable: true
+    }).addTo(map);
+
+    const updateLocationFromCoords = (lat: number, lng: number) => {
+      const formattedCoords = `${lat.toFixed(6)} N, ${Math.abs(lng).toFixed(6)} W`;
+      setLocalCoordinates(formattedCoords);
+      
+      // Request exact street details from Nominatim reverse-geocoder
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`, {
+        headers: {
+          'Accept-Language': 'es'
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.display_name) {
+          setAddress(data.display_name);
+        }
+      })
+      .catch(err => {
+        console.warn('Reverse geocoding error:', err);
+      });
+    };
+
+    marker.on('dragend', () => {
+      const position = marker.getLatLng();
+      updateLocationFromCoords(position.lat, position.lng);
+    });
+
+    map.on('click', (e: L.LeafletMouseEvent) => {
+      const position = e.latlng;
+      marker.setLatLng(position);
+      updateLocationFromCoords(position.lat, position.lng);
+    });
+
+    mapInstanceRef.current = map;
+    markerRef.current = marker;
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Update map viewport when coordinates are changed
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const marker = markerRef.current;
+    if (!map || !marker) return;
+
+    const coords = parseCoordinatesStr(localCoordinates);
+    const currentMarkerCoords = marker.getLatLng();
+    const distanceThreshold = 0.0001;
+    const diffLat = Math.abs(currentMarkerCoords.lat - coords[0]);
+    const diffLng = Math.abs(currentMarkerCoords.lng - coords[1]);
+
+    if (diffLat > distanceThreshold || diffLng > distanceThreshold) {
+      map.setView(coords, 14, { animate: true, duration: 0.8 });
+      marker.setLatLng(coords);
+    }
+  }, [localCoordinates]);
+
+  // Autocomplete typing address handlers
+  const handleAddressTextChange = (val: string) => {
+    setAddress(val);
+    setShowSuggestions(val.trim().length > 1);
+  };
+
+  const fetchNominatimQuery = async (queryText: string) => {
+    if (queryText.trim().length <= 2) {
+      setDynamicSuggestions([]);
+      return;
+    }
+    
+    setIsSearchingSuggestions(true);
+    try {
+      const isCdmx = queryText.toLowerCase().includes('cdmx') || queryText.toLowerCase().includes('mexico');
+      const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText + (isCdmx ? '' : ', CDMX, Mexico'))}&limit=5&addressdetails=1`;
+      
+      const response = await fetch(searchUrl, {
+        headers: {
+          'Accept-Language': 'es'
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const mapped = data.map((item: any) => {
+          const lat = parseFloat(item.lat);
+          const lon = parseFloat(item.lon);
+          return {
+            address: item.display_name,
+            coordinates: `${lat.toFixed(6)} N, ${Math.abs(lon).toFixed(6)} W`,
+            title: item.name || item.display_name.split(',')[0],
+            coords: [lat, lon] as [number, number]
+          };
+        });
+        setDynamicSuggestions(mapped);
+      }
+    } catch (error) {
+      console.warn('Nominatim autocomplete error:', error);
+    } finally {
+      setIsSearchingSuggestions(false);
+    }
+  };
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (address.trim().length > 2 && showSuggestions) {
+        const isMatchedOption = SUGGESTIONS.some(s => s.address === address) || dynamicSuggestions.some(s => s.address === address);
+        if (!isMatchedOption) {
+          fetchNominatimQuery(address);
+        }
+      } else {
+        setDynamicSuggestions([]);
+      }
+    }, 450);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [address]);
+
+  const handleSelectSuggestion = (s: typeof SUGGESTIONS[0]) => {
+    setAddress(s.address);
+    setLocalCoordinates(s.coordinates);
+    setShowSuggestions(false);
+  };
+
+  const handleMyLocation = () => {
+    setIsLocating(true);
+    setAddress('Buscando señal de satélite GPS...');
+    
+    setTimeout(() => {
+      // Simulate real CDMX locates
+      setAddress('Paseo de la Reforma 222, Col. Juárez, Alcaldía Cuauhtémoc, C.P. 06600, CDMX');
+      setLocalCoordinates('19.4273 N, 99.1676 W');
+      setIsLocating(false);
+    }, 1200);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        setUploadedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        setUploadedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!description.trim()) return;
+
+    setIsSubmitting(true);
+
+    // Formulate new dynamic incident
+    setTimeout(() => {
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      const newId = `ENV-2026-${randomNum}`;
+      
+      const reportImage = uploadedImage || (
+        category === 'Residuos' 
+          ? 'https://plus.unsplash.com/premium_photo-1661962386121-7221f7ed43ff?auto=format&fit=crop&w=600&q=80'
+          : category === 'Agua Contaminada'
+            ? 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?auto=format&fit=crop&w=600&q=80'
+            : 'https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&w=600&q=80'
+      );
+
+      const computedReport: IncidentReport = {
+        id: newId,
+        title: `${category === 'Residuos' ? 'Acumulación de Desechos' : category === 'Agua Contaminada' ? 'Fuga/Vertido de Agua' : 'Emisión de Gases'} - ${address.split(',')[0] || 'Nueva Ubicación'}`,
+        description: description.substring(0, 100) + '...',
+        detailedDescription: description,
+        category,
+        severity: 'Media Severidad', // Default
+        status: 'Abierto',
+        location: address || 'Zona Metropolitana Central',
+        coordinates: localCoordinates,
+        date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+        timeAgo: 'Hace unos instantes',
+        views: 1,
+        imageUrl: reportImage,
+        authorName: currentUser.name,
+        authorAvatar: currentUser.avatar,
+        authorRole: currentUser.role,
+        severityIndex: 6.5,
+        impactedUsers: 25,
+        timeline: {
+          received: { date: 'Hoy, Recién ingresado', checked: true },
+          reviewing: { note: 'Pendiente de asignación de autoridad', checked: false },
+          resolved: { checked: false }
+        },
+        comments: []
+      };
+
+      onAddReport(computedReport);
+      setIsSubmitting(false);
+
+      // Take user directly to view detail of they newly created incident
+      onSelectReportId(newId);
+    }, 2000);
+  };
+
+  return (
+    <div className="bg-[#FAFDF9] py-8 px-4 md:px-8">
+      <div className="max-w-3xl mx-auto space-y-8">
+        
+        {/* Title */}
+        <div className="space-y-2">
+          <h1 className="text-3xl font-extrabold text-[#143B20] tracking-tight">Reportar incidencia</h1>
+          <p className="text-sm text-[#4F6C56] leading-relaxed">
+            Proporciona los detalles del problema ambiental para que nuestro equipo pueda verificarlo y actuar.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+
+          {/* Section 1: Categories Option Buttons (Screenshots card items exactly) */}
+          <div className="bg-white rounded-3xl border border-[#DDE7DE] p-6 space-y-4 shadow-xs">
+            <h3 className="text-sm font-bold text-[#143B20] uppercase tracking-wider">
+              1. Categoría del Problema
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {categories.map((cat) => {
+                const isSelected = category === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setCategory(cat.id)}
+                    className={`p-5 rounded-2xl border text-center flex flex-col items-center justify-center space-y-3 transition-all cursor-pointer ${
+                      isSelected 
+                        ? 'bg-[#EBF7EE] border-[#1E8344] text-[#1E8344] ring-2 ring-[#1E8344]/10' 
+                        : 'bg-[#FAFDFC] border-[#CDE1D1] hover:border-[#1E8344]/50 text-[#557B5E]'
+                    }`}
+                  >
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                      isSelected ? 'bg-[#1E8344] text-white' : 'bg-[#EDF2EE] text-[#557B5E]'
+                    }`}>
+                      {cat.icon}
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold block">{cat.label}</p>
+                      <p className="text-[10px] text-slate-400 font-medium leading-normal leading-dense hidden sm:block max-w-[150px]">
+                        {cat.desc}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section 2: Location Map Frame Overlay with Real Leaflet Map Interface */}
+          <div className="bg-white rounded-3xl border border-[#DDE7DE] p-6 space-y-4 shadow-xs">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-bold text-[#143B20] uppercase tracking-wider">
+                2. Ubicación Exacta CDMX
+              </h3>
+              <div className="text-[10px] font-mono font-black text-[#1E8344] bg-[#EBF7EE] px-2 py-0.5 rounded-md">
+                COORD: {localCoordinates}
+              </div>
+            </div>
+
+            {/* Embedded Live Interactive Leaflet Map Pointer */}
+            <div className="relative h-64 rounded-2xl border border-[#CBDCD0] overflow-hidden bg-[#FAFDF9] shadow-inner">
+              <div ref={mapContainerRef} className="w-full h-full z-10" />
+              
+              {/* Compass Watermark Badge */}
+              <div className="absolute right-3 bottom-3 z-20 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-[#CBDCD0]/60 shadow-sm flex items-center space-x-1.5 pointer-events-none">
+                <Compass className="w-3.5 h-3.5 text-[#1E8344]" />
+                <span className="text-[9px] font-black text-[#143B20] uppercase tracking-wider">Sincronizado</span>
+              </div>
+            </div>
+
+            {/* Inputs & Custom Google Maps Autocomplete Search Dropdown */}
+            <div className="space-y-2 relative">
+              <div className="flex flex-col sm:flex-row gap-2 relative z-30">
+                <div className="relative flex-1">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#557B5E]">
+                    <Search className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Escribe para buscar colonia o dirección..."
+                    value={address}
+                    onChange={(e) => handleAddressTextChange(e.target.value)}
+                    onFocus={() => {
+                      if (address.trim().length > 1) {
+                        setShowSuggestions(true);
+                      }
+                    }}
+                    className="w-full bg-[#FAFDFC] border border-[#CDE1D1] rounded-xl py-3 pl-11 pr-4 text-xs font-bold text-[#143B20] focus:outline-none focus:ring-2 focus:ring-[#1E8344]/20 focus:border-[#1E8344] transition-all"
+                  />
+                  
+                  {/* Floating suggestions dropdown list */}
+                  {showSuggestions && (
+                    <div className="absolute top-13 left-0 right-0 bg-white border border-[#CBDCD0] shadow-2xl rounded-2xl overflow-hidden z-50 animate-slide-up max-h-64 overflow-y-auto">
+                      {/* Loading indicator */}
+                      {isSearchingSuggestions && (
+                        <div className="bg-[#FAFDF9] px-4 py-2.5 border-b border-[#CBDCD0]/30 flex items-center justify-between text-[10px] font-black uppercase text-[#1E8344] tracking-wider">
+                          <span>Buscando vía OpenStreetMap...</span>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        </div>
+                      )}
+
+                      {/* Offline Default suggestions */}
+                      {SUGGESTIONS.filter(item => 
+                        item.address.toLowerCase().includes(address.toLowerCase()) || 
+                        item.title.toLowerCase().includes(address.toLowerCase())
+                      ).length > 0 && (
+                        <>
+                          <div className="bg-[#FAFDF9] px-4 py-1.5 border-b border-[#CBDCD0]/50 text-[9px] font-black uppercase text-[#557B5E] tracking-wider">
+                            Puntos de Interés CDMX Guardados
+                          </div>
+                          {SUGGESTIONS.filter(item => 
+                            item.address.toLowerCase().includes(address.toLowerCase()) || 
+                            item.title.toLowerCase().includes(address.toLowerCase())
+                          ).map((s, idx) => (
+                            <button
+                              key={`static-${idx}`}
+                              type="button"
+                              onClick={() => handleSelectSuggestion(s)}
+                              className="w-full text-left px-4 py-2.5 hover:bg-[#EBF7EE] border-b border-slate-50 flex items-start space-x-3 transition-colors cursor-pointer"
+                            >
+                              <MapPin className="w-4 h-4 text-[#1E8344] shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-xs font-extrabold text-[#143B20]">{s.title}</p>
+                                <p className="text-[10px] text-[#557B5E] font-medium truncate max-w-[320px]">{s.address}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </>
+                      )}
+
+                      {/* Live OpenStreetMap Nominatim suggestions */}
+                      {dynamicSuggestions.length > 0 && (
+                        <>
+                          <div className="bg-emerald-50/50 px-4 py-1.5 border-b border-[#CBDCD0]/55 text-[9px] font-black uppercase text-[#1E8344] tracking-wider">
+                            Búsqueda en Vivo (OpenStreetMap)
+                          </div>
+                          {dynamicSuggestions.map((s, idx) => (
+                            <button
+                              key={`dynamic-${idx}`}
+                              type="button"
+                              onClick={() => handleSelectSuggestion(s)}
+                              className="w-full text-left px-4 py-2.5 hover:bg-[#EBF7EE] border-b border-emerald-50 flex items-start space-x-3 transition-colors cursor-pointer"
+                            >
+                              <Compass className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-xs font-extrabold text-[#143B20]">{s.title}</p>
+                                <p className="text-[10px] text-[#557B5E] font-medium truncate max-w-[320px]">{s.address}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </>
+                      )}
+
+                      {/* No suggestions at all */}
+                      {SUGGESTIONS.filter(item => 
+                        item.address.toLowerCase().includes(address.toLowerCase()) || 
+                        item.title.toLowerCase().includes(address.toLowerCase())
+                      ).length === 0 && dynamicSuggestions.length === 0 && !isSearchingSuggestions && (
+                        <div className="p-4 text-xs text-slate-400 font-bold text-center">
+                          Ninguna sugerencia guardada. Elige otra b&uacute;squeda o contin&uacute;a escribiendo la direcci&oacute;n libre.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleMyLocation}
+                  disabled={isLocating}
+                  className="bg-[#EDF2EE] text-[#143B20] border border-[#CDE1D1] font-black py-3 px-5 rounded-xl text-xs flex items-center justify-center space-x-2 hover:bg-[#DCE7DD] transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                >
+                  {isLocating ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-[#1E8344]" />
+                  ) : (
+                    <Target className="w-4 h-4 text-[#1E8344]" />
+                  )}
+                  <span>Mi ubicación</span>
+                </button>
+              </div>
+
+              {/* Extra Coordinate input in case they want manually tweak */}
+              <div className="flex items-center space-x-2 pt-1">
+                <span className="text-[10px] text-[#557B5E] font-bold uppercase tracking-wider whitespace-nowrap shrink-0">
+                  Coordenadas GPS:
+                </span>
+                <input 
+                  type="text"
+                  value={localCoordinates}
+                  onChange={(e) => setLocalCoordinates(e.target.value)}
+                  placeholder="E.g., 19.4150 N, 99.1620 W"
+                  className="w-full bg-[#FAFDFC] border border-[#CDE1D1]/60 rounded-lg px-2.5 py-1 text-[11px] font-bold text-[#143B20] focus:outline-none focus:ring-1 focus:ring-[#1E8344]/30"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Evidence Drop Files Area (Screenshot exactly) */}
+          <div className="bg-white rounded-3xl border border-[#DDE7DE] p-6 space-y-5 shadow-xs">
+            <h3 className="text-sm font-bold text-[#143B20] uppercase tracking-wider">
+              3. Detalles y Evidencia
+            </h3>
+
+            {/* Problem Area input */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#143B20] uppercase tracking-wider block">
+                Descripción del problema
+              </label>
+              <textarea
+                required
+                rows={4}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe brevemente lo que estás viendo..."
+                className="w-full bg-[#FAFDFC] border border-[#CDE1D1] rounded-2xl p-4 text-sm text-[#143B20] focus:outline-none focus:ring-2 focus:ring-[#1E8344]/20 focus:border-[#1E8344] focus:placeholder-transparent placeholder-slate-400 leading-relaxed"
+              />
+            </div>
+
+            {/* Drag Drop Image Uploader (Screen 5 Bottom) */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#143B20] uppercase tracking-wider block">
+                Adjuntar Fotografías (Opcional)
+              </label>
+              
+              <div
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-[#CDE1D1] rounded-2xl p-8 hover:bg-[#F3FAF4] hover:border-[#143B20]/40 transition-all text-center flex flex-col items-center justify-center space-y-3 cursor-pointer relative overflow-hidden h-44"
+              >
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileSelect} 
+                  accept="image/*" 
+                  className="hidden" 
+                />
+
+                {uploadedImage ? (
+                  <div className="absolute inset-0">
+                    <img 
+                      src={uploadedImage} 
+                      alt="Uploaded Evidencia" 
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                      <p className="text-white text-xs font-bold">Haz clic para reemplazar la imagen</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="w-12 h-12 rounded-full bg-[#EDF2EE] flex items-center justify-center text-[#557B5E]">
+                      <ImageIcon className="w-6 h-6" />
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-[#143B20]">
+                        Haz clic o arrastra imágenes aquí
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-none">
+                        PNG, JPG hasta 5MB
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Submit Button Form Pillar (Matches green elongated action button) */}
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-[#05682C] text-white font-bold py-3.5 px-8 rounded-full hover:bg-[#045524] transition-all flex items-center space-x-2 text-sm shadow-md shadow-[#05682C]/10 cursor-pointer disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Enviando reporte...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>Enviar Reporte</span>
+                </>
+              )}
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  );
+}

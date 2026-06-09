@@ -1,0 +1,6 @@
+{
+  "name": "Terranova Tech",
+  "description": "Plataforma interactiva para el reporte de incidencias ambientales, coordinación ciudadana con investigadores y monitoreo de impacto ecológico en tiempo real.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

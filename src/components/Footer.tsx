@@ -1,0 +1,73 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React from 'react';
+import { PageId } from '../types';
+
+interface FooterProps {
+  setCurrentPage?: (page: PageId) => void;
+}
+
+export default function Footer({ setCurrentPage }: FooterProps) {
+  const year = new Date().getFullYear();
+
+  const handleLink = (page: PageId) => {
+    if (setCurrentPage) {
+      setCurrentPage(page);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  return (
+    <footer className="bg-[#EBF1EC] border-t border-[#D5E4D8] text-[#55705B] py-8 px-4 md:px-8 mt-auto">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+        {/* Brand/Copyright */}
+        <div className="flex items-center space-x-3 text-center md:text-left">
+          <div className="w-10 h-10 rounded-full bg-[#143B20] flex items-center justify-center text-[#BBEFC7] font-bold text-xs shadow-inner">
+            TT
+          </div>
+          <div className="flex flex-col text-left">
+            <span className="text-sm font-bold text-[#143B20] tracking-tight">TERRANOVA TECH</span>
+            <span className="text-xs text-[#55705B]">
+              © {year} Terranova Tech. Datos para un futuro sostenible.
+            </span>
+          </div>
+        </div>
+
+        {/* Links */}
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-[#3b5341] tracking-wide">
+          <button 
+            type="button"
+            onClick={() => handleLink('acerca-de')} 
+            className="hover:text-[#1E8344] transition-colors"
+          >
+            Privacidad
+          </button>
+          <button 
+            type="button"
+            onClick={() => handleLink('acerca-de')} 
+            className="hover:text-[#1E8344] transition-colors"
+          >
+            Términos
+          </button>
+          <button 
+            type="button"
+            onClick={() => handleLink('acerca-de')} 
+            className="hover:text-[#1E8344] transition-colors"
+          >
+            Contacto
+          </button>
+          <button 
+            type="button"
+            onClick={() => handleLink('acerca-de')} 
+            className="hover:text-[#1E8344] text-[#1E8344] border-l border-[#C1D2C5] pl-6 transition-colors"
+          >
+            Impacto 2023
+          </button>
+        </div>
+      </div>
+    </footer>
+  );
+}
