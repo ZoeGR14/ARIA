@@ -57,4 +57,21 @@ El sistema utiliza una arquitectura escalable orientada a servicios para garanti
 * **Motor:** PostgreSQL.
 * **Extensión Espacial:** PostGIS (Manejo de coordenadas, radios y geometría).
 
+## 🚀 Instalación y Despliegue Local
+
+Sigue estos pasos para levantar el entorno de desarrollo en tu máquina local:
+
+### 1. Clonar el repositorio
+```bash
+git clone [https://github.com/ZoeGR14/ARIA.git](https://github.com/ZoeGR14/ARIA.git))
+cd ARIA
+```
+
+### 2. Levantar web
+
+```bash
+npm install
+npm run dev
+```
+
 *ARIA - Tu voz en el mapa, tu huella en el futuro.*
