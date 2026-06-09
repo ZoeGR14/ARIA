@@ -74,4 +74,164 @@ npm install
 npm run dev
 ```
 
+## Flujo de trabajo con Pull Requests
+
+### Objetivo
+
+Mantener la rama `main` estable y evitar que código sin revisar o sin probar llegue al repositorio principal.
+
+---
+
+### Reglas generales
+
+#### ❌ No hacer push directo a `main`
+
+Todos los cambios deben pasar por un Pull Request (PR).
+
+---
+
+#### ✅ Trabajar siempre en una rama propia
+
+Crear una rama a partir de `main` para cada tarea:
+
+```bash
+git checkout main
+git pull origin main
+
+git checkout -b feature/nombre-funcionalidad
+```
+
+Ejemplos:
+
+```text
+feature/login
+feature/mapa-rutas
+feature/notificaciones
+fix/error-autenticacion
+```
+
+---
+
+#### ✅ Hacer commits pequeños y descriptivos
+
+Ejemplos:
+
+```text
+feat: agregar pantalla de inicio de sesión
+fix: corregir error al cargar rutas
+refactor: simplificar lógica de navegación
+```
+
+Evitar mensajes como:
+
+```text
+cambios
+arreglo
+update
+aaaa
+```
+
+---
+
+### Proceso de desarrollo
+
+#### 1. Desarrollar en la rama de trabajo
+
+Realizar los cambios necesarios y hacer commits regularmente.
+
+```bash
+git add .
+git commit -m "feat: agregar autenticación con correo"
+```
+
+---
+
+#### 2. Actualizar la rama con cambios recientes
+
+Antes de abrir un Pull Request:
+
+```bash
+git checkout main
+git pull origin main
+
+git checkout feature/nombre-funcionalidad
+git merge main
+```
+
+Resolver conflictos si existen.
+
+---
+
+#### 3. Subir la rama al repositorio
+
+```bash
+git push origin feature/nombre-funcionalidad
+```
+
+---
+
+#### 4. Crear Pull Request
+
+Abrir un Pull Request hacia:
+
+```text
+feature/... → main
+```
+
+La descripción debe incluir:
+
+* Qué se cambió.
+* Por qué se hizo.
+* Cómo probarlo.
+* Capturas de pantalla si aplica.
+
+Ejemplo:
+
+```text
+## Cambios realizados
+
+- Agregada pantalla de inicio de sesión.
+- Validación de correo y contraseña.
+- Manejo de errores de autenticación.
+
+## Cómo probar
+
+1. Abrir la aplicación.
+2. Ingresar credenciales válidas.
+3. Verificar acceso correcto.
+```
+
+---
+
+#### 5. Revisión de código
+
+El Pull Request debe ser revisado por al menos otro integrante del equipo.
+
+Durante la revisión se pueden solicitar cambios.
+
+No debe hacerse merge hasta que:
+
+* Existan las aprobaciones necesarias.
+* Las pruebas automáticas hayan pasado.
+* Todos los comentarios estén resueltos.
+
+---
+
+#### 6. Merge
+
+Una vez aprobado:
+
+* Utilizar **Squash and Merge**.
+* Mantener un historial limpio y fácil de leer.
+
+Ejemplo del historial esperado:
+
+```text
+Agregar autenticación (#12)
+Corregir error de rutas (#13)
+Implementar notificaciones (#14)
+```
+
+---
+
 *ARIA - Tu voz en el mapa, tu huella en el futuro.*
