@@ -23,10 +23,22 @@ CREATE TABLE USUARIO (
     id SERIAL PRIMARY KEY,
     nombre_completo VARCHAR(150) NOT NULL,
     correo_electronico VARCHAR(150) UNIQUE NOT NULL,
+    email_verificado BOOLEAN DEFAULT FALSE,
     contrasena_hash VARCHAR(255) NOT NULL,
     puntos_totales INT DEFAULT 0, 
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     nivel_ranking VARCHAR(50) DEFAULT 'Novato'
+);
+
+-- Tabla para gestionar tokens de validación y recuperación de contraseñas
+CREATE TABLE TOKEN_AUTENTICACION (
+    id SERIAL PRIMARY KEY,
+    usuario_id INT NOT NULL REFERENCES USUARIO(id) ON DELETE CASCADE,
+    token VARCHAR(255) UNIQUE NOT NULL,
+    tipo VARCHAR(50) NOT NULL, -- Ej: 'VERIFICACION_CORREO', 'RECUPERACION_PASSWORD'
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expira_en TIMESTAMP NOT NULL,
+    usado BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE ADMINISTRADOR (

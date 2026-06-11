@@ -16,10 +16,10 @@ INSERT INTO CATEGORIA (nombre, descripcion, color_hex) VALUES
 ('Contaminación del Aire', 'Emisiones tóxicas, quemas clandestinas', '#8E44AD');
 
 -- 3. Insertar Usuarios de prueba (contraseñas son hashes simulados)
-INSERT INTO USUARIO (nombre_completo, correo_electronico, contrasena_hash, puntos_totales, nivel_ranking) VALUES 
-('Juan Pérez', 'juan.perez@example.com', 'hashed_pwd_123', 150, 'Ciudadano Activo'),
-('María Gómez', 'maria.gomez@example.com', 'hashed_pwd_456', 50, 'Novato'),
-('Carlos Administrador', 'admin@ariaplataforma.org', 'hashed_admin_pwd', 1000, 'Guardián Ambiental');
+INSERT INTO USUARIO (nombre_completo, correo_electronico, email_verificado, contrasena_hash, puntos_totales, nivel_ranking) VALUES 
+('Juan Pérez', 'juan.perez@example.com', true, 'hashed_pwd_123', 150, 'Ciudadano Activo'),
+('María Gómez', 'maria.gomez@example.com', true, 'hashed_pwd_456', 50, 'Novato'),
+('Carlos Administrador', 'admin@ariaplataforma.org', true, 'hashed_admin_pwd', 1000, 'Guardián Ambiental');
 
 -- 4. Asignar rol de Administrador
 INSERT INTO ADMINISTRADOR (id, nivel_acceso, ultimo_acceso) VALUES 
