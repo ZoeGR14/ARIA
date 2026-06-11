@@ -1,0 +1,6 @@
+-- 02-data.sql
+-- Coloca aquí las sentencias DML (INSERT) para poblar las tablas con datos iniciales de prueba.
+-- Ejemplo:
+-- INSERT INTO usuarios (nombre, email) VALUES 
+-- ('Juan Pérez', 'juan.perez@example.com'),
+-- ('María Gómez', 'maria.gomez@example.com');

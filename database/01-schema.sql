@@ -1,0 +1,9 @@
+-- 01-schema.sql
+-- Coloca aquí las sentencias DDL para crear las tablas, tipos, extensiones (como PostGIS) de tu base de datos.
+-- Ejemplo:
+-- CREATE TABLE usuarios (
+--     id SERIAL PRIMARY KEY,
+--     nombre VARCHAR(100),
+--     email VARCHAR(100) UNIQUE,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- );
