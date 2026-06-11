@@ -235,3 +235,45 @@ Implementar notificaciones (#14)
 ---
 
 *ARIA - Tu voz en el mapa, tu huella en el futuro.*
+
+---
+
+## 🚀 Guía de Configuración y Ejecución con Docker
+
+Sigue estos pasos para levantar el entorno de desarrollo local con React y la base de datos con PostGIS.
+
+### 📋 Requisitos Previos
+*   Tener instalado [Docker Desktop](https://www.docker.com/products/docker-desktop/) (que incluye Docker Compose).
+
+### ⚙️ Paso 1: Configurar Variables de Entorno
+Crea o edita el archivo [.env](file:///d:/PC/Documents/Universidad/04%20Ingenieria/ARIA/.env) en la raíz del proyecto para definir las credenciales de la base de datos:
+```env
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=aria_db
+POSTGRES_PORT=5432
+POSTGRES_HOST=db
+```
+
+### 🗄️ Paso 2: Inicializar el Esquema y Datos de Prueba
+Los scripts de inicialización están en la carpeta [database](file:///d:/PC/Documents/Universidad/04%20Ingenieria/ARIA/database):
+1.  **[01-schema.sql](file:///d:/PC/Documents/Universidad/04%20Ingenieria/ARIA/database/01-schema.sql):** Contiene la creación de extensiones (`postgis`), tablas, enums e índices.
+2.  **[02-data.sql](file:///d:/PC/Documents/Universidad/04%20Ingenieria/ARIA/database/02-data.sql):** Inserta datos iniciales de prueba (usuarios, categorías, estados y reportes con geolocalización).
+
+### 🛠️ Paso 3: Levantar la Aplicación
+Abre una terminal en la raíz del proyecto y ejecuta:
+```powershell
+docker compose up --build
+```
+Esto creará las imágenes, instalará las dependencias de Node y levantará los servicios:
+*   **Frontend (React/Vite):** Disponible en [http://localhost:3000](http://localhost:3000) (con **Hot Reload** activo, los cambios que guardes localmente se verán al instante).
+*   **Base de datos (PostgreSQL/PostGIS):** Expuesta en `localhost:5432`.
+
+### 🔄 Reiniciar / Limpiar la Base de Datos
+Si realizas modificaciones en los archivos de la carpeta `database` y deseas aplicarlas limpiando la base de datos por completo, ejecuta:
+```powershell
+docker compose down -v
+docker compose up --build
+```
+*(La bandera `-v` elimina los volúmenes antiguos de datos para forzar la ejecución limpia de tus scripts `.sql`)*.
+
