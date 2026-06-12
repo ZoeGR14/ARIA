@@ -47,6 +47,18 @@ CREATE TABLE ADMINISTRADOR (
     ultimo_acceso TIMESTAMP
 );
 
+-- Tabla para almacenar los tokens FCM (Notificaciones Push) de los dispositivos de los usuarios
+CREATE TABLE DISPOSITIVO_USUARIO (
+    id SERIAL PRIMARY KEY,
+    usuario_id INT NOT NULL REFERENCES USUARIO(id) ON DELETE CASCADE,
+    fcm_token VARCHAR(255) UNIQUE NOT NULL,
+    dispositivo_info VARCHAR(100),
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Índice para búsquedas rápidas por token
+CREATE INDEX idx_dispositivo_usuario_token ON DISPOSITIVO_USUARIO(fcm_token);
+
 -- 4. TABLA CENTRAL: REPORTE (Con PostGIS para optimización espacial)
 CREATE TABLE REPORTE (
     id SERIAL PRIMARY KEY,

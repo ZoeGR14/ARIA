@@ -56,3 +56,9 @@ INSERT INTO REPORTE (descripcion, ubicacion, severidad, url_evidencia_foto, punt
 INSERT INTO NOTIFICACION (mensaje, leido, tipo, usuario_id, reporte_id) VALUES 
 ('Tu reporte de basura ha sido recibido correctamente.', true, 'Sistema', 1, 1),
 ('Hemos comenzado a revisar la fuga de agua que reportaste.', false, 'Actualización', 2, 2);
+
+-- 7. Insertar Dispositivos de prueba para notificaciones FCM
+INSERT INTO DISPOSITIVO_USUARIO (usuario_id, fcm_token, dispositivo_info) VALUES
+(1, 'fcm_token_test_juan_chrome_windows', 'Google Chrome en Windows 10/11 (Escritorio)'),
+(2, 'fcm_token_test_maria_safari_ios', 'Apple Safari en iOS (Móvil)'),
+(3, 'fcm_token_test_admin_edge_windows', 'Microsoft Edge en Windows 10/11 (Escritorio)');
