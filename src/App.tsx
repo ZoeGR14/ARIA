@@ -259,7 +259,7 @@ export default function App() {
     const handlePopState = (event: PopStateEvent) => {
       if (event.state && event.state.page) {
         const { page, reportId } = event.state;
-        
+
         // Guard check: prevent logged-in users from going back to public auth screens
         if (isLoggedIn && ['inicio', 'login', 'signup'].includes(page)) {
           window.history.replaceState({ page: 'dashboard', reportId: selectedReportId }, '', '');
@@ -288,13 +288,13 @@ export default function App() {
       setAuthMessage(null);
     } else {
       const pagesRequiringAuth: PageId[] = [
-        'dashboard', 
-        'reportar', 
-        'mis-reportes', 
-        'editar-perfil', 
-        'reportes', 
-        'explorar-mapa', 
-        'comunidad', 
+        'dashboard',
+        'reportar',
+        'mis-reportes',
+        'editar-perfil',
+        'reportes',
+        'explorar-mapa',
+        'comunidad',
         'detalles-incidencia'
       ];
       if (pagesRequiringAuth.includes(currentPage)) {
@@ -319,13 +319,13 @@ export default function App() {
 
   const handleSetPage = (page: PageId) => {
     const pagesRequiringAuth: PageId[] = [
-      'dashboard', 
-      'reportar', 
-      'mis-reportes', 
-      'editar-perfil', 
-      'reportes', 
-      'explorar-mapa', 
-      'comunidad', 
+      'dashboard',
+      'reportar',
+      'mis-reportes',
+      'editar-perfil',
+      'reportes',
+      'explorar-mapa',
+      'comunidad',
       'detalles-incidencia'
     ];
     if (pagesRequiringAuth.includes(page) && !isLoggedIn) {
@@ -383,7 +383,7 @@ export default function App() {
 
   // Handle appending comments on detail screen
   const handleAddComment = (reportId: string, newComment: Comment) => {
-    setReports((prev) => 
+    setReports((prev) =>
       prev.map((rep) => {
         if (rep.id === reportId) {
           return {
@@ -410,15 +410,14 @@ export default function App() {
   const activeReport = reports.find((r) => r.id === selectedReportId) || reports[0];
 
   return (
-    <div className={`flex min-h-screen bg-[#FAFDF9] text-[#143B20] antialiased selection:bg-[#CCE8C6]/80 selection:text-[#0A3D18] ${
-      isLoggedIn ? 'flex-col md:flex-row' : 'flex-col'
-    }`}>
-      
+    <div className={`flex min-h-screen bg-[#FAFDF9] text-[#143B20] antialiased selection:bg-[#CCE8C6]/80 selection:text-[#0A3D18] ${isLoggedIn ? 'flex-col md:flex-row' : 'flex-col'
+      }`}>
+
       {/* 1. Header (Only displayed if NOT logged in) */}
       {!isLoggedIn && (
-        <Header 
-          currentPage={currentPage} 
-          setCurrentPage={handleSetPage} 
+        <Header
+          currentPage={currentPage}
+          setCurrentPage={handleSetPage}
           isLoggedIn={isLoggedIn}
           setIsLoggedIn={setIsLoggedIn}
         />
@@ -426,9 +425,9 @@ export default function App() {
 
       {/* 2. Sidebar (Only displayed if LOGGED in AND not on auth screens) */}
       {isLoggedIn && !['login', 'signup'].includes(currentPage) && (
-        <Sidebar 
-          currentPage={currentPage} 
-          setCurrentPage={handleSetPage} 
+        <Sidebar
+          currentPage={currentPage}
+          setCurrentPage={handleSetPage}
           isLoggedIn={isLoggedIn}
           setIsLoggedIn={setIsLoggedIn}
           userProfile={userProfile}
@@ -437,7 +436,7 @@ export default function App() {
 
       {/* Main Container Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        
+
         {/* Logged-In Top Header Bar */}
         {isLoggedIn && !['login', 'signup'].includes(currentPage) && (
           <header className="bg-white border-b border-[#E1ECE3] pl-16 md:pl-8 pr-4 md:pr-8 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
@@ -454,11 +453,10 @@ export default function App() {
               <div className="relative">
                 <button
                   onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
-                  className={`p-2.5 rounded-full border transition-all cursor-pointer relative ${
-                    showNotificationsDropdown
+                  className={`p-2.5 rounded-full border transition-all cursor-pointer relative ${showNotificationsDropdown
                       ? 'bg-[#EBF7EE] border-[#1E8344] text-[#1E8344]'
                       : 'bg-[#FAFDF9] border-[#CDE1D1] hover:border-[#1E8344] text-[#557D5E]'
-                  }`}
+                    }`}
                   title="Notificaciones"
                 >
                   <Bell className="w-4 h-4" />
@@ -473,11 +471,11 @@ export default function App() {
                 {showNotificationsDropdown && (
                   <>
                     {/* Click catcher background overlay to dismiss safely */}
-                    <div 
+                    <div
                       className="fixed inset-0 z-40"
                       onClick={() => setShowNotificationsDropdown(false)}
                     />
-                    
+
                     {/* Popover dropdown container */}
                     <div className="absolute right-0 mt-2.5 w-[280px] sm:w-[320px] bg-white rounded-2xl shadow-2xl border border-[#CBDCD0] overflow-hidden z-50 animate-slide-up flex flex-col max-h-[440px]">
                       {/* Header */}
@@ -516,9 +514,8 @@ export default function App() {
                                   handleSelectReportId(n.reportId);
                                 }
                               }}
-                              className={`p-3.5 text-left transition-colors cursor-pointer relative ${
-                                n.read ? 'bg-white hover:bg-[#F3FAF4]/35' : 'bg-[#EBF7EE]/10 hover:bg-[#EBF7EE]/30 border-l-2 border-l-[#1E8344]'
-                              }`}
+                              className={`p-3.5 text-left transition-colors cursor-pointer relative ${n.read ? 'bg-white hover:bg-[#F3FAF4]/35' : 'bg-[#EBF7EE]/10 hover:bg-[#EBF7EE]/30 border-l-2 border-l-[#1E8344]'
+                                }`}
                             >
                               <div className="flex items-start justify-between gap-1">
                                 <h4 className="text-[11.5px] font-extrabold text-[#143B20] leading-tight pr-3">
@@ -544,14 +541,14 @@ export default function App() {
               </div>
 
               {/* Profile card link */}
-              <button 
+              <button
                 onClick={() => handleSetPage('editar-perfil')}
                 className="flex items-center space-x-2 p-0.5 px-2.5 bg-[#FAFDF9] border border-[#CDE1D1] hover:border-[#1E8344] rounded-full transition-all cursor-pointer group text-left shadow-xs"
                 title="Modificar mi Perfil"
               >
-                <img 
-                  src={userProfile.avatar} 
-                  alt={userProfile.name} 
+                <img
+                  src={userProfile.avatar}
+                  alt={userProfile.name}
                   className="w-7 h-7 rounded-full object-cover border border-[#C5DDCB] group-hover:scale-105 transition-transform"
                   referrerPolicy="no-referrer"
                 />
@@ -572,10 +569,10 @@ export default function App() {
                   try {
                     const currentToken = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
                     if (currentToken && await isSupported()) {
-                      const fcmToken = await getToken(messaging, { 
-                        vapidKey: "BIB4QGDhC2lIgmT_MkMSWiumWu4d4e34XDzekN8VOxPRHJzNyiNbnGpM_3_OSj7gAeqPWjm2IdLnNGxqR_gyW-I" 
+                      const fcmToken = await getToken(messaging, {
+                        vapidKey: "BIB4QGDhC2lIgmT_MkMSWiumWu4d4e34XDzekN8VOxPRHJzNyiNbnGpM_3_OSj7gAeqPWjm2IdLnNGxqR_gyW-I"
                       }).catch(() => null);
-                      
+
                       if (fcmToken) {
                         // Notificamos al backend para que lo borre de sus registros
                         await fetch('http://localhost:3001/api/fcm/fcm-token', {
@@ -586,7 +583,7 @@ export default function App() {
                           },
                           body: JSON.stringify({ fcmToken })
                         }).catch(console.error);
-                        
+
                         // Lo borramos del navegador
                         await deleteToken(messaging).catch(console.error);
                       }
@@ -613,7 +610,7 @@ export default function App() {
             </div>
           </header>
         )}
-        
+
         {/* Main Screen Router Box with smooth fades */}
         <div className="flex-1">
           <AnimatePresence mode="wait">
@@ -701,8 +698,8 @@ export default function App() {
               )}
 
               {currentPage === 'acerca-de' && (
-                <AboutScreen 
-                  setCurrentPage={handleSetPage} 
+                <AboutScreen
+                  setCurrentPage={handleSetPage}
                 />
               )}
 
@@ -743,13 +740,13 @@ export default function App() {
       {/* Verification Modal Popup */}
       <AnimatePresence>
         {showVerificationModal && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0A1F10]/60 backdrop-blur-sm"
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
@@ -790,13 +787,13 @@ export default function App() {
         )}
 
         {isLoggingOut && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[#0A1F10]/70 backdrop-blur-md"
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
