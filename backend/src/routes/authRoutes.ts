@@ -3,7 +3,10 @@ import { Router } from "express";
 import {
 
     register,
-    login
+    login,
+    verificarCorreo,
+    solicitarRecuperacion,
+    restablecerPassword
 
 } from "../controllers/authController";
 
@@ -13,4 +16,18 @@ router.post("/register", register);
 
 router.post("/login", login);
 
+router.get(
+    "/verificar/:token",
+    verificarCorreo
+);
+
+router.post(
+    "/solicitar-recuperacion",
+    solicitarRecuperacion
+);
+
+router.post(
+    "/restablecer-password",
+    restablecerPassword
+);
 export default router;

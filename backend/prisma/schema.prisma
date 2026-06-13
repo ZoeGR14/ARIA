@@ -7,45 +7,116 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Rol {
-  CIUDADANO
-  ADMIN
+model administrador {
+  id            Int       @id
+  nivel_acceso  String    @db.VarChar(50)
+  ultimo_acceso DateTime? @db.Timestamp(6)
+  usuario       usuario   @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
-enum Severidad {
-  BAJA
-  MEDIA
-  ALTA
+model categoria {
+  id          Int       @id @default(autoincrement())
+  nombre      String    @db.VarChar(100)
+  descripcion String?
+  color_hex   String?   @db.VarChar(7)
+  reporte     reporte[]
 }
 
-model Usuario {
+model dispositivo_usuario {
+  id               Int       @id @default(autoincrement())
+  usuario_id       Int
+  fcm_token        String    @unique @db.VarChar(255)
+  dispositivo_info String?   @db.VarChar(100)
+  fecha_registro   DateTime? @default(now()) @db.Timestamp(6)
+  usuario          usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  id        Int      @id @default(autoincrement())
-
-  nombre    String
-
-  correo    String   @unique
-
-  password  String
-
-  rol       Rol      @default(CIUDADANO)
-
-  reportes  Reporte[]
+  @@index([fcm_token], map: "idx_dispositivo_usuario_token")
 }
 
-model Reporte {
+model estado {
+  id      Int       @id @default(autoincrement())
+  nombre  String    @db.VarChar(50)
+  reporte reporte[]
+}
 
-  id          Int      @id @default(autoincrement())
+model notificacion {
+  id         Int       @id @default(autoincrement())
+  mensaje    String
+  leido      Boolean?  @default(false)
+  tipo       String?   @db.VarChar(50)
+  fecha_hora DateTime? @default(now()) @db.Timestamp(6)
+  usuario_id Int
+  reporte_id Int?
+  reporte    reporte?  @relation(fields: [reporte_id], references: [id], onUpdate: NoAction)
+  usuario    usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
 
-  titulo      String
+model reporte {
+  id                  Int                      @id @default(autoincrement())
+  descripcion         String
+  ubicacion           Unsupported("geography")
+  fecha_creacion      DateTime?                @default(now()) @db.Timestamp(6)
+  fecha_actualizacion DateTime?                @default(now()) @db.Timestamp(6)
+  severidad           severidad_enum?          @default(Baja)
+  url_evidencia_foto  String?                  @db.VarChar(255)
+  puntos_asignados    Int?                     @default(0)
+  estado_puntos       estado_puntos_enum?      @default(Pendiente)
+  usuario_id          Int
+  estado_id           Int
+  categoria_id        Int
+  notificacion        notificacion[]
+  categoria           categoria                @relation(fields: [categoria_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  estado              estado                   @relation(fields: [estado_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario             usuario                  @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  descripcion String
+  @@index([ubicacion], map: "idx_reporte_ubicacion", type: Gist)
+}
 
-  severidad   Severidad
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model spatial_ref_sys {
+  srid      Int     @id
+  auth_name String? @db.VarChar(256)
+  auth_srid Int?
+  srtext    String? @db.VarChar(2048)
+  proj4text String? @db.VarChar(2048)
+}
 
-  fecha       DateTime @default(now())
+model token_autenticacion {
+  id         Int       @id @default(autoincrement())
+  usuario_id Int
+  token      String    @unique @db.VarChar(255)
+  tipo       String    @db.VarChar(50)
+  creado_en  DateTime? @default(now()) @db.Timestamp(6)
+  expira_en  DateTime  @db.Timestamp(6)
+  usado      Boolean?  @default(false)
+  usuario    usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
 
-  usuarioId   Int
+model usuario {
+  id                  Int                   @id @default(autoincrement())
+  nombre_completo     String                @db.VarChar(150)
+  correo_electronico  String                @unique @db.VarChar(150)
+  email_verificado    Boolean?              @default(false)
+  contrasena_hash     String                @db.VarChar(255)
+  puntos_totales      Int?                  @default(0)
+  fecha_registro      DateTime?             @default(now()) @db.Timestamp(6)
+  nivel_ranking       String?               @default("Novato") @db.VarChar(50)
+  administrador       administrador?
+  dispositivo_usuario dispositivo_usuario[]
+  notificacion        notificacion[]
+  reporte             reporte[]
+  token_autenticacion token_autenticacion[]
+}
 
-  usuario     Usuario @relation(fields:[usuarioId], references:[id])
+enum estado_puntos_enum {
+  Pendiente
+  Otorgado
+  Rechazado
+}
+
+enum severidad_enum {
+  Baja
+  Media
+  Alta
+  Critica
 }

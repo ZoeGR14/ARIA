@@ -1,68 +1,71 @@
 import { Request, Response } from "express";
-
 import prisma from "../config/prisma";
 
 export const stats = async (
-
     req: Request,
     res: Response
-
 ): Promise<void> => {
 
     try {
 
-        const totalReportes =
+        const [
+            totalReportes,
+            baja,
+            media,
+            alta,
+            critica
+        ] = await Promise.all([
 
-            await prisma.reporte.count();
+            prisma.reporte.count(),
 
-        const alta =
-
-            await prisma.reporte.count({
-
+            prisma.reporte.count({
                 where: {
-
-                    severidad: "ALTA"
-
+                    severidad: "Baja"
                 }
+            }),
 
-            });
-
-        const media =
-
-            await prisma.reporte.count({
-
+            prisma.reporte.count({
                 where: {
-
-                    severidad: "MEDIA"
-
+                    severidad: "Media"
                 }
+            }),
 
-            });
-
-        const baja =
-
-            await prisma.reporte.count({
-
+            prisma.reporte.count({
                 where: {
-
-                    severidad: "BAJA"
-
+                    severidad: "Alta"
                 }
+            }),
 
-            });
+            prisma.reporte.count({
+                where: {
+                    severidad: "Critica"
+                }
+            })
 
-        res.json({
+        ]);
+
+        res.status(200).json({
 
             totalReportes,
-            alta,
-            media,
-            baja
+
+            severidad: {
+                baja,
+                media,
+                alta,
+                critica
+            }
 
         });
 
     } catch (error) {
 
-        res.status(500).json(error);
+        console.error(error);
+
+        res.status(500).json({
+
+            mensaje: "Error al obtener estadísticas"
+
+        });
 
     }
 

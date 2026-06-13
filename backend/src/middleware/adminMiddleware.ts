@@ -1,29 +1,31 @@
-import {
-
-    Request,
-    Response,
-    NextFunction
-
-} from "express";
+import { Request, Response, NextFunction } from "express";
 
 export const adminMiddleware = (
-
     req: Request,
     res: Response,
     next: NextFunction
-
 ): void => {
 
-    if (req.user?.rol !== "ADMIN") {
+    if (!req.user) {
 
-        res.status(403).json({
-
-            mensaje: "Acceso denegado"
-
+        res.status(401).json({
+            mensaje: "No autenticado"
         });
 
         return;
+
+    }
+
+    if (req.user.rol !== "ADMINISTRADOR") {
+
+        res.status(403).json({
+            mensaje: "Acceso denegado"
+        });
+
+        return;
+
     }
 
     next();
+
 };

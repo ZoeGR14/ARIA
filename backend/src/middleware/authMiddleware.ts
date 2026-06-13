@@ -1,13 +1,17 @@
 import { Request, Response, NextFunction } from "express";
-
 import jwt from "jsonwebtoken";
 
-export const authMiddleware = (
+interface JwtPayload {
+    id: number;
+    rol: string;
+    iat?: number;
+    exp?: number;
+}
 
+export const authMiddleware = (
     req: Request,
     res: Response,
     next: NextFunction
-
 ): void => {
 
     const authHeader = req.headers.authorization;
@@ -15,9 +19,16 @@ export const authMiddleware = (
     if (!authHeader) {
 
         res.status(401).json({
-
             mensaje: "Token requerido"
+        });
 
+        return;
+    }
+
+    if (!authHeader.startsWith("Bearer ")) {
+
+        res.status(401).json({
+            mensaje: "Formato de token inválido"
         });
 
         return;
@@ -27,27 +38,40 @@ export const authMiddleware = (
 
     try {
 
+        const secret = process.env.JWT_SECRET;
+
+        if (!secret) {
+
+            throw new Error(
+                "JWT_SECRET no configurado"
+            );
+
+        }
+
         const decoded = jwt.verify(
-
             token,
-            process.env.JWT_SECRET as string
+            secret
+        ) as JwtPayload;
 
-        ) as {
+        req.user = {
 
-            id: number;
-            rol: string;
+            id: decoded.id,
+            rol: decoded.rol
 
         };
 
-        req.user = decoded;
-        console.log("middleware cargado");
         next();
 
-    } catch {
+    } catch (error) {
+
+        console.error(
+            "Error validando JWT:",
+            error
+        );
 
         res.status(401).json({
 
-            mensaje: "Token inválido"
+            mensaje: "Token inválido o expirado"
 
         });
 
