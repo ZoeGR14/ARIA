@@ -44,6 +44,7 @@ export default function App() {
   const [userProfile, setUserProfile] = useState(CARLOS_MENDOZA_PROFILE);
   const [reports, setReports] = useState<IncidentReport[]>(INITIAL_REPORTS);
   const [selectedReportId, setSelectedReportId] = useState<string>('ENV-2023-8472'); // Matches detailed report image default
+  const [previousPage, setPreviousPage] = useState<PageId>('reportes');
   const [authMessage, setAuthMessage] = useState<string | null>(null);
   const [prefilledLocation, setPrefilledLocation] = useState<{ address: string; coordinates: string } | null>(null);
   const [notifications, setNotifications] = useState([
@@ -198,6 +199,7 @@ export default function App() {
   });
 
   const handleSelectReportId = (id: string) => {
+    setPreviousPage(currentPage);
     setSelectedReportId(id);
     setCurrentPage('detalles-incidencia');
   };
@@ -440,6 +442,7 @@ export default function App() {
                   setCurrentPage={handleSetPage}
                   onAddComment={handleAddComment}
                   currentUser={userProfile}
+                  previousPage={previousPage}
                 />
               )}
 

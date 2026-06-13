@@ -31,6 +31,7 @@ interface ReportDetailScreenProps {
     avatar: string;
     role: string;
   };
+  previousPage?: PageId;
 }
 
 export default function ReportDetailScreen({
@@ -38,6 +39,7 @@ export default function ReportDetailScreen({
   setCurrentPage,
   onAddComment,
   currentUser,
+  previousPage,
 }: ReportDetailScreenProps) {
   const [commentText, setCommentText] = useState('');
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -133,8 +135,8 @@ export default function ReportDetailScreen({
     return (
       <div className="p-12 text-center bg-[#FAFDF9]">
         <p className="text-sm text-[#4F6C56]">Cargando incidencias o reporte no disponible...</p>
-        <button 
-          onClick={() => setCurrentPage('reportes')}
+        <button
+          onClick={() => setCurrentPage(previousPage ?? 'reportes')}
           className="mt-4 bg-[#05682C] text-white px-4 py-2 rounded-lg text-xs font-bold"
         >
           Volver a listados
@@ -177,11 +179,11 @@ export default function ReportDetailScreen({
         
         {/* Navigation back Link breadcrumb */}
         <button
-          onClick={() => setCurrentPage('reportes')}
+          onClick={() => setCurrentPage(previousPage ?? 'reportes')}
           className="text-[#4F6C56] hover:text-[#1E8344] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Volver a Reportes</span>
+          <span>Volver</span>
         </button>
 
         {/* Master Details Columns Grid */}
