@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageId, Contributor, IncidentReport } from '../types';
 import { 
   Award, Users, ShieldCheck, Sparkles, Trophy, Flame, 
   HelpCircle, ArrowRight, ChevronLeft, MapPin, Calendar, 
   Eye, CheckCircle2, AlertTriangle, ShieldAlert
 } from 'lucide-react';
-import { INITIAL_CONTRIBUTORS } from '../data/mockData';
+import { getContributores } from '../services/rankingService';
 
 interface CommunityScreenProps {
   setCurrentPage: (page: PageId) => void;
@@ -116,9 +116,14 @@ export default function CommunityScreen({
 }: CommunityScreenProps) {
   // Deep inspection state
   const [selectedContributor, setSelectedContributor] = useState<Contributor | null>(null);
+  const [localContributors, setLocalContributors] = useState<Contributor[]>([]);
+
+  useEffect(() => {
+    getContributores().then(setLocalContributors);
+  }, []);
 
   // Build a complete leaderboard combining mock contributors and the active user
-  const allContributors: Contributor[] = [...INITIAL_CONTRIBUTORS];
+  const allContributors: Contributor[] = [...localContributors];
   
   if (isLoggedIn && userProfile) {
     const carlosInList = allContributors.some(c => c.name === userProfile.name);
