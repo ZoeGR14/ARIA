@@ -29,5 +29,24 @@ services:
     depends_on:
       - db
 
+  backend:
+    build:
+      context: ./backend
+
+    container_name: aria_backend
+
+    ports:
+      - "3001:3000"
+      - "5555:5555"
+
+    env_file:
+      - ./backend/.env
+
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+    depends_on:
+      - db
 volumes:
   postgres_data:

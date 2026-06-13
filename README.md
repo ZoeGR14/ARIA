@@ -277,3 +277,399 @@ docker compose up --build
 ```
 *(La bandera `-v` elimina los volúmenes antiguos de datos para forzar la ejecución limpia de tus scripts `.sql`)*.
 
+# Backend (Node.js + Prisma + PostgreSQL/PostGIS)
+
+## Requisitos
+
+* Docker
+* Docker Compose
+* Node.js 22+ (solo para desarrollo local)
+* PostgreSQL con extensión PostGIS (incluido en Docker)
+
+---
+
+## Variables de entorno
+
+Además del archivo `.env` utilizado por el frontend, es necesario crear un archivo `.env` dentro de la carpeta `backend`.
+
+
+```env
+PORT=3000
+
+JWT_SECRET=super_secret
+
+DATABASE_URL=postgresql://postgres:postgres@db:5432/aria_db
+
+EMAIL_USER=aria.tnt.6cv1@gmail.com
+EMAIL_PASSWORD=deuf cdiu anwq gvjq
+```
+
+---
+
+## Levantar el proyecto
+
+Desde la raíz del proyecto:
+
+```bash
+docker compose up --build
+```
+
+Este comando iniciará:
+
+* Frontend React/Vite
+* Backend Node.js/Express
+* PostgreSQL + PostGIS
+
+Para ejecutar en segundo plano:
+
+```bash
+docker compose up -d --build
+```
+
+Verificar contenedores:
+
+```bash
+docker compose ps
+```
+
+Ver logs:
+
+```bash
+docker compose logs -f
+```
+
+---
+
+## Prisma
+
+Una vez que la base de datos haya sido creada y el contenedor del backend esté ejecutándose, es necesario sincronizar Prisma con PostgreSQL.
+
+### Obtener el esquema desde la base de datos
+
+```bash
+docker compose exec backend npx prisma db pull
+```
+
+### Generar Prisma Client
+
+```bash
+docker compose exec backend npx prisma generate
+```
+
+Estos comandos deben ejecutarse cada vez que se modifique la estructura de la base de datos.
+
+---
+
+## PostGIS y Prisma
+
+La tabla `REPORTE` utiliza el tipo espacial:
+
+```sql
+GEOGRAPHY(POINT, 4326)
+```
+
+Actualmente Prisma no soporta completamente los tipos geográficos de PostGIS.
+
+Por esta razón, los campos geográficos aparecerán en el archivo `schema.prisma` como:
+
+```prisma
+ubicacion Unsupported("geography")
+```
+
+Esto es normal y no debe modificarse.
+
+Las operaciones que involucren coordenadas geográficas deben realizarse mediante SQL nativo usando:
+
+```ts
+prisma.$queryRaw(...)
+prisma.$executeRaw(...)
+```
+
+Ejemplo para crear un punto geográfico:
+
+```sql
+ST_SetSRID(
+    ST_MakePoint(longitud, latitud),
+    4326
+)::geography
+```
+
+Ejemplo para recuperar coordenadas:
+
+```sql
+ST_X(ubicacion::geometry)
+ST_Y(ubicacion::geometry)
+```
+
+---
+
+# Endpoints
+
+Base URL:
+
+```text
+http://localhost:3001/api
+```
+## Usuarios de prueba
+
+```text
+Usuario: juan.perez@example.com
+Password: hashed_pwd_123
+```
+
+```text
+Usuario: maria.gomez@example.com 
+Password: hashed_pwd_456
+```
+
+```text
+Usuario: admin@ariaplataforma.org
+Password: hashed_admin_pwd
+```
+
+### Si quieres probar el correo debes crear un usuario con un correo al que puedas acceder.
+### Debes abrir el enlace del correo en la pc donde tengas la aplicación corriendo, si no lo haces así, deberás copiar el token que te arroje y validarlo con el Postman con el endpoint de verificar correo.
+### Lo mismo para restablecer la contraseña
+### Tabién lo puedes obtener desde la base de datos, accediendo con este comando:
+
+```bash
+docker compose exec db psql -U postgres -d aria_db
+select * from token_autenticacion;
+```
+
+---
+
+## Registro de usuario
+
+### Endpoint
+
+```http
+POST /auth/register
+```
+
+### Body
+
+```json
+{
+  "nombreCompleto": "Juan Pérez",
+  "correoElectronico": "juan@gmail.com",
+  "password": "Password123!"
+}
+```
+
+### Respuesta
+
+```json
+{
+  "mensaje": "Usuario registrado correctamente"
+}
+```
+
+---
+
+## Inicio de sesión
+
+### Endpoint
+
+```http
+POST /auth/login
+```
+
+### Body
+
+```json
+{
+  "correoElectronico": "juan@gmail.com",
+  "password": "Password123!"
+}
+```
+
+### Respuesta
+
+```json
+{
+  "token": "eyJhbGc...",
+  "usuario": {
+    "id": 1,
+    "nombreCompleto": "Juan Pérez",
+    "correoElectronico": "juan@gmail.com",
+    "rol": "CIUDADANO"
+  }
+}
+```
+
+---
+
+## Verificar correo
+
+### Endpoint
+
+```http
+GET /auth/verificar/:token
+```
+
+Ejemplo:
+
+```http
+GET /auth/verificar/abc123
+```
+
+---
+
+## Solicitar recuperación de contraseña
+
+### Endpoint
+
+```http
+POST /auth/solicitar-recuperacion
+```
+
+### Body
+
+```json
+{
+  "correoElectronico": "juan@gmail.com"
+}
+```
+
+---
+
+## Restablecer contraseña
+
+### Endpoint
+
+```http
+POST /auth/restablecer-password
+```
+
+### Body
+
+```json
+{
+  "token": "abc123",
+  "password": "NuevaPassword123!"
+}
+```
+
+---
+
+## Registrar token FCM
+
+### Endpoint
+
+```http
+POST /fcm/fcm-token
+```
+
+### Headers
+
+```http
+Authorization: Bearer <JWT>
+```
+
+### Body
+
+```json
+{
+  "fcmToken": "token_dispositivo",
+  "dispositivoInfo": "Chrome Windows 11"
+}
+```
+
+---
+
+## Eliminar token FCM
+
+### Endpoint
+
+```http
+DELETE /fcm/fcm-token
+```
+
+### Headers
+
+```http
+Authorization: Bearer <JWT>
+```
+
+### Body
+
+```json
+{
+  "fcmToken": "token_dispositivo"
+}
+```
+
+---
+
+## Obtener mis dispositivos
+
+### Endpoint
+
+```http
+GET /fcm/mis-dispositivos
+```
+
+### Headers
+
+```http
+Authorization: Bearer <JWT>
+```
+
+### Respuesta
+
+```json
+[
+  {
+    "id": 1,
+    "fcm_token": "fcm_token_test_juan_chrome_windows",
+    "dispositivo_info": "Google Chrome en Windows 10/11 (Escritorio)",
+    "fecha_registro": "2026-06-13T19:20:14.466Z"
+  }
+]
+```
+
+---
+
+## Estadísticas
+
+### Endpoint
+
+```http
+GET /dashboard/stats
+```
+
+### Headers
+
+```http
+Authorization: Bearer <JWT_ADMIN>
+```
+
+### Respuesta
+
+```json
+{
+  "totalReportes": 150,
+  "severidad": {
+    "baja": 40,
+    "media": 60,
+    "alta": 35,
+    "critica": 15
+  }
+}
+```
+
+---
+
+## Actualizar Prisma después de cambios en la base de datos
+
+Cada vez que se modifique el script SQL oficial:
+
+```bash
+docker compose exec backend npx prisma db pull
+
+docker compose exec backend npx prisma generate
+```
+
+De esta forma el cliente Prisma permanecerá sincronizado con la base de datos PostgreSQL.
+
