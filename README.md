@@ -558,7 +558,7 @@ POST /auth/restablecer-password
 ### Endpoint
 
 ```http
-POST /notificaciones/fcm-token
+POST /fcm/fcm-token
 ```
 
 ### Headers
@@ -583,7 +583,7 @@ Authorization: Bearer <JWT>
 ### Endpoint
 
 ```http
-DELETE /notificaciones/fcm-token
+DELETE /fcm/fcm-token
 ```
 
 ### Headers
@@ -602,12 +602,41 @@ Authorization: Bearer <JWT>
 
 ---
 
+## Obtener mis dispositivos
+
+### Endpoint
+
+```http
+GET /fcm/mis-dispositivos
+```
+
+### Headers
+
+```http
+Authorization: Bearer <JWT>
+```
+
+### Respuesta
+
+```json
+[
+  {
+    "id": 1,
+    "fcm_token": "fcm_token_test_juan_chrome_windows",
+    "dispositivo_info": "Google Chrome en Windows 10/11 (Escritorio)",
+    "fecha_registro": "2026-06-13T19:20:14.466Z"
+  }
+]
+```
+
+---
+
 ## Estadísticas
 
 ### Endpoint
 
 ```http
-GET /admin/stats
+GET /dashboard/stats
 ```
 
 ### Headers
