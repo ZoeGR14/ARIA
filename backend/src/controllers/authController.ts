@@ -81,23 +81,28 @@ export const register = async (
 
         });
 
-        await transporter.sendMail({
+        try {
+            await transporter.sendMail({
 
-            to: usuario.correo_electronico,
+                to: usuario.correo_electronico,
 
-            subject: "Verificación de correo",
+                subject: "Verificación de correo",
 
-            html: `
-        <h2>Bienvenido a ARIA</h2>
+                html: `
+            <h2>Bienvenido a ARIA</h2>
 
-        <p>Haz clic para verificar tu cuenta:</p>
+            <p>Haz clic para verificar tu cuenta:</p>
 
-        <a href="http://localhost:3001/api/auth/verificar/${token}">
-            Verificar cuenta
-        </a>
-    `
+            <a href="http://localhost:3001/api/auth/verificar/${token}">
+                Verificar cuenta
+            </a>
+        `
 
-        });
+            });
+        } catch (mailError) {
+            console.error("Error al enviar el correo de verificación:", mailError);
+            // No interrumpimos el flujo porque el usuario ya fue creado en BD
+        }
 
         res.status(201).json({
 
@@ -107,9 +112,9 @@ export const register = async (
 
                 id: usuario.id,
 
-                nombre_completo: usuario.nombreCompleto,
+                nombre_completo: usuario.nombre_completo,
 
-                correo_electronico: usuario.correoElectronico
+                correo_electronico: usuario.correo_electronico
 
             }
 
@@ -208,15 +213,15 @@ export const login = async (
 
                 id: usuario.id,
 
-                nombre_completo: usuario.nombreCompleto,
+                nombre_completo: usuario.nombre_completo,
 
-                correo_electronico: usuario.correoElectronico,
+                correo_electronico: usuario.correo_electronico,
 
-                email_verificado: usuario.emailVerificado,
+                email_verificado: usuario.email_verificado,
 
-                puntos_totales: usuario.puntosTotales,
+                puntos_totales: usuario.puntos_totales,
 
-                nivel_ranking: usuario.nivelRanking,
+                nivel_ranking: usuario.nivel_ranking,
 
                 rol
 

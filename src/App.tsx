@@ -22,7 +22,10 @@ import ExplorarMapaScreen from './components/ExplorarMapaScreen';
 import EditProfileScreen from './components/EditProfileScreen';
 import CommunityScreen from './components/CommunityScreen';
 import { motion, AnimatePresence } from 'motion/react';
-import { LogOut, Bell, Inbox, Check, Sparkles } from 'lucide-react';
+import { LogOut, Bell, Inbox, Check, Sparkles, Mail, Loader2 } from 'lucide-react';
+
+import { getToken, deleteToken, onMessage, isSupported } from 'firebase/messaging';
+import { messaging } from './firebase';
 
 const CARLOS_MENDOZA_PROFILE = {
   name: 'Carlos Mendoza',
@@ -72,17 +75,215 @@ export default function App() {
     }
   ]);
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleShowVerification = (email: string) => {
+    setVerificationEmail(email);
+    setShowVerificationModal(true);
+  };
+
+  // Load session from localStorage on startup
+  useEffect(() => {
+    const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
+    const userStr = localStorage.getItem('aria_user') || sessionStorage.getItem('aria_user');
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        const mappedProfile = {
+          id: user.id,
+          name: user.nombre_completo,
+          email: user.correo_electronico,
+          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+          role: user.rol === 'ADMINISTRADOR' ? 'Administrador' : 'Ciudadano Activo',
+          bio: `Hola, soy ${(user.nombre_completo || 'Usuario').split(' ')[0]}. Me interesa el monitoreo ambiental y registrar incidencias para cooperar de manera constructiva con mi comunidad local.`,
+          location: 'CDMX, MX',
+          level: user.nivel_ranking || 'Novato',
+          impactScore: user.puntos_totales || 0,
+          pointsThisMonth: user.puntos_totales || 0,
+          totalsCount: 0,
+          validatedCount: 0,
+          contributionsCount: 0,
+        };
+        setUserProfile(mappedProfile);
+        setIsLoggedIn(true);
+      } catch (e) {
+        console.error("Error loading cached user session:", e);
+        localStorage.removeItem('aria_token');
+        localStorage.removeItem('aria_user');
+        sessionStorage.removeItem('aria_token');
+        sessionStorage.removeItem('aria_user');
+      }
+    }
+  }, []);
+
+  // Listen for FCM messages
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+
+    const setupOnMessage = async () => {
+      try {
+        const supported = await isSupported();
+        if (!supported) return;
+
+        unsubscribe = onMessage(messaging, (message) => {
+          console.log("Mensaje recibido:", message);
+          if (message.notification) {
+            const newNotify = {
+              id: `n-fcm-${Date.now()}`,
+              title: message.notification.title || 'Nueva Notificación',
+              message: message.notification.body || '',
+              time: 'Hace unos instantes',
+              read: false,
+              reportId: message.data?.reportId,
+            };
+            setNotifications((prev) => [newNotify, ...prev]);
+          }
+        });
+      } catch (err) {
+        console.log("No se pudo iniciar el listener de mensajes FCM: ", err);
+      }
+    };
+
+    setupOnMessage();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  const getDeviceInfo = () => {
+    const ua = navigator.userAgent;
+    let browser = "Navegador Desconocido";
+    let os = "SO Desconocido";
+
+    if (ua.indexOf("Firefox") > -1) browser = "Firefox";
+    else if (ua.indexOf("SamsungBrowser") > -1) browser = "Samsung Browser";
+    else if (ua.indexOf("Opera") > -1 || ua.indexOf("OPR") > -1) browser = "Opera";
+    else if (ua.indexOf("Trident") > -1) browser = "Internet Explorer";
+    else if (ua.indexOf("Edge") > -1) browser = "Microsoft Edge";
+    else if (ua.indexOf("Chrome") > -1) browser = "Google Chrome";
+    else if (ua.indexOf("Safari") > -1) browser = "Apple Safari";
+
+    if (ua.indexOf("Windows NT 10.0") > -1) os = "Windows 10/11";
+    else if (ua.indexOf("Windows NT 6.2") > -1) os = "Windows 8";
+    else if (ua.indexOf("Windows NT 6.1") > -1) os = "Windows 7";
+    else if (ua.indexOf("Macintosh") > -1) os = "macOS";
+    else if (ua.indexOf("iPhone") > -1) os = "iOS";
+    else if (ua.indexOf("Android") > -1) os = "Android";
+    else if (ua.indexOf("Linux") > -1) os = "Linux";
+
+    return `${browser} en ${os} (Escritorio/Móvil)`;
+  };
+
+  // Save FCM token for the user if they don't have it saved
+  useEffect(() => {
+    const handleFcmTokenRegistration = async () => {
+      if (!isLoggedIn) return;
+
+      const tokenJwt = localStorage.getItem('aria_token');
+      if (!tokenJwt) return;
+
+      try {
+        const supported = await isSupported();
+        if (!supported) return;
+
+        const fcmToken = await getToken(messaging, {
+          vapidKey: "BIB4QGDhC2lIgmT_MkMSWiumWu4d4e34XDzekN8VOxPRHJzNyiNbnGpM_3_OSj7gAeqPWjm2IdLnNGxqR_gyW-I"
+        }).catch(error => {
+          console.log("Error al generar el token FCM: ", error);
+          return null;
+        });
+
+        if (!fcmToken) {
+          console.log("No se pudo generar el token FCM o permiso denegado");
+          return;
+        }
+
+        console.log("Token FCM obtenido: ", fcmToken);
+
+        const devicesRes = await fetch('http://localhost:3001/api/fcm/mis-dispositivos', {
+          headers: {
+            'Authorization': `Bearer ${tokenJwt}`
+          }
+        });
+
+        if (devicesRes.ok) {
+          const devices = await devicesRes.json();
+          const alreadySaved = devices.some((d: any) => d.fcm_token === fcmToken);
+          if (alreadySaved) {
+            console.log("El dispositivo ya está registrado en la base de datos");
+            return;
+          }
+        }
+
+        const deviceInfo = getDeviceInfo();
+        const registerRes = await fetch('http://localhost:3001/api/fcm/fcm-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenJwt}`
+          },
+          body: JSON.stringify({
+            fcmToken,
+            dispositivoInfo: deviceInfo
+          })
+        });
+
+        if (registerRes.ok) {
+          console.log("Token FCM y info de dispositivo guardados exitosamente");
+        } else {
+          const errData = await registerRes.json();
+          console.warn("Error al registrar token FCM en base de datos: ", errData.mensaje);
+        }
+
+      } catch (err) {
+        console.error("Error en el flujo de registro FCM: ", err);
+      }
+    };
+
+    handleFcmTokenRegistration();
+  }, [isLoggedIn]);
 
   // Automatically scroll to top on page navigation
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage]);
 
+  // Handle browser back/forward buttons (History API)
+  useEffect(() => {
+    // Save initial state on mount so first 'back' works properly
+    window.history.replaceState({ page: currentPage, reportId: selectedReportId }, '', '');
+
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.page) {
+        const { page, reportId } = event.state;
+        
+        // Guard check: prevent logged-in users from going back to public auth screens
+        if (isLoggedIn && ['inicio', 'login', 'signup'].includes(page)) {
+          window.history.replaceState({ page: 'dashboard', reportId: selectedReportId }, '', '');
+          setCurrentPage('dashboard');
+          return;
+        }
+
+        setCurrentPage(page);
+        if (reportId) {
+          setSelectedReportId(reportId);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isLoggedIn]);
+
   // Safely auto-route between public and authenticated pages on login/navigation changes
   useEffect(() => {
     if (isLoggedIn) {
       if (['inicio', 'login', 'signup'].includes(currentPage)) {
         setCurrentPage('dashboard');
+        window.history.replaceState({ page: 'dashboard', reportId: selectedReportId }, '', '');
       }
       setAuthMessage(null);
     } else {
@@ -111,6 +312,7 @@ export default function App() {
           setAuthMessage('Debes iniciar sesión para acceder a esta sección.');
         }
         setCurrentPage('login');
+        window.history.replaceState({ page: 'login', reportId: selectedReportId }, '', '');
       }
     }
   }, [isLoggedIn, currentPage]);
@@ -141,11 +343,13 @@ export default function App() {
         setAuthMessage('Debes iniciar sesión para acceder a esta sección.');
       }
       setCurrentPage('login');
+      window.history.pushState({ page: 'login', reportId: selectedReportId }, '', '');
     } else {
       if (page !== 'login') {
         setAuthMessage(null);
       }
       setCurrentPage(page);
+      window.history.pushState({ page, reportId: selectedReportId }, '', '');
     }
   };
 
@@ -200,6 +404,7 @@ export default function App() {
   const handleSelectReportId = (id: string) => {
     setSelectedReportId(id);
     setCurrentPage('detalles-incidencia');
+    window.history.pushState({ page: 'detalles-incidencia', reportId: id }, '', '');
   };
 
   const activeReport = reports.find((r) => r.id === selectedReportId) || reports[0];
@@ -362,11 +567,44 @@ export default function App() {
 
               {/* Logout button */}
               <button
-                onClick={() => {
-                  setIsLoggedIn(false);
-                  handleSetPage('inicio');
+                onClick={async () => {
+                  setIsLoggingOut(true);
+                  try {
+                    const currentToken = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
+                    if (currentToken && await isSupported()) {
+                      const fcmToken = await getToken(messaging, { 
+                        vapidKey: "BIB4QGDhC2lIgmT_MkMSWiumWu4d4e34XDzekN8VOxPRHJzNyiNbnGpM_3_OSj7gAeqPWjm2IdLnNGxqR_gyW-I" 
+                      }).catch(() => null);
+                      
+                      if (fcmToken) {
+                        // Notificamos al backend para que lo borre de sus registros
+                        await fetch('http://localhost:3001/api/fcm/fcm-token', {
+                          method: 'DELETE',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${currentToken}`
+                          },
+                          body: JSON.stringify({ fcmToken })
+                        }).catch(console.error);
+                        
+                        // Lo borramos del navegador
+                        await deleteToken(messaging).catch(console.error);
+                      }
+                    }
+                  } catch (e) {
+                    console.error("Error al limpiar token FCM en logout", e);
+                  } finally {
+                    localStorage.removeItem('aria_token');
+                    localStorage.removeItem('aria_user');
+                    sessionStorage.removeItem('aria_token');
+                    sessionStorage.removeItem('aria_user');
+                    setIsLoggedIn(false);
+                    setIsLoggingOut(false);
+                    handleSetPage('inicio');
+                  }
                 }}
-                className="flex items-center space-x-1.5 px-3 py-1.5 bg-rose-50 border border-rose-100 font-bold hover:bg-rose-100 hover:border-rose-200 text-rose-700 rounded-full text-[11px] transition-all cursor-pointer active:scale-95"
+                disabled={isLoggingOut}
+                className="flex items-center space-x-1.5 px-3 py-1.5 bg-rose-50 border border-rose-100 font-bold hover:bg-rose-100 hover:border-rose-200 text-rose-700 rounded-full text-[11px] transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Cerrar Sesión"
               >
                 <LogOut className="w-3.5 h-3.5 text-rose-600" />
@@ -448,6 +686,8 @@ export default function App() {
                   setCurrentPage={handleSetPage}
                   setIsLoggedIn={setIsLoggedIn}
                   authMessage={authMessage}
+                  setUserProfile={setUserProfile}
+                  onShowVerification={handleShowVerification}
                 />
               )}
 
@@ -456,6 +696,7 @@ export default function App() {
                   setCurrentPage={handleSetPage}
                   setIsLoggedIn={setIsLoggedIn}
                   setUserProfile={setUserProfile}
+                  onShowVerification={handleShowVerification}
                 />
               )}
 
@@ -499,6 +740,79 @@ export default function App() {
         <Footer setCurrentPage={handleSetPage} />
       </div>
 
+      {/* Verification Modal Popup */}
+      <AnimatePresence>
+        {showVerificationModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0A1F10]/60 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-[#CDE1D1]"
+            >
+              <div className="bg-gradient-to-tr from-[#1E8344] via-[#33A25A] to-[#8AD690] p-6 text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-full mx-auto flex items-center justify-center backdrop-blur-md mb-4 shadow-lg border border-white/30">
+                  <Mail className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-black text-white tracking-tight">Verifica tu Correo</h3>
+              </div>
+              <div className="p-8 text-center space-y-6">
+                <div className="space-y-2">
+                  <p className="text-sm text-[#4F6C56] font-medium leading-relaxed">
+                    Hemos enviado un enlace de confirmación a:
+                  </p>
+                  <p className="font-bold text-[#143B20] bg-[#F3FAF4] border border-[#CDE1D1] py-2 px-4 rounded-xl inline-block truncate max-w-full text-sm">
+                    {verificationEmail || "tu correo"}
+                  </p>
+                </div>
+                <p className="text-xs text-[#557C5E] font-medium leading-relaxed">
+                  Por favor, revisa tu bandeja de entrada o carpeta de spam y haz click en el enlace para activar tu cuenta. Una vez verificada, podrás iniciar sesión.
+                </p>
+                <div className="pt-2">
+                  <button
+                    onClick={() => {
+                      setShowVerificationModal(false);
+                      handleSetPage('login');
+                    }}
+                    className="w-full bg-[#1E8344] hover:bg-[#166634] text-white font-bold py-3.5 rounded-xl transition-all shadow-md active:scale-95 text-sm uppercase tracking-wider cursor-pointer"
+                  >
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {isLoggingOut && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[#0A1F10]/70 backdrop-blur-md"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full border border-[#CDE1D1] text-center"
+            >
+              <div className="mx-auto w-16 h-16 bg-[#F3FAF4] rounded-full flex items-center justify-center mb-4 border border-[#CDE1D1]">
+                <Loader2 className="w-8 h-8 text-[#1E8344] animate-spin" />
+              </div>
+              <h3 className="text-xl font-black text-[#143B20] tracking-tight mb-2">Cerrando sesión</h3>
+              <p className="text-sm text-[#557B5E] font-medium leading-relaxed">
+                Por favor espera un momento mientras cerramos tu sesión de forma segura...
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

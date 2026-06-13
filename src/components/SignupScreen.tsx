@@ -11,12 +11,14 @@ interface SignupScreenProps {
   setCurrentPage: (page: PageId) => void;
   setIsLoggedIn: (login: boolean) => void;
   setUserProfile: (profile: any) => void;
+  onShowVerification: (email: string) => void;
 }
 
 export default function SignupScreen({
   setCurrentPage,
   setIsLoggedIn,
   setUserProfile,
+  onShowVerification
 }: SignupScreenProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -26,8 +28,9 @@ export default function SignupScreen({
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError(null);
 
@@ -46,35 +49,46 @@ export default function SignupScreen({
       return;
     }
 
-    // Register mock user
-    const newUserProfile = {
-      name: name || 'Investigador Ciudadano',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-      role: 'Investigador Ciudadano',
-      bio: `Hola, soy ${name.split(' ')[0]}. Me interesa el monitoreo ambiental y registrar incidencias para cooperar de manera constructiva con mi comunidad local.`,
-      location: 'Bogotá, CO',
-      level: 'Novato Nivel 1',
-      impactScore: 10,
-      pointsThisMonth: 10,
-      totalsCount: 1,
-      validatedCount: 0,
-      contributionsCount: 1,
-    };
-    
-    setUserProfile(newUserProfile);
-    setIsLoggedIn(true);
-    setCurrentPage('dashboard');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:3001/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nombreCompleto: name,
+          correoElectronico: email,
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.mensaje || 'Error al registrar usuario');
+      }
+
+      // Registro exitoso, solicitar verificación de correo
+      onShowVerification(email);
+
+    } catch (err: any) {
+      setValidationError(err.message || 'Error de red. Intenta de nuevo.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="min-h-[calc(100vh-68px)] bg-[#FCFDFB] flex flex-col justify-between">
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12">
-        
+
         {/* Left Half: Deep sunlit pine forest background (Matches exact image style) */}
-        <div 
+        <div
           className="hidden lg:flex lg:col-span-5 relative bg-cover bg-center items-end p-12 text-white h-auto"
-          style={{ 
-            backgroundImage: "linear-gradient(to top, rgba(10,31,15,0.95) 20%, rgba(10,31,15,0.1) 100%), url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=80')" 
+          style={{
+            backgroundImage: "linear-gradient(to top, rgba(10,31,15,0.95) 20%, rgba(10,31,15,0.1) 100%), url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=80')"
           }}
         >
           <div className="space-y-4 max-w-sm">
@@ -85,7 +99,7 @@ export default function SignupScreen({
               Registra la deforestación y apoya a biólogos e investigadores independientes a salvaguardar pulmones naturales.
             </p>
           </div>
-          
+
           <div className="absolute top-8 left-8 flex items-center space-x-2">
             <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-extrabold text-xs">
               T
@@ -144,7 +158,7 @@ export default function SignupScreen({
               {/* Email Field */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-[#143B20] uppercase tracking-wider block">
-                  Correo electrónico laboral
+                  Correo electrónico
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
@@ -241,10 +255,11 @@ export default function SignupScreen({
               {/* Sign up Trigger */}
               <button
                 type="submit"
-                className="w-full bg-[#05682C] text-white font-bold py-3.5 rounded-xl hover:bg-[#045524] transition-all text-sm tracking-wide flex items-center justify-center space-x-2 shadow-xs cursor-pointer"
+                disabled={isLoading}
+                className="w-full bg-[#05682C] text-white font-bold py-3.5 rounded-xl hover:bg-[#045524] disabled:opacity-70 disabled:cursor-not-allowed transition-all text-sm tracking-wide flex items-center justify-center space-x-2 shadow-xs cursor-pointer"
               >
-                <span>Crear cuenta</span>
-                <span>→</span>
+                <span>{isLoading ? 'Creando cuenta...' : 'Crear cuenta'}</span>
+                {!isLoading && <span>→</span>}
               </button>
 
               {/* OR Stacked divider (Capital matching Screen 4) */}

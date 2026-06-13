@@ -11,22 +11,83 @@ interface LoginScreenProps {
   setCurrentPage: (page: PageId) => void;
   setIsLoggedIn: (login: boolean) => void;
   authMessage?: string | null;
+  setUserProfile: (profile: any) => void;
+  onShowVerification: (email: string) => void;
 }
 
 export default function LoginScreen({ 
   setCurrentPage, 
   setIsLoggedIn,
   authMessage = null,
+  setUserProfile,
+  onShowVerification
 }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login
-    setIsLoggedIn(true);
-    setCurrentPage('dashboard');
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:3001/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          correoElectronico: email,
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 401 && data.mensaje === "Verifique su correo") {
+          onShowVerification(email);
+          return;
+        }
+        throw new Error(data.mensaje || 'Error al iniciar sesión');
+      }
+
+      if (rememberMe) {
+        localStorage.setItem('aria_token', data.token);
+        localStorage.setItem('aria_user', JSON.stringify(data.usuario));
+      } else {
+        sessionStorage.setItem('aria_token', data.token);
+        sessionStorage.setItem('aria_user', JSON.stringify(data.usuario));
+      }
+
+      const userProfile = {
+        id: data.usuario.id,
+        name: data.usuario.nombre_completo,
+        email: data.usuario.correo_electronico,
+        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+        role: data.usuario.rol === 'ADMINISTRADOR' ? 'Administrador' : 'Ciudadano Activo',
+        bio: `Hola, soy ${(data.usuario.nombre_completo || 'Usuario').split(' ')[0]}. Me interesa el monitoreo ambiental y registrar incidencias para cooperar de manera constructiva con mi comunidad local.`,
+        location: 'CDMX, MX',
+        level: data.usuario.nivel_ranking || 'Novato',
+        impactScore: data.usuario.puntos_totales || 0,
+        pointsThisMonth: data.usuario.puntos_totales || 0,
+        totalsCount: 0,
+        validatedCount: 0,
+        contributionsCount: 0,
+      };
+
+      setUserProfile(userProfile);
+      setIsLoggedIn(true);
+      setCurrentPage('dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Error de red. Intenta de nuevo.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -73,6 +134,15 @@ export default function LoginScreen({
                 <Lock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <div className="font-semibold leading-relaxed">
                   {authMessage}
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-3.5 flex items-start gap-2.5 text-rose-800 text-xs shadow-xs">
+                <span className="text-sm shrink-0">⚠️</span>
+                <div className="font-semibold leading-relaxed">
+                  {error}
                 </div>
               </div>
             )}
@@ -140,6 +210,8 @@ export default function LoginScreen({
                 <label className="flex items-center space-x-2 text-[#4F6C56] cursor-pointer">
                   <input 
                     type="checkbox" 
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-4 h-4 rounded text-[#1E8344] focus:ring-[#1E8344] border-[#CDE1D1]" 
                   />
                   <span>Mantener sesión iniciada</span>
@@ -155,9 +227,10 @@ export default function LoginScreen({
               {/* Main submit */}
               <button
                 type="submit"
-                className="w-full bg-[#05682C] text-white font-bold py-3.5 rounded-xl hover:bg-[#045524] hover:shadow-md transition-all text-sm tracking-wide"
+                disabled={isLoading}
+                className="w-full bg-[#05682C] text-white font-bold py-3.5 rounded-xl hover:bg-[#045524] disabled:opacity-70 disabled:cursor-not-allowed hover:shadow-md transition-all text-sm tracking-wide"
               >
-                Iniciar Sesión
+                {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
               </button>
 
               {/* OR Divider */}
