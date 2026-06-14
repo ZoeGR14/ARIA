@@ -100,24 +100,13 @@ export default function SignupScreen({
             </p>
           </div>
 
-          <div className="absolute top-8 left-8 flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-extrabold text-xs">
-              T
-            </div>
-            <span className="text-sm font-bold tracking-wider uppercase text-white/95">TERRANOVA TECH</span>
-          </div>
+
         </div>
 
         {/* Right Half: Signup Form (Matches screenshot exactly) */}
         <div className="lg:col-span-7 flex flex-col justify-center items-center p-6 md:p-16">
           <div className="w-full max-w-md space-y-8 bg-white p-6 md:p-10 rounded-2xl border border-[#EBF1EC] shadow-xs">
-            {/* Brand Logo Header */}
-            <div className="flex flex-col items-center text-center space-y-2">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#1E8344] via-[#33A25A] to-[#8AD690] flex items-center justify-center shadow-lg">
-                <span className="text-white font-black text-sm">T.TECH</span>
-              </div>
-              <h3 className="text-[10px] font-black text-[#557C5E] uppercase tracking-widest mt-1 font-mono">Terranova Tech</h3>
-            </div>
+
 
             {/* Inputs Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
