@@ -72,11 +72,9 @@ export default function Sidebar({
             className="flex items-center space-x-3 cursor-pointer select-none pb-2 border-b border-[#E1ECE3]"
             onClick={() => handleNav(isLoggedIn ? 'dashboard' : 'inicio')}
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#1E8344] via-[#33A25A] to-[#8AD690] flex items-center justify-center shadow-md flex-shrink-0">
-              <span className="text-white font-extrabold text-[#9px] tracking-tighter">T.TECH</span>
-            </div>
+            <img src="/tiny.png" alt="ARIA Logo" className="w-10 h-10 object-contain flex-shrink-0" />
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-black text-[#143B20] tracking-tight leading-none truncate">Terranova Tech</span>
+              <span className="text-sm font-black text-[#143B20] tracking-tight leading-none truncate">ARIA</span>
               <span className="text-[9px] text-[#557B5E] font-bold tracking-tighter uppercase mt-1 truncate">Soporte Ambiental</span>
             </div>
           </div>

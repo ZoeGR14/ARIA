@@ -14,7 +14,7 @@ interface EditProfileScreenProps {
     role: string;
     level: string;
   };
-  setUserProfile: (profile: { name: string; avatar: string; role: string; level: string }) => void;
+  setUserProfile: any;
 }
 
 const PRESET_AVATARS = [
@@ -42,12 +42,13 @@ export default function EditProfileScreen({
     e.preventDefault();
     if (!name.trim()) return;
     
-    setUserProfile({
+    setUserProfile((prev: any) => ({
+      ...prev,
       name: name.trim(),
       role: role.trim(),
       level: level.trim(),
       avatar: avatar,
-    });
+    }));
     
     setShowSavedMsg(true);
     setTimeout(() => {

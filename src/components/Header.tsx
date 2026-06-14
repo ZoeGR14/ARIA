@@ -26,13 +26,7 @@ export default function Header({
         onClick={() => navigate(isLoggedIn ? '/dashboard' : '/')}
         className="flex items-center space-x-2.5 cursor-pointer select-none"
       >
-        <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#1E8344] via-[#33A25A] to-[#8AD690] flex items-center justify-center font-extrabold text-white text-xs shadow-sm">
-          T
-        </div>
-        <div>
-          <span className="text-sm font-black text-[#143B20] tracking-tight block leading-none">Terranova Tech</span>
-          <span className="text-[9px] text-[#557B5E] font-bold tracking-tight uppercase block mt-1">Plataforma Ciudadana</span>
-        </div>
+        <img src="/tiny.png" alt="ARIA Logo" className="h-12 w-auto object-contain" />
       </div>
 
       {/* Navigation Links (Unauthenticated state) */}

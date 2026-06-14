@@ -229,7 +229,7 @@ export default function CommunityScreen({
                       className="w-24 h-24 rounded-full object-cover border-4 border-slate-100 shadow-lg"
                       referrerPolicy="no-referrer"
                     />
-                    {getRankBadge(selectedContributor.rank) !== `#${selectedContributor.rank}` && (
+                    {selectedContributor.rank <= 3 && (
                       <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-md leading-none border">
                         {getRankBadge(selectedContributor.rank)}
                       </div>
@@ -585,7 +585,9 @@ export default function CommunityScreen({
                       <Sparkles className="w-4.5 h-4.5 text-[#1E8344]" />
                       <h3 className="text-base font-extrabold text-[#143B20]">Misiones Activas</h3>
                     </div>
-                    <HelpCircle className="w-4.5 h-4.5 text-slate-300" title="Al cumplir estas metas grupales recibes bonos de impacto" />
+                    <span title="Al cumplir estas metas grupales recibes bonos de impacto">
+                      <HelpCircle className="w-4 h-4 text-slate-300" />
+                    </span>
                   </div>
 
                   <div className="space-y-4">
