@@ -6,8 +6,13 @@ import bcrypt from "bcrypt";
 
 import jwt from "jsonwebtoken";
 
+import path from 'path';
+
 import { generarToken } from "../utils/token";
 import { transporter } from "../services/email.service";
+
+import {verificationEmailTemplate} from "../assets/templates/verificarCorreo"
+import {recoverEmailTemplate} from "../assets/templates/recuperarContra"
 
 export const register = async (
     req: Request,
@@ -82,22 +87,25 @@ export const register = async (
         });
 
         try {
+            const url = "http://localhost:3000/verificar-correo/"+token;
+            const html = verificationEmailTemplate(
+                usuario.nombre_completo,
+                url
+            );
             await transporter.sendMail({
 
                 to: usuario.correo_electronico,
 
-                subject: "Verificación de correo",
+                subject: "Verifica tu cuenta en ARIA",
 
-                html: `
-            <h2>Bienvenido a ARIA</h2>
-
-            <p>Haz clic para verificar tu cuenta:</p>
-
-            <a href="http://localhost:3001/api/auth/verificar/${token}">
-                Verificar cuenta
-            </a>
-        `
-
+                html,
+                attachments: [
+                    {
+                        filename: 'logo-aria.png',
+                        path: path.join(process.cwd(),'src','assets', 'images', 'tiny.png'),
+                        cid: 'aria-logo'
+                    }
+                ]
             });
         } catch (mailError) {
             console.error("Error al enviar el correo de verificación:", mailError);
@@ -257,19 +265,24 @@ export const verificarCorreo = async (
 
                 token,
 
-                tipo: "VERIFICACION_CORREO",
-
-                usado: false
+                tipo: "VERIFICACION_CORREO"
 
             }
 
         });
 
-    if (!registro) {
-
-        res.status(400).json({
-
+    if (registro == null) {
+        res.status(401).json({
             mensaje: "Token inválido"
+        })
+        return;
+    }
+
+    if (registro.usado) {
+
+        res.json({
+
+            mensaje: "Correo verificado"
 
         });
 
@@ -384,21 +397,31 @@ export const solicitarRecuperacion = async (
 
     });
 
-    await transporter.sendMail({
+    try {
+        const url = "http://localhost:3000/reset-password?token="+token;
+        const html = recoverEmailTemplate(
+            usuario.nombre_completo,
+            url
+        );
+        await transporter.sendMail({
 
-        to: usuario.correo_electronico,
+            to: usuario.correo_electronico,
 
-        subject: "Recuperación de contraseña",
+            subject: "Recupera tu contraseña",
 
-        html: `
-            <p>Recupera tu contraseña:</p>
-
-            <a href="http://localhost:3000/reset-password?token=${token}">
-                Restablecer contraseña
-            </a>
-        `
-
-    });
+            html,
+            attachments: [
+                {
+                    filename: 'logo-aria.png',
+                    path: path.join(process.cwd(),'src','assets', 'images', 'tiny.png'),
+                    cid: 'aria-logo'
+                }
+            ]
+        });
+    } catch (mailError) {
+        console.error("Error al enviar el correo de verificación:", mailError);
+        // No interrumpimos el flujo porque el usuario ya fue creado en BD
+    }
 
     res.json({
 

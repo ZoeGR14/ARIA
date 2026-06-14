@@ -13,6 +13,7 @@ import Footer from './components/Footer';
 import LandingScreen from './components/LandingScreen';
 import DashboardScreen from './components/DashboardScreen';
 import LoginScreen from './components/LoginScreen';
+import VerifyEmailScreen from "./components/VerifyEmailScreen.tsx";
 import SignupScreen from './components/SignupScreen';
 import ResetPasswordScreen from './components/ResetPasswordScreen';
 import ReportFormScreen from './components/ReportFormScreen';
@@ -521,7 +522,8 @@ export default function App() {
                <Routes>
                 <Route path="/" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LandingScreen reports={reports} />} />
                 <Route path="/login" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LoginScreen setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} onShowVerification={handleShowVerification} />} />
-                <Route path="/signup" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <SignupScreen setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} onShowVerification={handleShowVerification} />} />
+                 <Route path="/verificar-correo/:token" element={<VerifyEmailScreen />}/>
+                 <Route path="/signup" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <SignupScreen setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} onShowVerification={handleShowVerification} />} />
                 <Route path="/reset-password" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <ResetPasswordScreen />} />
                 <Route path="/acerca-de" element={<AboutScreen />} />
                 <Route path="/dashboard" element={
