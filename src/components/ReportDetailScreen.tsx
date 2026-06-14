@@ -4,10 +4,11 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { PageId, IncidentReport, Comment } from '../types';
-import { 
-  ArrowLeft, Clock, Calendar, CheckCircle2, ShieldAlert, Users, 
-  MapPin, Compass, Play, Send, Shield, User 
+import { useNavigate, useParams } from 'react-router-dom';
+import { IncidentReport, Comment } from '../types';
+import {
+  ArrowLeft, Clock, Calendar, CheckCircle2, ShieldAlert, Users,
+  MapPin, Compass, Play, Send, Shield, User
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -23,24 +24,23 @@ const REPORT_COORDINATES: Record<string, [number, number]> = {
 };
 
 interface ReportDetailScreenProps {
-  report: IncidentReport | null;
-  setCurrentPage: (page: PageId) => void;
+  reports: IncidentReport[];
   onAddComment: (reportId: string, comment: Comment) => void;
   currentUser: {
     name: string;
     avatar: string;
     role: string;
   };
-  previousPage?: PageId;
 }
 
 export default function ReportDetailScreen({
-  report,
-  setCurrentPage,
+  reports,
   onAddComment,
   currentUser,
-  previousPage,
 }: ReportDetailScreenProps) {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const report = reports.find(r => r.id === id) ?? null;
   const [commentText, setCommentText] = useState('');
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -135,8 +135,8 @@ export default function ReportDetailScreen({
     return (
       <div className="p-12 text-center bg-[#FAFDF9]">
         <p className="text-sm text-[#4F6C56]">Cargando incidencias o reporte no disponible...</p>
-        <button
-          onClick={() => setCurrentPage(previousPage ?? 'reportes')}
+        <button 
+          onClick={() => navigate(-1)}
           className="mt-4 bg-[#05682C] text-white px-4 py-2 rounded-lg text-xs font-bold"
         >
           Volver a listados
@@ -179,11 +179,11 @@ export default function ReportDetailScreen({
         
         {/* Navigation back Link breadcrumb */}
         <button
-          onClick={() => setCurrentPage(previousPage ?? 'reportes')}
+          onClick={() => navigate(-1)}
           className="text-[#4F6C56] hover:text-[#1E8344] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Volver</span>
+          <span>Volver a Reportes</span>
         </button>
 
         {/* Master Details Columns Grid */}
@@ -392,7 +392,7 @@ export default function ReportDetailScreen({
 
               {/* Open basemap translucent button action */}
               <button 
-                onClick={() => setCurrentPage('explorar-mapa')}
+                onClick={() => navigate('/explorar-mapa')}
                 className="w-full bg-[#EDF2EE] border border-[#CDE1D1] text-[#143B20] hover:bg-[#DCE7DD] text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-xs active:scale-95"
               >
                 <Compass className="w-4 h-4 text-[#1E8344]" />

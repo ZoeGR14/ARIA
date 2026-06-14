@@ -4,15 +4,13 @@
  */
 
 import React, { useState } from 'react';
-import { PageId } from '../types';
-import { 
-  Home, Map, ClipboardList, Award, Info, LayoutDashboard, PlusCircle, 
-  LogOut, LogIn, Menu, X, User, ChevronRight, FileText, UserCog 
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  Home, Map, ClipboardList, Award, Info, LayoutDashboard, PlusCircle,
+  LogOut, LogIn, Menu, X, User, ChevronRight, FileText, UserCog
 } from 'lucide-react';
 
 interface SidebarProps {
-  currentPage: PageId;
-  setCurrentPage: (page: PageId) => void;
   isLoggedIn: boolean;
   setIsLoggedIn: (login: boolean) => void;
   userProfile?: {
@@ -24,12 +22,12 @@ interface SidebarProps {
 }
 
 export default function Sidebar({
-  currentPage,
-  setCurrentPage,
   isLoggedIn,
   setIsLoggedIn,
   userProfile,
 }: SidebarProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const menuItems = isLoggedIn
@@ -48,19 +46,18 @@ export default function Sidebar({
         { id: 'acerca-de', label: 'Acerca de', icon: <Info className="w-5 h-5" /> },
       ];
 
-  const handleNav = (id: PageId) => {
-    // Redirect 'inicio' to 'dashboard' if logged in
-    if (isLoggedIn && id === 'inicio') {
-      setCurrentPage('dashboard');
+  const handleNav = (id: string) => {
+    if (id === 'inicio') {
+      navigate('/');
     } else {
-      setCurrentPage(id);
+      navigate('/' + id);
     }
     setMobileOpen(false);
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
-    setCurrentPage('inicio');
+    navigate('/');
     setMobileOpen(false);
   };
 
@@ -91,11 +88,15 @@ export default function Sidebar({
             </span>
 
             {menuItems.map((item) => {
-              const isActive = currentPage === item.id;
+              const isActive = item.id === 'dashboard'
+                ? location.pathname === '/dashboard'
+                : item.id === 'inicio'
+                  ? location.pathname === '/'
+                  : location.pathname === '/' + item.id;
               return (
                 <button
                   key={item.id}
-                  onClick={() => handleNav(item.id as PageId)}
+                  onClick={() => handleNav(item.id)}
                   className={`w-full flex items-center space-x-3.5 px-4 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                     isActive
                       ? 'bg-[#EBF7EE] text-[#1E8344]'
@@ -114,7 +115,7 @@ export default function Sidebar({
           {/* Core Green Elongated action button CTA */}
           <div className="pt-2 px-1">
             <button
-              onClick={() => handleNav(isLoggedIn ? 'reportar' : 'login')}
+              onClick={() => navigate(isLoggedIn ? '/reportar' : '/login')}
               className="w-full bg-[#05682C] text-white font-extrabold py-3.5 px-4 rounded-full hover:bg-[#045524] transition-all flex items-center justify-center space-x-2 text-xs shadow-md shadow-[#05682C]/10 cursor-pointer"
             >
               <PlusCircle className="w-4.5 h-4.5" />
@@ -127,7 +128,7 @@ export default function Sidebar({
         {!isLoggedIn && (
           <div className="pt-5 border-t border-[#E1ECE3] mt-8">
             <button
-              onClick={() => handleNav('login')}
+              onClick={() => navigate('/login')}
               className="w-full flex items-center justify-center space-x-2 bg-[#EDF2EE] border border-[#CDE1D1] text-[#143B20] hover:bg-[#DCE7DD] font-bold py-3 px-4 rounded-xl text-xs transition-colors cursor-pointer"
             >
               <LogIn className="w-4 h-4 text-[#1E8344]" />

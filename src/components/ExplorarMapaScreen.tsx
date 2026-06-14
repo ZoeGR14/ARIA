@@ -4,25 +4,21 @@
  */
 
 import React from 'react';
-import { PageId, IncidentReport } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { IncidentReport } from '../types';
 import MapPlaceholder from './MapPlaceholder';
 import { Target, MapPin, Compass, Info, ShieldCheck } from 'lucide-react';
 
 interface ExplorarMapaScreenProps {
   reports: IncidentReport[];
-  setCurrentPage: (page: PageId) => void;
-  onSelectReportId: (id: string) => void;
-  focusedReportId?: string;
   onReportLocation?: (address: string, coordinates: string) => void;
 }
 
 export default function ExplorarMapaScreen({
   reports,
-  setCurrentPage,
-  onSelectReportId,
-  focusedReportId,
   onReportLocation,
 }: ExplorarMapaScreenProps) {
+  const navigate = useNavigate();
   return (
     <div className="bg-[#FAFDF9] py-8 px-4 md:px-8 min-h-[calc(100vh-68px)]">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -57,13 +53,9 @@ export default function ExplorarMapaScreen({
               </div>
             </div>
             
-            <MapPlaceholder 
+            <MapPlaceholder
               reports={reports}
-              focusedReportId={focusedReportId}
-              onSelectReportId={(id) => {
-                onSelectReportId(id);
-                setCurrentPage('detalles-incidencia');
-              }} 
+              onSelectReportId={(id) => navigate('/reporte/' + id)}
               onReportLocation={onReportLocation}
             />
           </div>

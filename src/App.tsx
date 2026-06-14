@@ -4,8 +4,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { PageId, IncidentReport, Comment } from './types';
-import { INITIAL_REPORTS, INITIAL_CONTRIBUTORS } from './data/mockData';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { IncidentReport, Comment } from './types';
+import { INITIAL_REPORTS } from './data/mockData';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -22,7 +23,7 @@ import ExplorarMapaScreen from './components/ExplorarMapaScreen';
 import EditProfileScreen from './components/EditProfileScreen';
 import CommunityScreen from './components/CommunityScreen';
 import { motion, AnimatePresence } from 'motion/react';
-import { LogOut, Bell, Inbox, Check, Sparkles } from 'lucide-react';
+import { LogOut, Bell, Inbox } from 'lucide-react';
 
 const CARLOS_MENDOZA_PROFILE = {
   name: 'Carlos Mendoza',
@@ -38,14 +39,18 @@ const CARLOS_MENDOZA_PROFILE = {
   contributionsCount: 34,
 };
 
+function PrivateRoute({ children, isLoggedIn, message }: { children: React.ReactNode; isLoggedIn: boolean; message?: string }) {
+  if (!isLoggedIn) return <Navigate to="/login" state={{ authMessage: message }} replace />;
+  return <>{children}</>;
+}
+
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false); // Starts as logged out by default
-  const [currentPage, setCurrentPage] = useState<PageId>('inicio'); // First screen is home page
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [userProfile, setUserProfile] = useState(CARLOS_MENDOZA_PROFILE);
   const [reports, setReports] = useState<IncidentReport[]>(INITIAL_REPORTS);
-  const [selectedReportId, setSelectedReportId] = useState<string>('ENV-2023-8472'); // Matches detailed report image default
-  const [previousPage, setPreviousPage] = useState<PageId>('reportes');
-  const [authMessage, setAuthMessage] = useState<string | null>(null);
   const [prefilledLocation, setPrefilledLocation] = useState<{ address: string; coordinates: string } | null>(null);
   const [notifications, setNotifications] = useState([
     {
@@ -74,91 +79,19 @@ export default function App() {
   ]);
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
 
-  // Automatically scroll to top on page navigation
+  // Scroll to top on route change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentPage]);
-
-  // Safely auto-route between public and authenticated pages on login/navigation changes
-  useEffect(() => {
-    if (isLoggedIn) {
-      if (['inicio', 'login', 'signup'].includes(currentPage)) {
-        setCurrentPage('dashboard');
-      }
-      setAuthMessage(null);
-    } else {
-      const pagesRequiringAuth: PageId[] = [
-        'dashboard', 
-        'reportar', 
-        'mis-reportes', 
-        'editar-perfil', 
-        'reportes', 
-        'explorar-mapa', 
-        'comunidad', 
-        'detalles-incidencia'
-      ];
-      if (pagesRequiringAuth.includes(currentPage)) {
-        if (currentPage === 'reportar') {
-          setAuthMessage('Debes iniciar sesión para poder reportar una incidencia ambiental.');
-        } else if (currentPage === 'mis-reportes') {
-          setAuthMessage('Debes iniciar sesión para ver tus reportes.');
-        } else if (currentPage === 'editar-perfil') {
-          setAuthMessage('Debes iniciar sesión para modificar tu perfil.');
-        } else if (currentPage === 'reportes' || currentPage === 'explorar-mapa' || currentPage === 'detalles-incidencia') {
-          setAuthMessage('Debes iniciar sesión para poder explorar e inspeccionar el mapa de incidencias.');
-        } else if (currentPage === 'comunidad') {
-          setAuthMessage('Debes iniciar sesión para ver los perfiles de la comunidad y repasar sus reportes.');
-        } else {
-          setAuthMessage('Debes iniciar sesión para acceder a esta sección.');
-        }
-        setCurrentPage('login');
-      }
-    }
-  }, [isLoggedIn, currentPage]);
-
-  const handleSetPage = (page: PageId) => {
-    const pagesRequiringAuth: PageId[] = [
-      'dashboard', 
-      'reportar', 
-      'mis-reportes', 
-      'editar-perfil', 
-      'reportes', 
-      'explorar-mapa', 
-      'comunidad', 
-      'detalles-incidencia'
-    ];
-    if (pagesRequiringAuth.includes(page) && !isLoggedIn) {
-      if (page === 'reportar') {
-        setAuthMessage('Debes iniciar sesión para poder reportar una incidencia ambiental.');
-      } else if (page === 'mis-reportes') {
-        setAuthMessage('Debes iniciar sesión para ver tus reportes.');
-      } else if (page === 'editar-perfil') {
-        setAuthMessage('Debes iniciar sesión para modificar tu perfil.');
-      } else if (page === 'reportes' || page === 'explorar-mapa' || page === 'detalles-incidencia') {
-        setAuthMessage('Debes iniciar sesión para poder explorar e inspeccionar el mapa de incidencias.');
-      } else if (page === 'comunidad') {
-        setAuthMessage('Debes iniciar sesión para ver los perfiles de la comunidad y repasar sus reportes.');
-      } else {
-        setAuthMessage('Debes iniciar sesión para acceder a esta sección.');
-      }
-      setCurrentPage('login');
-    } else {
-      if (page !== 'login') {
-        setAuthMessage(null);
-      }
-      setCurrentPage(page);
-    }
-  };
+  }, [location.pathname]);
 
   const handleReportAtLocation = (address: string, coordinates: string) => {
     setPrefilledLocation({ address, coordinates });
-    handleSetPage('reportar');
+    navigate('/reportar');
   };
 
   // Handle adding a brand new incident report
   const handleAddReport = (newReport: IncidentReport) => {
     setReports((prev) => [newReport, ...prev]);
-    // Also increment Carlos totals count on submission
     setUserProfile((prev) => ({
       ...prev,
       totalsCount: prev.totalsCount + 1,
@@ -166,7 +99,6 @@ export default function App() {
       pointsThisMonth: prev.pointsThisMonth + 5,
     }));
 
-    // Generate immediate success notification
     const newNotify = {
       id: `n-new-${Date.now()}`,
       title: 'Reporte registrado',
@@ -180,12 +112,12 @@ export default function App() {
 
   // Handle appending comments on detail screen
   const handleAddComment = (reportId: string, newComment: Comment) => {
-    setReports((prev) => 
+    setReports((prev) =>
       prev.map((rep) => {
         if (rep.id === reportId) {
           return {
             ...rep,
-            comments: [commentWithTimestamp(newComment), ...(rep.comments || [])],
+            comments: [{ ...newComment, timeAgo: 'Hace unos instantes' }, ...(rep.comments || [])],
           };
         }
         return rep;
@@ -193,39 +125,24 @@ export default function App() {
     );
   };
 
-  const commentWithTimestamp = (c: Comment) => ({
-    ...c,
-    timeAgo: 'Hace unos instantes',
-  });
-
-  const handleSelectReportId = (id: string) => {
-    setPreviousPage(currentPage);
-    setSelectedReportId(id);
-    setCurrentPage('detalles-incidencia');
-  };
-
-  const activeReport = reports.find((r) => r.id === selectedReportId) || reports[0];
+  const isAuthScreen = ['/login', '/signup'].includes(location.pathname);
 
   return (
     <div className={`flex min-h-screen bg-[#FAFDF9] text-[#143B20] antialiased selection:bg-[#CCE8C6]/80 selection:text-[#0A3D18] ${
       isLoggedIn ? 'flex-col md:flex-row' : 'flex-col'
     }`}>
-      
+
       {/* 1. Header (Only displayed if NOT logged in) */}
       {!isLoggedIn && (
-        <Header 
-          currentPage={currentPage} 
-          setCurrentPage={handleSetPage} 
+        <Header
           isLoggedIn={isLoggedIn}
           setIsLoggedIn={setIsLoggedIn}
         />
       )}
 
       {/* 2. Sidebar (Only displayed if LOGGED in AND not on auth screens) */}
-      {isLoggedIn && !['login', 'signup'].includes(currentPage) && (
-        <Sidebar 
-          currentPage={currentPage} 
-          setCurrentPage={handleSetPage} 
+      {isLoggedIn && !isAuthScreen && (
+        <Sidebar
           isLoggedIn={isLoggedIn}
           setIsLoggedIn={setIsLoggedIn}
           userProfile={userProfile}
@@ -234,9 +151,9 @@ export default function App() {
 
       {/* Main Container Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        
+
         {/* Logged-In Top Header Bar */}
-        {isLoggedIn && !['login', 'signup'].includes(currentPage) && (
+        {isLoggedIn && !isAuthScreen && (
           <header className="bg-white border-b border-[#E1ECE3] pl-16 md:pl-8 pr-4 md:pr-8 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
             {/* Left contextual tag */}
             <div className="flex items-center space-x-2">
@@ -270,11 +187,11 @@ export default function App() {
                 {showNotificationsDropdown && (
                   <>
                     {/* Click catcher background overlay to dismiss safely */}
-                    <div 
+                    <div
                       className="fixed inset-0 z-40"
                       onClick={() => setShowNotificationsDropdown(false)}
                     />
-                    
+
                     {/* Popover dropdown container */}
                     <div className="absolute right-0 mt-2.5 w-[280px] sm:w-[320px] bg-white rounded-2xl shadow-2xl border border-[#CBDCD0] overflow-hidden z-50 animate-slide-up flex flex-col max-h-[440px]">
                       {/* Header */}
@@ -306,11 +223,10 @@ export default function App() {
                             <div
                               key={n.id}
                               onClick={() => {
-                                // Mark single notification read
                                 setNotifications(prev => prev.map(notif => notif.id === n.id ? { ...notif, read: true } : notif));
                                 setShowNotificationsDropdown(false);
                                 if (n.reportId) {
-                                  handleSelectReportId(n.reportId);
+                                  navigate('/reporte/' + n.reportId);
                                 }
                               }}
                               className={`p-3.5 text-left transition-colors cursor-pointer relative ${
@@ -341,14 +257,14 @@ export default function App() {
               </div>
 
               {/* Profile card link */}
-              <button 
-                onClick={() => handleSetPage('editar-perfil')}
+              <button
+                onClick={() => navigate('/editar-perfil')}
                 className="flex items-center space-x-2 p-0.5 px-2.5 bg-[#FAFDF9] border border-[#CDE1D1] hover:border-[#1E8344] rounded-full transition-all cursor-pointer group text-left shadow-xs"
                 title="Modificar mi Perfil"
               >
-                <img 
-                  src={userProfile.avatar} 
-                  alt={userProfile.name} 
+                <img
+                  src={userProfile.avatar}
+                  alt={userProfile.name}
                   className="w-7 h-7 rounded-full object-cover border border-[#C5DDCB] group-hover:scale-105 transition-transform"
                   referrerPolicy="no-referrer"
                 />
@@ -366,7 +282,7 @@ export default function App() {
               <button
                 onClick={() => {
                   setIsLoggedIn(false);
-                  handleSetPage('inicio');
+                  navigate('/');
                 }}
                 className="flex items-center space-x-1.5 px-3 py-1.5 bg-rose-50 border border-rose-100 font-bold hover:bg-rose-100 hover:border-rose-200 text-rose-700 rounded-full text-[11px] transition-all cursor-pointer active:scale-95"
                 title="Cerrar Sesión"
@@ -377,129 +293,70 @@ export default function App() {
             </div>
           </header>
         )}
-        
+
         {/* Main Screen Router Box with smooth fades */}
         <div className="flex-1">
           <AnimatePresence mode="wait">
             <motion.div
-              key={currentPage}
+              key={location.pathname}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.15, ease: 'easeOut' }}
             >
-              {currentPage === 'inicio' && (
-                <LandingScreen
-                  reports={reports}
-                  contributors={INITIAL_CONTRIBUTORS}
-                  setCurrentPage={handleSetPage}
-                  onSelectReportId={handleSelectReportId}
-                />
-              )}
-
-              {currentPage === 'dashboard' && (
-                <DashboardScreen
-                  reports={reports}
-                  userProfile={userProfile}
-                  setCurrentPage={handleSetPage}
-                  setIsLoggedIn={setIsLoggedIn}
-                  onSelectReportId={handleSelectReportId}
-                />
-              )}
-
-              {currentPage === 'reportes' && (
-                <ExploreReportsScreen
-                  reports={reports}
-                  setCurrentPage={handleSetPage}
-                  onSelectReportId={handleSelectReportId}
-                />
-              )}
-
-              {currentPage === 'comunidad' && (
-                <CommunityScreen
-                  setCurrentPage={handleSetPage}
-                  userProfile={userProfile}
-                  isLoggedIn={isLoggedIn}
-                  reports={reports}
-                  onSelectReportId={handleSelectReportId}
-                />
-              )}
-
-              {currentPage === 'reportar' && (
-                <ReportFormScreen
-                  onAddReport={handleAddReport}
-                  setCurrentPage={handleSetPage}
-                  onSelectReportId={handleSelectReportId}
-                  currentUser={userProfile}
-                  prefilledLocation={prefilledLocation}
-                  onClearPrefilledLocation={() => setPrefilledLocation(null)}
-                />
-              )}
-
-              {currentPage === 'detalles-incidencia' && (
-                <ReportDetailScreen
-                  report={activeReport}
-                  setCurrentPage={handleSetPage}
-                  onAddComment={handleAddComment}
-                  currentUser={userProfile}
-                  previousPage={previousPage}
-                />
-              )}
-
-              {currentPage === 'login' && (
-                <LoginScreen
-                  setCurrentPage={handleSetPage}
-                  setIsLoggedIn={setIsLoggedIn}
-                  authMessage={authMessage}
-                />
-              )}
-
-              {currentPage === 'signup' && (
-                <SignupScreen
-                  setCurrentPage={handleSetPage}
-                  setIsLoggedIn={setIsLoggedIn}
-                  setUserProfile={setUserProfile}
-                />
-              )}
-
-              {currentPage === 'acerca-de' && (
-                <AboutScreen 
-                  setCurrentPage={handleSetPage} 
-                />
-              )}
-
-              {currentPage === 'mis-reportes' && (
-                <MyReportsScreen
-                  reports={reports}
-                  userProfile={userProfile}
-                  setCurrentPage={handleSetPage}
-                  onSelectReportId={handleSelectReportId}
-                />
-              )}
-
-              {currentPage === 'explorar-mapa' && (
-                <ExplorarMapaScreen
-                  reports={reports}
-                  setCurrentPage={handleSetPage}
-                  onSelectReportId={handleSelectReportId}
-                  focusedReportId={selectedReportId}
-                  onReportLocation={handleReportAtLocation}
-                />
-              )}
-
-              {currentPage === 'editar-perfil' && (
-                <EditProfileScreen
-                  userProfile={userProfile}
-                  setUserProfile={setUserProfile}
-                  setCurrentPage={handleSetPage}
-                />
-              )}
+              <Routes>
+                <Route path="/" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LandingScreen reports={reports} />} />
+                <Route path="/login" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LoginScreen setIsLoggedIn={setIsLoggedIn} />} />
+                <Route path="/signup" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <SignupScreen setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} />} />
+                <Route path="/acerca-de" element={<AboutScreen />} />
+                <Route path="/dashboard" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para acceder a esta sección.">
+                    <DashboardScreen reports={reports} userProfile={userProfile} setIsLoggedIn={setIsLoggedIn} />
+                  </PrivateRoute>
+                } />
+                <Route path="/reportar" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para poder reportar una incidencia ambiental.">
+                    <ReportFormScreen onAddReport={handleAddReport} currentUser={userProfile} prefilledLocation={prefilledLocation} onClearPrefilledLocation={() => setPrefilledLocation(null)} />
+                  </PrivateRoute>
+                } />
+                <Route path="/reportes" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para poder explorar e inspeccionar el mapa de incidencias.">
+                    <ExploreReportsScreen reports={reports} />
+                  </PrivateRoute>
+                } />
+                <Route path="/mis-reportes" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para ver tus reportes.">
+                    <MyReportsScreen reports={reports} userProfile={userProfile} />
+                  </PrivateRoute>
+                } />
+                <Route path="/explorar-mapa" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para poder explorar e inspeccionar el mapa de incidencias.">
+                    <ExplorarMapaScreen reports={reports} onReportLocation={handleReportAtLocation} />
+                  </PrivateRoute>
+                } />
+                <Route path="/comunidad" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para ver los perfiles de la comunidad y repasar sus reportes.">
+                    <CommunityScreen userProfile={userProfile} isLoggedIn={isLoggedIn} reports={reports} />
+                  </PrivateRoute>
+                } />
+                <Route path="/editar-perfil" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para modificar tu perfil.">
+                    <EditProfileScreen userProfile={userProfile} setUserProfile={setUserProfile} />
+                  </PrivateRoute>
+                } />
+                <Route path="/reporte/:id" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para poder explorar e inspeccionar el mapa de incidencias.">
+                    <ReportDetailScreen reports={reports} onAddComment={handleAddComment} currentUser={userProfile} />
+                  </PrivateRoute>
+                } />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
             </motion.div>
           </AnimatePresence>
         </div>
 
         {/* Persistent Brand Footer */}
-        <Footer setCurrentPage={handleSetPage} />
+        <Footer />
       </div>
 
     </div>

@@ -4,16 +4,16 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { PageId, Contributor, IncidentReport } from '../types';
-import { 
-  Award, Users, ShieldCheck, Sparkles, Trophy, Flame, 
-  HelpCircle, ArrowRight, ChevronLeft, MapPin, Calendar, 
+import { useNavigate } from 'react-router-dom';
+import { Contributor, IncidentReport } from '../types';
+import {
+  Award, Users, ShieldCheck, Sparkles, Trophy, Flame,
+  HelpCircle, ArrowRight, ChevronLeft, MapPin, Calendar,
   Eye, CheckCircle2, AlertTriangle, ShieldAlert
 } from 'lucide-react';
 import { getContributores } from '../services/rankingService';
 
 interface CommunityScreenProps {
-  setCurrentPage: (page: PageId) => void;
   userProfile?: {
     name: string;
     avatar: string;
@@ -23,7 +23,6 @@ interface CommunityScreenProps {
   };
   isLoggedIn: boolean;
   reports?: IncidentReport[];
-  onSelectReportId?: (id: string) => void;
 }
 
 const COMMUNITY_CHALLENGES = [
@@ -108,13 +107,11 @@ const CONTRIBUTOR_DETAILS: Record<string, {
 };
 
 export default function CommunityScreen({
-  setCurrentPage,
   userProfile,
   isLoggedIn,
   reports = [],
-  onSelectReportId,
 }: CommunityScreenProps) {
-  // Deep inspection state
+  const navigate = useNavigate();
   const [selectedContributor, setSelectedContributor] = useState<Contributor | null>(null);
   const [localContributors, setLocalContributors] = useState<Contributor[]>([]);
 
@@ -122,7 +119,7 @@ export default function CommunityScreen({
     getContributores().then(setLocalContributors);
   }, []);
 
-  // Build a complete leaderboard combining mock contributors and the active user
+  // Build a complete leaderboard combining API contributors and the active user
   const allContributors: Contributor[] = [...localContributors];
   
   if (isLoggedIn && userProfile) {
@@ -387,12 +384,7 @@ export default function CommunityScreen({
                               </span>
 
                               <button
-                                onClick={() => {
-                                  if (onSelectReportId) {
-                                    onSelectReportId(item.id);
-                                    setCurrentPage('detalles-incidencia');
-                                  }
-                                }}
+                                onClick={() => navigate('/reporte/' + item.id)}
                                 className="mt-3 bg-[#EBF7EE] hover:bg-[#DCE7DD] text-[#1E8344] font-black text-[11px] py-1.5 px-3.5 rounded-lg inline-flex items-center space-x-1 border border-[#C9DEC2] cursor-pointer transition-all active:scale-95 text-xs"
                               >
                                 <span>Ver Alerta</span>
@@ -474,7 +466,7 @@ export default function CommunityScreen({
                         if (carlosUser) {
                           setSelectedContributor(carlosUser);
                         } else {
-                          setCurrentPage('editar-perfil');
+                          navigate('/editar-perfil');
                         }
                       }}
                       className="text-xs font-black text-[#1E8344] hover:underline cursor-pointer flex items-center gap-1 font-sans"
@@ -485,7 +477,7 @@ export default function CommunityScreen({
                   </div>
                 ) : (
                   <button
-                    onClick={() => setCurrentPage('signup')}
+                    onClick={() => navigate('/signup')}
                     className="bg-[#05682C] text-white font-extrabold text-[10px] uppercase py-2 px-3.5 rounded-xl hover:bg-[#045524] transition-colors mt-3 w-fit cursor-pointer"
                   >
                     Crear Perfil
