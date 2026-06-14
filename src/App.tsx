@@ -522,8 +522,7 @@ export default function App() {
                <Routes>
                 <Route path="/" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LandingScreen reports={reports} />} />
                 <Route path="/login" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LoginScreen setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} onShowVerification={handleShowVerification} />} />
-                 <Route path="/verificar-correo/:token" element={<VerifyEmailScreen />}
-                 />
+                 <Route path="/verificar-correo/:token" element={<VerifyEmailScreen />}/>
                  <Route path="/signup" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <SignupScreen setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} onShowVerification={handleShowVerification} />} />
                 <Route path="/reset-password" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <ResetPasswordScreen />} />
                 <Route path="/acerca-de" element={<AboutScreen />} />
