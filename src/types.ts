@@ -3,20 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type PageId = 
-  | 'inicio' 
-  | 'dashboard' 
-  | 'reportar' 
-  | 'reportes' 
-  | 'mis-reportes'
-  | 'explorar-mapa'
-  | 'editar-perfil'
-  | 'comunidad' 
-  | 'detalles-incidencia' 
-  | 'login' 
-  | 'signup'
-  | 'acerca-de';
-
 export type ReportCategory = 'Residuos' | 'Agua Contaminada' | 'Calidad del Aire' | 'Agua';
 
 export type SeverityLevel = 'Alta' | 'Media' | 'Baja' | 'Alta Severidad' | 'Media Severidad' | 'Baja Severidad';

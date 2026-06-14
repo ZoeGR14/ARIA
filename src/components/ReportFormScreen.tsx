@@ -4,8 +4,9 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { PageId, IncidentReport, ReportCategory } from '../types';
-import { 
+import { useNavigate } from 'react-router-dom';
+import { IncidentReport, ReportCategory } from '../types';
+import {
   Trash2, Droplets, Wind, Search, MapPin, Target, Send, Image as ImageIcon,
   CheckCircle, Loader2, Compass
 } from 'lucide-react';
@@ -59,8 +60,6 @@ const SUGGESTIONS = [
 
 interface ReportFormScreenProps {
   onAddReport: (newReport: IncidentReport) => void;
-  setCurrentPage: (page: PageId) => void;
-  onSelectReportId: (id: string) => void;
   currentUser: {
     name: string;
     avatar: string;
@@ -72,12 +71,11 @@ interface ReportFormScreenProps {
 
 export default function ReportFormScreen({
   onAddReport,
-  setCurrentPage,
-  onSelectReportId,
   currentUser,
   prefilledLocation,
   onClearPrefilledLocation,
 }: ReportFormScreenProps) {
+  const navigate = useNavigate();
   const [category, setCategory] = useState<ReportCategory>('Residuos');
   const [address, setAddress] = useState(prefilledLocation?.address || '');
   const [description, setDescription] = useState('');
@@ -396,7 +394,7 @@ export default function ReportFormScreen({
       setIsSubmitting(false);
 
       // Take user directly to view detail of they newly created incident
-      onSelectReportId(newId);
+      navigate('/reporte/' + newId);
     }, 2000);
   };
 

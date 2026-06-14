@@ -4,9 +4,10 @@
  */
 
 import React, { useState } from 'react';
-import { PageId, IncidentReport } from '../types';
-import { 
-  User, MapPin, Edit2, TrendingUp, HelpCircle, LogOut, 
+import { useNavigate } from 'react-router-dom';
+import { IncidentReport } from '../types';
+import {
+  User, MapPin, Edit2, TrendingUp, HelpCircle, LogOut,
   PlusCircle, LayoutDashboard, Map, ClipboardList, Award, Settings,
   Droplets, Scissors, Wind, ShieldCheck, Eye, Clock, ListCollapse
 } from 'lucide-react';
@@ -26,29 +27,26 @@ interface DashboardScreenProps {
     validatedCount: number;
     contributionsCount: number;
   };
-  setCurrentPage: (page: PageId) => void;
   setIsLoggedIn: (login: boolean) => void;
-  onSelectReportId: (id: string) => void;
 }
 
 export default function DashboardScreen({
   reports,
   userProfile,
-  setCurrentPage,
   setIsLoggedIn,
-  onSelectReportId,
 }: DashboardScreenProps) {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'panel' | 'mapa' | 'reportes' | 'colab' | 'config'>('panel');
 
   const handleLogout = () => {
     setIsLoggedIn(false);
-    setCurrentPage('inicio');
+    navigate('/');
   };
 
-  const handleSidebarNav = (tab: 'panel' | 'mapa' | 'reportes' | 'colab' | 'config', pageId?: PageId) => {
+  const handleSidebarNav = (tab: 'panel' | 'mapa' | 'reportes' | 'colab' | 'config', path?: string) => {
     setActiveTab(tab);
-    if (pageId) {
-      setCurrentPage(pageId);
+    if (path) {
+      navigate(path);
     }
   };
 
@@ -129,7 +127,7 @@ export default function DashboardScreen({
                   </span>
                 </div>
                 <button 
-                  onClick={() => setCurrentPage('editar-perfil')}
+                  onClick={() => navigate('/editar-perfil')}
                   className="text-[#1E8344] font-bold hover:underline flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
@@ -225,7 +223,7 @@ export default function DashboardScreen({
           <div className="p-6 border-b border-[#F0F6F1] flex items-center justify-between">
             <h3 className="text-base font-bold text-[#143B20]">Actividad Reciente</h3>
             <button
-              onClick={() => setCurrentPage('reportes')}
+              onClick={() => navigate('/reportes')}
               className="text-[#1E8344] text-xs font-bold hover:underline"
             >
               Ver todo →
@@ -237,7 +235,7 @@ export default function DashboardScreen({
               carlosReports.map((report) => (
                 <div 
                   key={report.id}
-                  onClick={() => onSelectReportId(report.id)}
+                  onClick={() => navigate('/reporte/' + report.id)}
                   className="p-5 flex items-center justify-between hover:bg-[#FAFDFC] transition-all cursor-pointer"
                 >
                   <div className="flex items-center space-x-4 min-w-0">

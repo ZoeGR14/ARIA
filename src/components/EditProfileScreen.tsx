@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { PageId } from '../types';
+import { useNavigate } from 'react-router-dom';
 import { User, Shield, Briefcase, Camera, Save, ArrowLeft, Check, Sparkles } from 'lucide-react';
 
 interface EditProfileScreenProps {
@@ -15,7 +15,6 @@ interface EditProfileScreenProps {
     level: string;
   };
   setUserProfile: (profile: { name: string; avatar: string; role: string; level: string }) => void;
-  setCurrentPage: (page: PageId) => void;
 }
 
 const PRESET_AVATARS = [
@@ -30,8 +29,8 @@ const PRESET_AVATARS = [
 export default function EditProfileScreen({
   userProfile,
   setUserProfile,
-  setCurrentPage,
 }: EditProfileScreenProps) {
+  const navigate = useNavigate();
   const [name, setName] = useState(userProfile.name);
   const [role, setRole] = useState(userProfile.role);
   const [level, setLevel] = useState(userProfile.level);
@@ -54,7 +53,7 @@ export default function EditProfileScreen({
     setTimeout(() => {
       setShowSavedMsg(false);
       // Automatically redirect they to dashboard (Inicio Perfil)
-      setCurrentPage('dashboard');
+      navigate('/dashboard');
     }, 1500);
   };
 
@@ -64,7 +63,7 @@ export default function EditProfileScreen({
         
         {/* Back navigation header link */}
         <button
-          onClick={() => setCurrentPage('dashboard')}
+          onClick={() => navigate('/dashboard')}
           className="inline-flex items-center gap-1 text-xs font-bold text-[#557B5E] hover:text-[#1E8344] bg-white border border-[#DDE7DE] px-3.5 py-2 rounded-full cursor-pointer transition-colors shadow-xs"
         >
           <ArrowLeft className="w-4 h-4" />

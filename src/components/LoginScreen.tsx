@@ -4,20 +4,19 @@
  */
 
 import React, { useState } from 'react';
-import { PageId } from '../types';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 interface LoginScreenProps {
-  setCurrentPage: (page: PageId) => void;
   setIsLoggedIn: (login: boolean) => void;
-  authMessage?: string | null;
 }
 
-export default function LoginScreen({ 
-  setCurrentPage, 
+export default function LoginScreen({
   setIsLoggedIn,
-  authMessage = null,
 }: LoginScreenProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const authMessage = (location.state as any)?.authMessage ?? null;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,7 +25,7 @@ export default function LoginScreen({
     e.preventDefault();
     // Simulate login
     setIsLoggedIn(true);
-    setCurrentPage('dashboard');
+    navigate('/dashboard');
   };
 
   return (
@@ -173,7 +172,7 @@ export default function LoginScreen({
                   type="button"
                   onClick={() => {
                     setIsLoggedIn(true);
-                    setCurrentPage('dashboard');
+                    navigate('/dashboard');
                   }}
                   className="flex items-center justify-center space-x-2 border border-[#CDE1D1] rounded-xl py-3 hover:bg-[#F3FAF4] text-xs font-extrabold text-[#143B20]"
                 >
@@ -191,7 +190,7 @@ export default function LoginScreen({
                   type="button"
                   onClick={() => {
                     setIsLoggedIn(true);
-                    setCurrentPage('dashboard');
+                    navigate('/dashboard');
                   }}
                   className="flex items-center justify-center space-x-2 border border-[#CDE1D1] rounded-xl py-3 hover:bg-[#F3FAF4] text-xs font-extrabold text-[#143B20]"
                 >
@@ -208,7 +207,7 @@ export default function LoginScreen({
                 <span>¿No tienes cuenta? </span>
                 <button
                   type="button"
-                  onClick={() => setCurrentPage('signup')}
+                  onClick={() => navigate('/signup')}
                   className="text-[#1E8344] hover:underline"
                 >
                   Regístrate

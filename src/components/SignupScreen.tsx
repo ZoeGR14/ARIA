@@ -4,20 +4,19 @@
  */
 
 import React, { useState } from 'react';
-import { PageId } from '../types';
+import { useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 interface SignupScreenProps {
-  setCurrentPage: (page: PageId) => void;
   setIsLoggedIn: (login: boolean) => void;
   setUserProfile: (profile: any) => void;
 }
 
 export default function SignupScreen({
-  setCurrentPage,
   setIsLoggedIn,
   setUserProfile,
 }: SignupScreenProps) {
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [emailConfirm, setEmailConfirm] = useState('');
@@ -63,7 +62,7 @@ export default function SignupScreen({
     
     setUserProfile(newUserProfile);
     setIsLoggedIn(true);
-    setCurrentPage('dashboard');
+    navigate('/dashboard');
   };
 
   return (
@@ -260,7 +259,7 @@ export default function SignupScreen({
                   type="button"
                   onClick={() => {
                     setIsLoggedIn(true);
-                    setCurrentPage('dashboard');
+                    navigate('/dashboard');
                   }}
                   className="w-full flex items-center justify-center space-x-3 border border-[#CDE1D1] rounded-xl py-3 hover:bg-[#F3FAF4] text-xs font-bold text-[#143B20] bg-white transition-all shadow-xs"
                 >
@@ -277,7 +276,7 @@ export default function SignupScreen({
                   type="button"
                   onClick={() => {
                     setIsLoggedIn(true);
-                    setCurrentPage('dashboard');
+                    navigate('/dashboard');
                   }}
                   className="w-full flex items-center justify-center space-x-3 border border-[#CDE1D1] rounded-xl py-3 hover:bg-[#F3FAF4] text-xs font-bold text-[#143B20] bg-white transition-all shadow-xs"
                 >
@@ -293,7 +292,7 @@ export default function SignupScreen({
                 <span>¿Ya tienes una cuenta? </span>
                 <button
                   type="button"
-                  onClick={() => setCurrentPage('login')}
+                  onClick={() => navigate('/login')}
                   className="text-[#1E8344] hover:underline"
                 >
                   Iniciar sesión
