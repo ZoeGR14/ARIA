@@ -188,7 +188,7 @@ export default function App() {
     const handleFcmTokenRegistration = async () => {
       if (!isLoggedIn) return;
 
-      const tokenJwt = localStorage.getItem('aria_token');
+      const tokenJwt = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
       if (!tokenJwt) return;
 
       try {
