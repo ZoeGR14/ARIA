@@ -661,6 +661,151 @@ Authorization: Bearer <JWT_ADMIN>
 
 ---
 
+## Reportes
+
+### Obtener reportes activos
+
+#### Endpoint
+
+```http
+GET /reportes/activos
+```
+
+#### Respuesta
+
+```json
+[
+  {
+    "id": 1,
+    "descripcion": "Acumulación de basura en la esquina del parque principal.",
+    "fecha_creacion": "2026-06-13T19:20:14.466Z",
+    "fecha_actualizacion": "2026-06-13T19:20:14.466Z",
+    "severidad": "Media",
+    "url_evidencia_foto": "http://localhost:3001/uploads/1718345732000-987654321.jpg",
+    "puntos_asignados": 0,
+    "estado_puntos": "Pendiente",
+    "usuario_id": 1,
+    "estado_id": 1,
+    "categoria_id": 1,
+    "latitude": 19.4150,
+    "longitude": -99.1620,
+    "categoria": {
+      "id": 1,
+      "nombre": "Residuos Sólidos",
+      "color_hex": "#FF5733"
+    },
+    "estado": {
+      "id": 1,
+      "nombre": "Recibido"
+    },
+    "usuario": {
+      "id": 1,
+      "nombre_completo": "Juan Pérez"
+    }
+  }
+]
+```
+
+---
+
+### Obtener un reporte por ID
+
+#### Endpoint
+
+```http
+GET /reportes/:id
+```
+
+Ejemplo:
+```http
+GET /reportes/1
+```
+
+#### Respuesta
+
+```json
+{
+  "id": 1,
+  "descripcion": "Acumulación de basura en la esquina del parque principal.",
+  "fecha_creacion": "2026-06-13T19:20:14.466Z",
+  "fecha_actualizacion": "2026-06-13T19:20:14.466Z",
+  "severidad": "Media",
+  "url_evidencia_foto": "http://localhost:3001/uploads/1718345732000-987654321.jpg",
+  "puntos_asignados": 0,
+  "estado_puntos": "Pendiente",
+  "usuario_id": 1,
+  "estado_id": 1,
+  "categoria_id": 1,
+  "latitude": 19.4150,
+  "longitude": -99.1620,
+  "categoria": {
+    "id": 1,
+    "nombre": "Residuos Sólidos",
+    "color_hex": "#FF5733"
+  },
+  "estado": {
+    "id": 1,
+    "nombre": "Recibido"
+  },
+  "usuario": {
+    "id": 1,
+    "nombre_completo": "Juan Pérez"
+  }
+}
+```
+
+---
+
+### Crear reporte (Subida de imagen con Multer)
+
+#### Endpoint
+
+```http
+POST /reportes
+```
+
+#### Headers
+
+```http
+Authorization: Bearer <JWT>
+Content-Type: multipart/form-data
+```
+
+#### Body (form-data)
+
+- **`descripcion`**: `Fuga de agua en banqueta pública` (texto)
+- **`latitude`**: `19.4150` (número/texto)
+- **`longitude`**: `-99.1620` (número/texto)
+- **`severidad`**: `Media` (debe ser: `Baja`, `Media`, `Alta` o `Critica`)
+- **`categoria_id`**: `2` (ID entero de la categoría)
+- **`foto`**: `[Archivo de Imagen]` (campo de tipo archivo/file)
+
+#### Respuesta
+
+```json
+{
+  "mensaje": "Reporte creado exitosamente",
+  "id": 2,
+  "url_evidencia_foto": "http://localhost:3001/uploads/1718345732000-987654321.jpg"
+}
+```
+
+---
+
+### Cómo probar los reportes con Postman o Thunder Client
+
+1. **Iniciar Sesión**: Envía un `POST` a `/auth/login` con las credenciales de prueba para obtener el token `JWT`.
+2. **Consultar Reportes Activos**: Envía un `GET` a `/reportes/activos`.
+3. **Enviar Nuevo Reporte con Imagen**:
+   - Configura una petición `POST` a `/reportes`.
+   - Agrega la cabecera `Authorization` con valor `Bearer <TU_JWT_TOKEN>`.
+   - En la pestaña **Body**, selecciona **form-data** (no raw/json).
+   - Registra las claves (`descripcion`, `latitude`, `longitude`, `severidad`, `categoria_id`) como texto.
+   - Registra la clave **`foto`**, cambia su tipo a **File/Archivo** en la herramienta de pruebas, y selecciona una imagen JPG/PNG del equipo.
+   - Presiona enviar y valida que retorne la URL de acceso a la imagen subida en `url_evidencia_foto`.
+
+---
+
 ## Actualizar Prisma después de cambios en la base de datos
 
 Cada vez que se modifique el script SQL oficial:
