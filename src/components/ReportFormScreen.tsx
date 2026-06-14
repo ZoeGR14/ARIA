@@ -524,8 +524,8 @@ export default function ReportFormScreen({
                     type="button"
                     onClick={() => setCategory(cat.id)}
                     className={`p-5 rounded-2xl border text-center flex flex-col items-center justify-center space-y-3 transition-all cursor-pointer ${isSelected
-                        ? 'bg-[#EBF7EE] border-[#1E8344] text-[#1E8344] ring-2 ring-[#1E8344]/10'
-                        : 'bg-[#FAFDFC] border-[#CDE1D1] hover:border-[#1E8344]/50 text-[#557B5E]'
+                      ? 'bg-[#EBF7EE] border-[#1E8344] text-[#1E8344] ring-2 ring-[#1E8344]/10'
+                      : 'bg-[#FAFDFC] border-[#CDE1D1] hover:border-[#1E8344]/50 text-[#557B5E]'
                       }`}
                   >
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${isSelected ? 'bg-[#1E8344] text-white' : 'bg-[#EDF2EE] text-[#557B5E]'
