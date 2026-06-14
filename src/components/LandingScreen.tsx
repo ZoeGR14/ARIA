@@ -24,9 +24,9 @@ export default function LandingScreen({
   useEffect(() => {
     getContributores().then(setContributors);
   }, []);
-  
+
   // Estado para la ubicación
-  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
 
   // Modal de alerta de permisos de ubicación
   const [showLocationModal, setShowLocationModal] = useState(false);
@@ -141,7 +141,7 @@ export default function LandingScreen({
               </h2>
               <span className="text-xs text-[#557B5E] font-mono">En vivo</span>
             </div>
-            
+
             <MapPlaceholder reports={reports} />
           </div>
         </div>
@@ -204,14 +204,14 @@ export default function LandingScreen({
           </div>
           <div className="bg-white rounded-2xl border border-[#E1ECE3] shadow-sm divide-y divide-[#E1ECE3] overflow-hidden">
             {recentReports.map((report) => (
-              <div 
+              <div
                 key={report.id}
                 onClick={() => navigate('/reporte/' + report.id)}
                 className="p-5 flex items-start space-x-4 hover:bg-[#FAFDFC] transition-all cursor-pointer group"
               >
-                <img 
-                  src={report.imageUrl} 
-                  alt={report.title} 
+                <img
+                  src={report.imageUrl}
+                  alt={report.title}
                   className="w-16 h-16 object-cover rounded-xl border border-[#C5DDCB] flex-shrink-0"
                   referrerPolicy="no-referrer"
                 />
@@ -250,19 +250,18 @@ export default function LandingScreen({
           </div>
           <div className="bg-white rounded-2xl border border-[#E1ECE3] shadow-sm p-6 space-y-4">
             {contributors.map((contrib, index) => (
-              <div 
+              <div
                 key={contrib.id}
                 className="flex items-center justify-between border-b border-[#F0F6F1] last:border-none pb-4 last:pb-0"
               >
                 <div className="flex items-center space-x-3">
-                  <span className={`text-base font-black italic w-6 text-center ${
-                    index === 0 ? 'text-[#C49B2F]' : index === 1 ? 'text-[#778B8D]' : 'text-[#A07044]'
-                  }`}>
+                  <span className={`text-base font-black italic w-6 text-center ${index === 0 ? 'text-[#C49B2F]' : index === 1 ? 'text-[#778B8D]' : 'text-[#A07044]'
+                    }`}>
                     {index + 1}
                   </span>
-                  <img 
-                    src={contrib.avatar} 
-                    alt={contrib.name} 
+                  <img
+                    src={contrib.avatar}
+                    alt={contrib.name}
                     className="w-10 h-10 rounded-full object-cover border border-[#C5DDCB]"
                     referrerPolicy="no-referrer"
                   />
@@ -272,7 +271,7 @@ export default function LandingScreen({
                       {contrib.verified && (
                         <span className="text-[#1E8344]" title="Usuario verificado">
                           <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                           </svg>
                         </span>
                       )}
@@ -305,7 +304,7 @@ export default function LandingScreen({
               className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-[#CDE1D1]"
             >
               <div className="bg-gradient-to-tr from-[#E1ECE3] to-[#F3FAF4] p-6 text-center border-b border-[#CDE1D1] relative">
-                <button 
+                <button
                   onClick={() => setShowLocationModal(false)}
                   className="absolute top-4 right-4 p-1 rounded-full text-[#557B5E] hover:bg-white hover:text-[#143B20] transition-colors cursor-pointer"
                 >
