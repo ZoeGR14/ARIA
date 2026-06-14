@@ -60,6 +60,11 @@ export default function LoginScreen({
         throw new Error(data.mensaje || 'Error al iniciar sesión');
       }
 
+      // --- ¡LA SOLUCIÓN! ---
+      // Guardamos el token con el nombre exacto que busca tu formulario de reportes
+      localStorage.setItem('token', data.token);
+      // ---------------------
+
       if (rememberMe) {
         localStorage.setItem('aria_token', data.token);
         localStorage.setItem('aria_user', JSON.stringify(data.usuario));
@@ -141,16 +146,12 @@ export default function LoginScreen({
               Monitoreo y análisis de datos ecológicos con precisión institucional. Diseñado para el futuro.
             </p>
           </div>
-          
-
         </div>
 
         {/* Right Half: Form Submission (Matches screenshot forms exactly) */}
         <div className="lg:col-span-7 flex flex-col justify-center items-center p-6 md:p-16">
           {/* Form wrapper */}
           <div className="w-full max-w-md space-y-8 bg-white p-6 md:p-10 rounded-2xl border border-[#EBF1EC] shadow-xs">
-
-
             {authMessage && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-start gap-2.5 text-amber-800 text-xs shadow-xs">
                 <Lock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
@@ -258,8 +259,6 @@ export default function LoginScreen({
               >
                 {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
               </button>
-
-
 
               {/* Redirect footer */}
               <div className="text-center pt-2 text-xs font-bold text-[#4F6C56]">

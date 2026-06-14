@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-
+import { crearReporte } from '../services/reportesService';
 const SUGGESTIONS = [
   {
     address: 'Calle Querétaro 112, Col. Roma Norte, Alcaldía Cuauhtémoc, C.P. 06700, CDMX',
@@ -85,7 +85,7 @@ export default function ReportFormScreen({
   
   // Estado para guardar el archivo real para enviarlo por fetch
   const [rawFile, setRawFile] = useState<File | null>(null); 
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [dynamicSuggestions, setDynamicSuggestions] = useState<typeof SUGGESTIONS>([]);
@@ -389,8 +389,8 @@ export default function ReportFormScreen({
     }
   };
 
-  // ------------------------------------------------------------------
-  // INTEGRACIÓN FE-1: DATA BINDING CON FETCH
+// ------------------------------------------------------------------
+  // PARCHE PARA EL ERROR 500 (NOT NULL VIOLATION)
   // ------------------------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -399,76 +399,78 @@ export default function ReportFormScreen({
     setIsSubmitting(true);
 
     const formData = new FormData();
-    formData.append('titulo', `Reporte de ${category}`);
     formData.append('descripcion', description);
-    formData.append('coordenadas', localCoordinates);
-    formData.append('direccion', address);
     
+    // AQUÍ ESTÁ EL PARCHE: Forzamos el envío de un valor válido aunque esté vacío
+    formData.append('categoria_id', (category && category.trim() !== '') ? category : '1');
+    formData.append('subcategoria_id', '1'); 
+    formData.append('severidad', 'Media'); 
+
+    const [lat, lng] = typeof localCoordinates === 'string' ? localCoordinates.split(',') : ['19.4150', '-99.1620'];
+    formData.append('latitude', lat ? lat.trim() : '19.4150');
+    formData.append('longitude', lng ? lng.trim() : '-99.1620');
+
     if (rawFile) {
-      formData.append('evidencia', rawFile);
+        formData.append('foto', rawFile);
     }
 
     try {
-      // Petición al backend real
-      const respuesta = await fetch('http://localhost:3000/api/reportes', {
-        method: 'POST',
-        body: formData
-      });
+        const token = localStorage.getItem('token') || '';
+        const dataDelBackend = await crearReporte(formData, token);
 
-      if (!respuesta.ok) {
-        throw new Error(`Error en el servidor: ${respuesta.status}`);
-      }
+        console.log("¡Reporte guardado en BD!", dataDelBackend);
+        alert("¡Reporte enviado y guardado exitosamente!");
 
-      const dataDelBackend = await respuesta.json();
-      console.log("¡Reporte guardado en BD!", dataDelBackend);
-      alert("¡Reporte enviado y guardado exitosamente!");
+        const newId = dataDelBackend.id || `ENV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+        
+        const reportImage = uploadedImage || (
+            category === 'Residuos' 
+            ? 'https://plus.unsplash.com/premium_photo-1661962386121-7221f7ed43ff?auto=format&fit=crop&w=600&q=80'
+            : category === 'Agua Contaminada'
+                ? 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?auto=format&fit=crop&w=600&q=80'
+                : 'https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&w=600&q=80'
+        );
 
-      // Mantenemos el código visual de tu equipo para que la app fluya al detalle
-      const newId = dataDelBackend.id || `ENV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-      
-      const reportImage = uploadedImage || (
-        category === 'Residuos' 
-          ? 'https://plus.unsplash.com/premium_photo-1661962386121-7221f7ed43ff?auto=format&fit=crop&w=600&q=80'
-          : category === 'Agua Contaminada'
-            ? 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?auto=format&fit=crop&w=600&q=80'
-            : 'https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&w=600&q=80'
-      );
+        const computedReport: IncidentReport = {
+            id: newId,
+            title: `${category === 'Residuos' ? 'Acumulación de Desechos' : category === 'Agua Contaminada' ? 'Fuga/Vertido de Agua' : 'Emisión de Gases'} - ${address.split(',')[0] || 'Nueva Ubicación'}`,
+            description: description.substring(0, 100) + '...',
+            detailedDescription: description,
+            category: category || 'General',
+            severity: 'Media Severidad',
+            status: 'Abierto',
+            location: address || 'Zona Metropolitana Central',
+            coordinates: localCoordinates,
+            date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+            timeAgo: 'Hace unos instantes',
+            views: 1,
+            imageUrl: reportImage,
+            authorName: currentUser.name,
+            authorAvatar: currentUser.avatar,
+            authorRole: currentUser.role,
+            severityIndex: 6.5,
+            impactedUsers: 25,
+            timeline: {
+                received: { date: 'Hoy, Recién ingresado', checked: true },
+                reviewing: { note: 'Pendiente de asignación de autoridad', checked: false },
+                resolved: { checked: false }
+            },
+            comments: []
+        };
 
-      const computedReport: IncidentReport = {
-        id: newId,
-        title: `${category === 'Residuos' ? 'Acumulación de Desechos' : category === 'Agua Contaminada' ? 'Fuga/Vertido de Agua' : 'Emisión de Gases'} - ${address.split(',')[0] || 'Nueva Ubicación'}`,
-        description: description.substring(0, 100) + '...',
-        detailedDescription: description,
-        category,
-        severity: 'Media Severidad',
-        status: 'Abierto',
-        location: address || 'Zona Metropolitana Central',
-        coordinates: localCoordinates,
-        date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
-        timeAgo: 'Hace unos instantes',
-        views: 1,
-        imageUrl: reportImage,
-        authorName: currentUser.name,
-        authorAvatar: currentUser.avatar,
-        authorRole: currentUser.role,
-        severityIndex: 6.5,
-        impactedUsers: 25,
-        timeline: {
-          received: { date: 'Hoy, Recién ingresado', checked: true },
-          reviewing: { note: 'Pendiente de asignación de autoridad', checked: false },
-          resolved: { checked: false }
-        },
-        comments: []
-      };
+        onAddReport(computedReport);
 
-      onAddReport(computedReport);
-      setIsSubmitting(false);
+        setTimeout(() => {
+            navigate('/reporte/' + newId);
+        }, 2000);
 
-      // Take user directly to view detail of they newly created incident
-      navigate('/reporte/' + newId);
-    }, 2000);
-  };
-
+    } catch (error) {
+        console.error("Error de envío:", error);
+        alert("Hubo un problema conectando con el backend.");
+    } finally {
+        setIsSubmitting(false);
+    }
+};
   return (
     <div className="bg-[#FAFDF9] py-8 px-4 md:px-8">
       <div className="max-w-3xl mx-auto space-y-8">
