@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { PageId, IncidentReport, Contributor } from '../types';
 import MapPlaceholder from './MapPlaceholder';
 import { motion } from 'motion/react';
-import { ClipboardList, ShieldCheck, Users, Globe, Trash2, Droplets, Factory, ArrowRight, Award } from 'lucide-react';
+import { ClipboardList, ShieldCheck, Users, Globe, Trash2, Droplets, Factory, ArrowRight, Award, Target } from 'lucide-react';
 
 interface LandingScreenProps {
   reports: IncidentReport[];
@@ -23,7 +23,31 @@ export default function LandingScreen({
   onSelectReportId,
 }: LandingScreenProps) {
   
-  // Recent reports for the landing page grid (let's pick the top 3 with varying timelines)
+  // Estado para la ubicación
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+
+  const handleGoToMyCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Tu navegador no soporta geolocalización.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+        alert(`Ubicación detectada: ${latitude}, ${longitude}`);
+        // NOTA: Para que el mapa se mueva, MapPlaceholder necesita recibir 
+        // estas coordenadas. Por ahora, esto confirma que el GPS funciona.
+      },
+      (err) => {
+        console.error(err);
+        alert("No pudimos obtener tu ubicación.");
+      },
+      { enableHighAccuracy: false, timeout: 10000 }
+    );
+  };
+
+  // Recent reports for the landing page grid
   const recentReports = reports.slice(0, 3);
 
   const getCategoryIcon = (category: string) => {
@@ -92,7 +116,7 @@ export default function LandingScreen({
           </div>
 
           {/* Interactive Map Visual Platform on Right */}
-          <div id="map" className="lg:col-span-7 flex flex-col space-y-4">
+          <div id="map" className="lg:col-span-7 flex flex-col space-y-4 relative">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-[#143B20] tracking-wider uppercase flex items-center gap-1.5">
                 <Globe className="w-4 h-4 text-[#1E8344]" />
@@ -100,7 +124,7 @@ export default function LandingScreen({
               </h2>
               <span className="text-xs text-[#557B5E] font-mono">En vivo</span>
             </div>
-            
+                      
             <MapPlaceholder reports={reports} onSelectReportId={onSelectReportId} />
           </div>
         </div>
@@ -118,7 +142,6 @@ export default function LandingScreen({
               <p className="text-xs text-[#557B5E] font-medium">Reportes activos</p>
             </div>
           </div>
-
           <div className="flex items-center space-x-3.5 border-r border-[#E1ECE3] last:border-none p-2 align-middle">
             <div className="w-10 h-10 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
               <ShieldCheck className="w-5 h-5" />
@@ -128,7 +151,6 @@ export default function LandingScreen({
               <p className="text-xs text-[#557B5E] font-medium">Problemas resueltos</p>
             </div>
           </div>
-
           <div className="flex items-center space-x-3.5 border-r border-[#E1ECE3] last:border-none p-2 align-middle">
             <div className="w-10 h-10 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
               <Users className="w-5 h-5" />
@@ -138,7 +160,6 @@ export default function LandingScreen({
               <p className="text-xs text-[#557B5E] font-medium">Usuarios activos</p>
             </div>
           </div>
-
           <div className="flex items-center space-x-3.5 last:border-none p-2 align-middle">
             <div className="w-10 h-10 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
               <Globe className="w-5 h-5" />
@@ -151,9 +172,8 @@ export default function LandingScreen({
         </div>
       </section>
 
-      {/* Split Details Section: Recent Reports vs Top Contributors */}
+      {/* Split Details Section */}
       <section className="px-4 py-12 md:px-8 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8">
-        {/* Recent reports list (Left, width 7/12) */}
         <div className="md:col-span-7 space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-[#12301A] font-sans tracking-tight">Reportes recientes</h3>
@@ -165,7 +185,6 @@ export default function LandingScreen({
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
-
           <div className="bg-white rounded-2xl border border-[#E1ECE3] shadow-sm divide-y divide-[#E1ECE3] overflow-hidden">
             {recentReports.map((report) => (
               <div 
@@ -173,15 +192,12 @@ export default function LandingScreen({
                 onClick={() => onSelectReportId(report.id)}
                 className="p-5 flex items-start space-x-4 hover:bg-[#FAFDFC] transition-all cursor-pointer group"
               >
-                {/* Thumb icon/image */}
                 <img 
                   src={report.imageUrl} 
                   alt={report.title} 
                   className="w-16 h-16 object-cover rounded-xl border border-[#C5DDCB] flex-shrink-0"
                   referrerPolicy="no-referrer"
                 />
-
-                {/* Info Text */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {getCategoryIcon(report.category)}
@@ -190,14 +206,11 @@ export default function LandingScreen({
                     </span>
                     <span className="text-xs text-slate-400 font-medium">• {report.timeAgo}</span>
                   </div>
-                  
                   <h4 className="text-sm font-bold text-[#143B20] mt-1 line-clamp-1 group-hover:text-[#1E8344] transition-colors">
                     {report.title}
                   </h4>
                   <p className="text-xs text-[#557B5E] mt-0.5 font-medium">📍 {report.location}</p>
                 </div>
-
-                {/* Severity Badge */}
                 <span className={`text-[10px] font-bold px-2.5 py-1 border rounded-full uppercase tracking-tight ${getSeverityBadgeClass(report.severity)}`}>
                   {report.severity.replace(' Severidad', '')}
                 </span>
@@ -205,8 +218,6 @@ export default function LandingScreen({
             ))}
           </div>
         </div>
-
-        {/* Top Contributors Ranking (Right, width 5/12) */}
         <div className="md:col-span-5 space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-[#12301A] font-sans tracking-tight flex items-center gap-2">
@@ -220,28 +231,24 @@ export default function LandingScreen({
               Ver ranking completo
             </button>
           </div>
-
           <div className="bg-white rounded-2xl border border-[#E1ECE3] shadow-sm p-6 space-y-4">
             {contributors.map((contrib, index) => (
               <div 
                 key={contrib.id}
                 className="flex items-center justify-between border-b border-[#F0F6F1] last:border-none pb-4 last:pb-0"
               >
-                {/* Ranking Index, Avatar, Name */}
                 <div className="flex items-center space-x-3">
                   <span className={`text-base font-black italic w-6 text-center ${
                     index === 0 ? 'text-[#C49B2F]' : index === 1 ? 'text-[#778B8D]' : 'text-[#A07044]'
                   }`}>
                     {index + 1}
                   </span>
-
                   <img 
                     src={contrib.avatar} 
                     alt={contrib.name} 
                     className="w-10 h-10 rounded-full object-cover border border-[#C5DDCB]"
                     referrerPolicy="no-referrer"
                   />
-
                   <div>
                     <h4 className="text-sm font-bold text-[#143B20] flex items-center gap-1 leading-tight">
                       {contrib.name}
@@ -256,8 +263,6 @@ export default function LandingScreen({
                     <p className="text-[11px] text-[#557B5E] font-medium">Investigador Ciudadano</p>
                   </div>
                 </div>
-
-                {/* Score tally */}
                 <div className="text-right">
                   <span className="text-sm font-black text-[#143B20] tracking-tight">{contrib.points.toLocaleString()}</span>
                   <span className="text-[10px] text-[#557B5E] font-bold block leading-none">pts</span>
@@ -269,4 +274,4 @@ export default function LandingScreen({
       </section>
     </div>
   );
-}
+} 

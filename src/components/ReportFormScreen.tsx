@@ -84,6 +84,10 @@ export default function ReportFormScreen({
   const [localCoordinates, setLocalCoordinates] = useState(prefilledLocation?.coordinates || '19.4150 N, 99.1620 W');
   const [isLocating, setIsLocating] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  
+  // Estado para guardar el archivo real para enviarlo por fetch
+  const [rawFile, setRawFile] = useState<File | null>(null); 
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [dynamicSuggestions, setDynamicSuggestions] = useState<typeof SUGGESTIONS>([]);
@@ -132,7 +136,6 @@ export default function ReportFormScreen({
     return [19.4150, -99.1620];
   };
 
-  // Sync Prefilled from Explorer Map Searched Pin
   useEffect(() => {
     if (prefilledLocation) {
       setAddress(prefilledLocation.address);
@@ -144,7 +147,6 @@ export default function ReportFormScreen({
     }
   }, [prefilledLocation]);
 
-  // Map Initialization inside creation screen
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
@@ -186,7 +188,6 @@ export default function ReportFormScreen({
       const formattedCoords = `${lat.toFixed(6)} N, ${Math.abs(lng).toFixed(6)} W`;
       setLocalCoordinates(formattedCoords);
       
-      // Request exact street details from Nominatim reverse-geocoder
       fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`, {
         headers: {
           'Accept-Language': 'es'
@@ -225,7 +226,6 @@ export default function ReportFormScreen({
     };
   }, []);
 
-  // Update map viewport when coordinates are changed
   useEffect(() => {
     const map = mapInstanceRef.current;
     const marker = markerRef.current;
@@ -243,7 +243,6 @@ export default function ReportFormScreen({
     }
   }, [localCoordinates]);
 
-  // Autocomplete typing address handlers
   const handleAddressTextChange = (val: string) => {
     setAddress(val);
     setShowSuggestions(val.trim().length > 1);
@@ -307,55 +306,127 @@ export default function ReportFormScreen({
     setShowSuggestions(false);
   };
 
+  
+  //  GPS NATIVO
+  
   const handleMyLocation = () => {
     setIsLocating(true);
     setAddress('Buscando señal de satélite GPS...');
-    
-    setTimeout(() => {
-      // Simulate real CDMX locates
-      setAddress('Paseo de la Reforma 222, Col. Juárez, Alcaldía Cuauhtémoc, C.P. 06600, CDMX');
-      setLocalCoordinates('19.4273 N, 99.1676 W');
+
+    if (!navigator.geolocation) {
+      alert("Tu navegador no soporta geolocalización");
       setIsLocating(false);
-    }, 1200);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const formattedCoords = `${lat.toFixed(6)} N, ${Math.abs(lng).toFixed(6)} W`;
+        
+        setLocalCoordinates(formattedCoords);
+        
+        // Hacemos reverse geocoding para que también actualice el texto de la calle
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`, {
+          headers: { 'Accept-Language': 'es' }
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.display_name) {
+            setAddress(data.display_name);
+          } else {
+            setAddress(`Ubicación GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+          }
+        })
+        .catch(() => setAddress(`Ubicación GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`))
+        .finally(() => setIsLocating(false));
+      },
+      (error) => {
+        console.error("Error GPS:", error);
+        alert("No pudimos obtener tu ubicación real. Revisa los permisos.");
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true }
+    );
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
   };
 
+ 
+  // VALIDACIÓN ESTRICA Y GUARDADO DE ARCHIVOS
+
+  const processFile = (file: File) => {
+    if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
+      alert("Error: Solo se aceptan formatos JPEG o PNG.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Error: El archivo supera los 5MB permitidos.");
+      return;
+    }
+
+    setRawFile(file); // Guardamos el File real para el FormData
+    
+    // Generamos la miniatura visual para la UI
+    const reader = new FileReader();
+    reader.onload = () => {
+      setUploadedImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      const reader = new FileReader();
-      reader.onload = () => {
-        setUploadedImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      processFile(e.dataTransfer.files[0]);
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = () => {
-        setUploadedImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      processFile(e.target.files[0]);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // ------------------------------------------------------------------
+  // INTEGRACIÓN FE-1: DATA BINDING CON FETCH
+  // ------------------------------------------------------------------
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) return;
 
     setIsSubmitting(true);
 
-    // Formulate new dynamic incident
-    setTimeout(() => {
-      const randomNum = Math.floor(1000 + Math.random() * 9000);
-      const newId = `ENV-2026-${randomNum}`;
+    const formData = new FormData();
+    formData.append('titulo', `Reporte de ${category}`);
+    formData.append('descripcion', description);
+    formData.append('coordenadas', localCoordinates);
+    formData.append('direccion', address);
+    
+    if (rawFile) {
+      formData.append('evidencia', rawFile);
+    }
+
+    try {
+      // Petición al backend real
+      const respuesta = await fetch('http://localhost:3000/api/reportes', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!respuesta.ok) {
+        throw new Error(`Error en el servidor: ${respuesta.status}`);
+      }
+
+      const dataDelBackend = await respuesta.json();
+      console.log("¡Reporte guardado en BD!", dataDelBackend);
+      alert("¡Reporte enviado y guardado exitosamente!");
+
+      // Mantenemos el código visual de tu equipo para que la app fluya al detalle
+      const newId = dataDelBackend.id || `ENV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
       
       const reportImage = uploadedImage || (
         category === 'Residuos' 
@@ -371,7 +442,7 @@ export default function ReportFormScreen({
         description: description.substring(0, 100) + '...',
         detailedDescription: description,
         category,
-        severity: 'Media Severidad', // Default
+        severity: 'Media Severidad',
         status: 'Abierto',
         location: address || 'Zona Metropolitana Central',
         coordinates: localCoordinates,
@@ -393,11 +464,14 @@ export default function ReportFormScreen({
       };
 
       onAddReport(computedReport);
-      setIsSubmitting(false);
-
-      // Take user directly to view detail of they newly created incident
       onSelectReportId(newId);
-    }, 2000);
+
+    } catch (error) {
+      console.error("Error de envío:", error);
+      alert("Hubo un problema conectando con el backend. (Si el servidor local no está prendido, esto es normal)");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -564,7 +638,7 @@ export default function ReportFormScreen({
                         item.title.toLowerCase().includes(address.toLowerCase())
                       ).length === 0 && dynamicSuggestions.length === 0 && !isSearchingSuggestions && (
                         <div className="p-4 text-xs text-slate-400 font-bold text-center">
-                          Ninguna sugerencia guardada. Elige otra b&uacute;squeda o contin&uacute;a escribiendo la direcci&oacute;n libre.
+                          Ninguna sugerencia guardada. Elige otra búsqueda o continúa escribiendo la dirección libre.
                         </div>
                       )}
                     </div>
@@ -639,7 +713,7 @@ export default function ReportFormScreen({
                   type="file" 
                   ref={fileInputRef} 
                   onChange={handleFileSelect} 
-                  accept="image/*" 
+                  accept="image/jpeg, image/png" 
                   className="hidden" 
                 />
 

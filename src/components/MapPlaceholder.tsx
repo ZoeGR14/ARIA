@@ -640,6 +640,18 @@ export default function MapPlaceholder({
     setSearchedCoordinates(null);
     mapInstanceRef.current?.setView([19.4150, -99.1620], 12, { animate: true, duration: 0.8 });
   };
+  const handleLocateUser = () => {
+    if (!mapInstanceRef.current || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        mapInstanceRef.current!.setView([latitude, longitude], 15, { animate: true });
+        const marker = L.marker([latitude, longitude]).addTo(mapInstanceRef.current!).bindPopup("¡Estás aquí!").openPopup();
+        setTimeout(() => marker.remove(), 4000);
+      },
+      (err) => alert("No pudimos obtener la ubicación: " + err.message)
+    );
+  };
 
   // Copy unique share link to clipboard
   const handleCopyShareLink = (pinId: string) => {
@@ -1035,6 +1047,15 @@ export default function MapPlaceholder({
           <Target className="w-5 h-5 text-[#1E8344]" />
         </button>
       </div>
+
+<button 
+        onClick={handleLocateUser}
+        className="absolute bottom-6 right-6 z-[999] bg-white text-[#1E8344] font-bold px-4 py-2 rounded-full shadow-lg border border-[#1E8344] hover:bg-emerald-50 transition-all flex items-center gap-2 text-xs"
+        title="Centrar en mi ubicación"
+      >
+        <Target className="w-4 h-4" />
+        <span>Mi ubicación</span>
+      </button>
 
       {/* Leaflet Live Tile Map status indicator watermark */}
       <span className="absolute right-4 bottom-4 bg-[#779A81]/90 backdrop-blur-md text-white text-[9px] font-mono font-bold px-2.5 py-1 rounded shadow-md tracking-wider z-20 select-none">
