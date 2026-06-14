@@ -3,25 +3,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { PageId, IncidentReport, Contributor } from '../types';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { IncidentReport, Contributor } from '../types';
 import MapPlaceholder from './MapPlaceholder';
+import { getContributores } from '../services/rankingService';
 import { motion } from 'motion/react';
 import { ClipboardList, ShieldCheck, Users, Globe, Trash2, Droplets, Factory, ArrowRight, Award, Target } from 'lucide-react';
 
 interface LandingScreenProps {
   reports: IncidentReport[];
-  contributors: Contributor[];
-  setCurrentPage: (page: PageId) => void;
-  onSelectReportId: (id: string) => void;
 }
 
 export default function LandingScreen({
   reports,
-  contributors,
-  setCurrentPage,
-  onSelectReportId,
 }: LandingScreenProps) {
+  const navigate = useNavigate();
+  const [contributors, setContributors] = useState<Contributor[]>([]);
+
+  useEffect(() => {
+    getContributores().then(setContributors);
+  }, []);
   
   // Estado para la ubicación
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
@@ -93,7 +95,7 @@ export default function LandingScreen({
 
             <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={() => setCurrentPage('reportar')}
+                onClick={() => navigate('/reportar')}
                 className="bg-[#05682C] text-white font-bold px-6 py-3.5 rounded-full hover:bg-[#045524] hover:shadow-lg transition-all text-sm flex items-center justify-center space-x-2 shadow-md shadow-[#05682C]/10"
               >
                 <span>+ Reportar incidencia</span>
@@ -124,8 +126,8 @@ export default function LandingScreen({
               </h2>
               <span className="text-xs text-[#557B5E] font-mono">En vivo</span>
             </div>
-                      
-            <MapPlaceholder reports={reports} onSelectReportId={onSelectReportId} />
+            
+            <MapPlaceholder reports={reports} onSelectReportId={(id) => navigate('/reporte/' + id)} />
           </div>
         </div>
       </section>
@@ -178,7 +180,7 @@ export default function LandingScreen({
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-[#12301A] font-sans tracking-tight">Reportes recientes</h3>
             <button
-              onClick={() => setCurrentPage('reportes')}
+              onClick={() => navigate('/reportes')}
               className="text-[#1E8344] text-xs font-bold hover:underline flex items-center gap-1 cursor-pointer"
             >
               <span>Ver todos</span>
@@ -189,7 +191,7 @@ export default function LandingScreen({
             {recentReports.map((report) => (
               <div 
                 key={report.id}
-                onClick={() => onSelectReportId(report.id)}
+                onClick={() => navigate('/reporte/' + report.id)}
                 className="p-5 flex items-start space-x-4 hover:bg-[#FAFDFC] transition-all cursor-pointer group"
               >
                 <img 
@@ -225,7 +227,7 @@ export default function LandingScreen({
               <span>Top contribuidores</span>
             </h3>
             <button
-              onClick={() => setCurrentPage('dashboard')}
+              onClick={() => navigate('/dashboard')}
               className="text-[#1E8344] text-xs font-bold hover:underline"
             >
               Ver ranking completo

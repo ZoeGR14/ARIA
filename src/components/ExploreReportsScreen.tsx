@@ -4,20 +4,18 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { PageId, IncidentReport, ReportCategory } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { IncidentReport, ReportCategory } from '../types';
 import { Trash2, Droplets, Wind, Search, MapPin, Calendar, Filter, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react';
 
 interface ExploreReportsScreenProps {
   reports: IncidentReport[];
-  setCurrentPage: (page: PageId) => void;
-  onSelectReportId: (id: string) => void;
 }
 
 export default function ExploreReportsScreen({
   reports,
-  setCurrentPage,
-  onSelectReportId,
 }: ExploreReportsScreenProps) {
+  const navigate = useNavigate();
   const [selectedStatus, setSelectedStatus] = useState<string>('Todos');
   const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -184,7 +182,7 @@ export default function ExploreReportsScreen({
             paginatedReports.map((report) => (
               <div 
                 key={report.id}
-                onClick={() => onSelectReportId(report.id)}
+                onClick={() => navigate('/reporte/' + report.id)}
                 className="bg-white rounded-3xl border border-[#DDE7DE] overflow-hidden flex flex-col justify-between shadow-xs hover:shadow-md transition-all h-[420px] group cursor-pointer"
               >
                 {/* Upper thumbnail with float severity tag */}
@@ -244,7 +242,7 @@ export default function ExploreReportsScreen({
                   {/* Quick inspector action link */}
                   <div className="pt-4 border-t border-[#F0F6F1] flex items-center justify-between mt-4">
                     <button
-                      onClick={() => onSelectReportId(report.id)}
+                      onClick={() => navigate('/reporte/' + report.id)}
                       className="text-[#05682C] text-xs font-extrabold hover:text-[#045524] flex items-center gap-1 cursor-pointer transition-colors"
                     >
                       <span>Ver detalle</span>

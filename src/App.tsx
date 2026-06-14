@@ -4,8 +4,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { PageId, IncidentReport, Comment } from './types';
-import { INITIAL_REPORTS, INITIAL_CONTRIBUTORS } from './data/mockData';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { IncidentReport, Comment } from './types';
+import { INITIAL_REPORTS } from './data/mockData';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -13,6 +14,7 @@ import LandingScreen from './components/LandingScreen';
 import DashboardScreen from './components/DashboardScreen';
 import LoginScreen from './components/LoginScreen';
 import SignupScreen from './components/SignupScreen';
+import ResetPasswordScreen from './components/ResetPasswordScreen';
 import ReportFormScreen from './components/ReportFormScreen';
 import ReportDetailScreen from './components/ReportDetailScreen';
 import ExploreReportsScreen from './components/ExploreReportsScreen';
@@ -22,7 +24,10 @@ import ExplorarMapaScreen from './components/ExplorarMapaScreen';
 import EditProfileScreen from './components/EditProfileScreen';
 import CommunityScreen from './components/CommunityScreen';
 import { motion, AnimatePresence } from 'motion/react';
-import { LogOut, Bell, Inbox, Check, Sparkles } from 'lucide-react';
+import { LogOut, Bell, Inbox, Check, Sparkles, Mail, Loader2 } from 'lucide-react';
+
+import { getToken, deleteToken, onMessage, isSupported } from 'firebase/messaging';
+import { messaging } from './firebase';
 
 const CARLOS_MENDOZA_PROFILE = {
   name: 'Carlos Mendoza',
@@ -38,13 +43,23 @@ const CARLOS_MENDOZA_PROFILE = {
   contributionsCount: 34,
 };
 
+let isLoggingOutFlag = false;
+
+function PrivateRoute({ children, isLoggedIn, message }: { children: React.ReactNode; isLoggedIn: boolean; message?: string }) {
+  if (!isLoggedIn) {
+    if (isLoggingOutFlag) return null;
+    return <Navigate to="/login" state={{ authMessage: message }} replace />;
+  }
+  return <>{children}</>;
+}
+
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false); // Starts as logged out by default
-  const [currentPage, setCurrentPage] = useState<PageId>('inicio'); // First screen is home page
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [userProfile, setUserProfile] = useState(CARLOS_MENDOZA_PROFILE);
   const [reports, setReports] = useState<IncidentReport[]>(INITIAL_REPORTS);
-  const [selectedReportId, setSelectedReportId] = useState<string>('ENV-2023-8472'); // Matches detailed report image default
-  const [authMessage, setAuthMessage] = useState<string | null>(null);
   const [prefilledLocation, setPrefilledLocation] = useState<{ address: string; coordinates: string } | null>(null);
   const [notifications, setNotifications] = useState([
     {
@@ -72,92 +87,190 @@ export default function App() {
     }
   ]);
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Automatically scroll to top on page navigation
+  const handleShowVerification = (email: string) => {
+    setVerificationEmail(email);
+    setShowVerificationModal(true);
+  };
+
+  // Load session from localStorage on startup
+  useEffect(() => {
+    const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
+    const userStr = localStorage.getItem('aria_user') || sessionStorage.getItem('aria_user');
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        const mappedProfile = {
+          id: user.id,
+          name: user.nombre_completo,
+          email: user.correo_electronico,
+          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+          role: user.rol === 'ADMINISTRADOR' ? 'Administrador' : 'Ciudadano Activo',
+          bio: `Hola, soy ${(user.nombre_completo || 'Usuario').split(' ')[0]}. Me interesa el monitoreo ambiental y registrar incidencias para cooperar de manera constructiva con mi comunidad local.`,
+          location: 'CDMX, MX',
+          level: user.nivel_ranking || 'Novato',
+          impactScore: user.puntos_totales || 0,
+          pointsThisMonth: user.puntos_totales || 0,
+          totalsCount: 0,
+          validatedCount: 0,
+          contributionsCount: 0,
+        };
+        setUserProfile(mappedProfile);
+        setIsLoggedIn(true);
+      } catch (e) {
+        console.error("Error loading cached user session:", e);
+        localStorage.removeItem('aria_token');
+        localStorage.removeItem('aria_user');
+        sessionStorage.removeItem('aria_token');
+        sessionStorage.removeItem('aria_user');
+      }
+    }
+  }, []);
+
+  // Listen for FCM messages
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+
+    const setupOnMessage = async () => {
+      try {
+        const supported = await isSupported();
+        if (!supported) return;
+
+        unsubscribe = onMessage(messaging, (message) => {
+          console.log("Mensaje recibido:", message);
+          if (message.notification) {
+            const newNotify = {
+              id: `n-fcm-${Date.now()}`,
+              title: message.notification.title || 'Nueva Notificación',
+              message: message.notification.body || '',
+              time: 'Hace unos instantes',
+              read: false,
+              reportId: message.data?.reportId,
+            };
+            setNotifications((prev) => [newNotify, ...prev]);
+          }
+        });
+      } catch (err) {
+        console.log("No se pudo iniciar el listener de mensajes FCM: ", err);
+      }
+    };
+
+    setupOnMessage();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  const getDeviceInfo = () => {
+    const ua = navigator.userAgent;
+    let browser = "Navegador Desconocido";
+    let os = "SO Desconocido";
+
+    if (ua.indexOf("Firefox") > -1) browser = "Firefox";
+    else if (ua.indexOf("SamsungBrowser") > -1) browser = "Samsung Browser";
+    else if (ua.indexOf("Opera") > -1 || ua.indexOf("OPR") > -1) browser = "Opera";
+    else if (ua.indexOf("Trident") > -1) browser = "Internet Explorer";
+    else if (ua.indexOf("Edge") > -1) browser = "Microsoft Edge";
+    else if (ua.indexOf("Chrome") > -1) browser = "Google Chrome";
+    else if (ua.indexOf("Safari") > -1) browser = "Apple Safari";
+
+    if (ua.indexOf("Windows NT 10.0") > -1) os = "Windows 10/11";
+    else if (ua.indexOf("Windows NT 6.2") > -1) os = "Windows 8";
+    else if (ua.indexOf("Windows NT 6.1") > -1) os = "Windows 7";
+    else if (ua.indexOf("Macintosh") > -1) os = "macOS";
+    else if (ua.indexOf("iPhone") > -1) os = "iOS";
+    else if (ua.indexOf("Android") > -1) os = "Android";
+    else if (ua.indexOf("Linux") > -1) os = "Linux";
+
+    return `${browser} en ${os} (Escritorio/Móvil)`;
+  };
+
+  // Save FCM token for the user if they don't have it saved
+  useEffect(() => {
+    const handleFcmTokenRegistration = async () => {
+      if (!isLoggedIn) return;
+
+      const tokenJwt = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
+      if (!tokenJwt) return;
+
+      try {
+        const supported = await isSupported();
+        if (!supported) return;
+
+        const fcmToken = await getToken(messaging, {
+          vapidKey: "BIB4QGDhC2lIgmT_MkMSWiumWu4d4e34XDzekN8VOxPRHJzNyiNbnGpM_3_OSj7gAeqPWjm2IdLnNGxqR_gyW-I"
+        }).catch(error => {
+          console.log("Error al generar el token FCM: ", error);
+          return null;
+        });
+
+        if (!fcmToken) {
+          console.log("No se pudo generar el token FCM o permiso denegado");
+          return;
+        }
+
+        console.log("Token FCM obtenido: ", fcmToken);
+
+        const devicesRes = await fetch('http://localhost:3001/api/fcm/mis-dispositivos', {
+          headers: {
+            'Authorization': `Bearer ${tokenJwt}`
+          }
+        });
+
+        if (devicesRes.ok) {
+          const devices = await devicesRes.json();
+          const alreadySaved = devices.some((d: any) => d.fcm_token === fcmToken);
+          if (alreadySaved) {
+            console.log("El dispositivo ya está registrado en la base de datos");
+            return;
+          }
+        }
+
+        const deviceInfo = getDeviceInfo();
+        const registerRes = await fetch('http://localhost:3001/api/fcm/fcm-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenJwt}`
+          },
+          body: JSON.stringify({
+            fcmToken,
+            dispositivoInfo: deviceInfo
+          })
+        });
+
+        if (registerRes.ok) {
+          console.log("Token FCM y info de dispositivo guardados exitosamente");
+        } else {
+          const errData = await registerRes.json();
+          console.warn("Error al registrar token FCM en base de datos: ", errData.mensaje);
+        }
+
+      } catch (err) {
+        console.error("Error en el flujo de registro FCM: ", err);
+      }
+    };
+
+    handleFcmTokenRegistration();
+  }, [isLoggedIn]);
+
+  // Scroll to top on route change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentPage]);
-
-  // Safely auto-route between public and authenticated pages on login/navigation changes
-  useEffect(() => {
-    if (isLoggedIn) {
-      if (['inicio', 'login', 'signup'].includes(currentPage)) {
-        setCurrentPage('dashboard');
-      }
-      setAuthMessage(null);
-    } else {
-      const pagesRequiringAuth: PageId[] = [
-        'dashboard', 
-        'reportar', 
-        'mis-reportes', 
-        'editar-perfil', 
-        'reportes', 
-        'explorar-mapa', 
-        'comunidad', 
-        'detalles-incidencia'
-      ];
-      if (pagesRequiringAuth.includes(currentPage)) {
-        if (currentPage === 'reportar') {
-          setAuthMessage('Debes iniciar sesión para poder reportar una incidencia ambiental.');
-        } else if (currentPage === 'mis-reportes') {
-          setAuthMessage('Debes iniciar sesión para ver tus reportes.');
-        } else if (currentPage === 'editar-perfil') {
-          setAuthMessage('Debes iniciar sesión para modificar tu perfil.');
-        } else if (currentPage === 'reportes' || currentPage === 'explorar-mapa' || currentPage === 'detalles-incidencia') {
-          setAuthMessage('Debes iniciar sesión para poder explorar e inspeccionar el mapa de incidencias.');
-        } else if (currentPage === 'comunidad') {
-          setAuthMessage('Debes iniciar sesión para ver los perfiles de la comunidad y repasar sus reportes.');
-        } else {
-          setAuthMessage('Debes iniciar sesión para acceder a esta sección.');
-        }
-        setCurrentPage('login');
-      }
-    }
-  }, [isLoggedIn, currentPage]);
-
-  const handleSetPage = (page: PageId) => {
-    const pagesRequiringAuth: PageId[] = [
-      'dashboard', 
-      'reportar', 
-      'mis-reportes', 
-      'editar-perfil', 
-      'reportes', 
-      'explorar-mapa', 
-      'comunidad', 
-      'detalles-incidencia'
-    ];
-    if (pagesRequiringAuth.includes(page) && !isLoggedIn) {
-      if (page === 'reportar') {
-        setAuthMessage('Debes iniciar sesión para poder reportar una incidencia ambiental.');
-      } else if (page === 'mis-reportes') {
-        setAuthMessage('Debes iniciar sesión para ver tus reportes.');
-      } else if (page === 'editar-perfil') {
-        setAuthMessage('Debes iniciar sesión para modificar tu perfil.');
-      } else if (page === 'reportes' || page === 'explorar-mapa' || page === 'detalles-incidencia') {
-        setAuthMessage('Debes iniciar sesión para poder explorar e inspeccionar el mapa de incidencias.');
-      } else if (page === 'comunidad') {
-        setAuthMessage('Debes iniciar sesión para ver los perfiles de la comunidad y repasar sus reportes.');
-      } else {
-        setAuthMessage('Debes iniciar sesión para acceder a esta sección.');
-      }
-      setCurrentPage('login');
-    } else {
-      if (page !== 'login') {
-        setAuthMessage(null);
-      }
-      setCurrentPage(page);
-    }
-  };
+  }, [location.pathname]);
 
   const handleReportAtLocation = (address: string, coordinates: string) => {
     setPrefilledLocation({ address, coordinates });
-    handleSetPage('reportar');
+    navigate('/reportar');
   };
 
   // Handle adding a brand new incident report
   const handleAddReport = (newReport: IncidentReport) => {
     setReports((prev) => [newReport, ...prev]);
-    // Also increment Carlos totals count on submission
     setUserProfile((prev) => ({
       ...prev,
       totalsCount: prev.totalsCount + 1,
@@ -165,7 +278,6 @@ export default function App() {
       pointsThisMonth: prev.pointsThisMonth + 5,
     }));
 
-    // Generate immediate success notification
     const newNotify = {
       id: `n-new-${Date.now()}`,
       title: 'Reporte registrado',
@@ -179,12 +291,12 @@ export default function App() {
 
   // Handle appending comments on detail screen
   const handleAddComment = (reportId: string, newComment: Comment) => {
-    setReports((prev) => 
+    setReports((prev) =>
       prev.map((rep) => {
         if (rep.id === reportId) {
           return {
             ...rep,
-            comments: [commentWithTimestamp(newComment), ...(rep.comments || [])],
+            comments: [{ ...newComment, timeAgo: 'Hace unos instantes' }, ...(rep.comments || [])],
           };
         }
         return rep;
@@ -192,38 +304,24 @@ export default function App() {
     );
   };
 
-  const commentWithTimestamp = (c: Comment) => ({
-    ...c,
-    timeAgo: 'Hace unos instantes',
-  });
-
-  const handleSelectReportId = (id: string) => {
-    setSelectedReportId(id);
-    setCurrentPage('detalles-incidencia');
-  };
-
-  const activeReport = reports.find((r) => r.id === selectedReportId) || reports[0];
+  const isAuthScreen = ['/login', '/signup'].includes(location.pathname);
 
   return (
     <div className={`flex min-h-screen bg-[#FAFDF9] text-[#143B20] antialiased selection:bg-[#CCE8C6]/80 selection:text-[#0A3D18] ${
       isLoggedIn ? 'flex-col md:flex-row' : 'flex-col'
     }`}>
-      
+
       {/* 1. Header (Only displayed if NOT logged in) */}
       {!isLoggedIn && (
-        <Header 
-          currentPage={currentPage} 
-          setCurrentPage={handleSetPage} 
+        <Header
           isLoggedIn={isLoggedIn}
           setIsLoggedIn={setIsLoggedIn}
         />
       )}
 
       {/* 2. Sidebar (Only displayed if LOGGED in AND not on auth screens) */}
-      {isLoggedIn && !['login', 'signup'].includes(currentPage) && (
-        <Sidebar 
-          currentPage={currentPage} 
-          setCurrentPage={handleSetPage} 
+      {isLoggedIn && !isAuthScreen && (
+        <Sidebar
           isLoggedIn={isLoggedIn}
           setIsLoggedIn={setIsLoggedIn}
           userProfile={userProfile}
@@ -232,9 +330,9 @@ export default function App() {
 
       {/* Main Container Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        
+
         {/* Logged-In Top Header Bar */}
-        {isLoggedIn && !['login', 'signup'].includes(currentPage) && (
+        {isLoggedIn && !isAuthScreen && (
           <header className="bg-white border-b border-[#E1ECE3] pl-16 md:pl-8 pr-4 md:pr-8 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
             {/* Left contextual tag */}
             <div className="flex items-center space-x-2">
@@ -249,11 +347,10 @@ export default function App() {
               <div className="relative">
                 <button
                   onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
-                  className={`p-2.5 rounded-full border transition-all cursor-pointer relative ${
-                    showNotificationsDropdown
+                  className={`p-2.5 rounded-full border transition-all cursor-pointer relative ${showNotificationsDropdown
                       ? 'bg-[#EBF7EE] border-[#1E8344] text-[#1E8344]'
                       : 'bg-[#FAFDF9] border-[#CDE1D1] hover:border-[#1E8344] text-[#557D5E]'
-                  }`}
+                    }`}
                   title="Notificaciones"
                 >
                   <Bell className="w-4 h-4" />
@@ -268,11 +365,11 @@ export default function App() {
                 {showNotificationsDropdown && (
                   <>
                     {/* Click catcher background overlay to dismiss safely */}
-                    <div 
+                    <div
                       className="fixed inset-0 z-40"
                       onClick={() => setShowNotificationsDropdown(false)}
                     />
-                    
+
                     {/* Popover dropdown container */}
                     <div className="absolute right-0 mt-2.5 w-[280px] sm:w-[320px] bg-white rounded-2xl shadow-2xl border border-[#CBDCD0] overflow-hidden z-50 animate-slide-up flex flex-col max-h-[440px]">
                       {/* Header */}
@@ -304,16 +401,14 @@ export default function App() {
                             <div
                               key={n.id}
                               onClick={() => {
-                                // Mark single notification read
                                 setNotifications(prev => prev.map(notif => notif.id === n.id ? { ...notif, read: true } : notif));
                                 setShowNotificationsDropdown(false);
                                 if (n.reportId) {
-                                  handleSelectReportId(n.reportId);
+                                  navigate('/reporte/' + n.reportId);
                                 }
                               }}
-                              className={`p-3.5 text-left transition-colors cursor-pointer relative ${
-                                n.read ? 'bg-white hover:bg-[#F3FAF4]/35' : 'bg-[#EBF7EE]/10 hover:bg-[#EBF7EE]/30 border-l-2 border-l-[#1E8344]'
-                              }`}
+                              className={`p-3.5 text-left transition-colors cursor-pointer relative ${n.read ? 'bg-white hover:bg-[#F3FAF4]/35' : 'bg-[#EBF7EE]/10 hover:bg-[#EBF7EE]/30 border-l-2 border-l-[#1E8344]'
+                                }`}
                             >
                               <div className="flex items-start justify-between gap-1">
                                 <h4 className="text-[11.5px] font-extrabold text-[#143B20] leading-tight pr-3">
@@ -339,14 +434,14 @@ export default function App() {
               </div>
 
               {/* Profile card link */}
-              <button 
-                onClick={() => handleSetPage('editar-perfil')}
+              <button
+                onClick={() => navigate('/editar-perfil')}
                 className="flex items-center space-x-2 p-0.5 px-2.5 bg-[#FAFDF9] border border-[#CDE1D1] hover:border-[#1E8344] rounded-full transition-all cursor-pointer group text-left shadow-xs"
                 title="Modificar mi Perfil"
               >
-                <img 
-                  src={userProfile.avatar} 
-                  alt={userProfile.name} 
+                <img
+                  src={userProfile.avatar}
+                  alt={userProfile.name}
                   className="w-7 h-7 rounded-full object-cover border border-[#C5DDCB] group-hover:scale-105 transition-transform"
                   referrerPolicy="no-referrer"
                 />
@@ -362,11 +457,48 @@ export default function App() {
 
               {/* Logout button */}
               <button
-                onClick={() => {
-                  setIsLoggedIn(false);
-                  handleSetPage('inicio');
+                onClick={async () => {
+                  isLoggingOutFlag = true;
+                  setIsLoggingOut(true);
+                  try {
+                    const currentToken = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
+                    if (currentToken && await isSupported()) {
+                      const fcmToken = await getToken(messaging, {
+                        vapidKey: "BIB4QGDhC2lIgmT_MkMSWiumWu4d4e34XDzekN8VOxPRHJzNyiNbnGpM_3_OSj7gAeqPWjm2IdLnNGxqR_gyW-I"
+                      }).catch(() => null);
+
+                      if (fcmToken) {
+                        // Notificamos al backend para que lo borre de sus registros
+                        await fetch('http://localhost:3001/api/fcm/fcm-token', {
+                          method: 'DELETE',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${currentToken}`
+                          },
+                          body: JSON.stringify({ fcmToken })
+                        }).catch(console.error);
+
+                        // Lo borramos del navegador
+                        await deleteToken(messaging).catch(console.error);
+                      }
+                    }
+                  } catch (e) {
+                    console.error("Error al limpiar token FCM en logout", e);
+                  } finally {
+                    localStorage.removeItem('aria_token');
+                    localStorage.removeItem('aria_user');
+                    sessionStorage.removeItem('aria_token');
+                    sessionStorage.removeItem('aria_user');
+                    setIsLoggedIn(false);
+                    setIsLoggingOut(false);
+                    navigate('/', { replace: true });
+                    setTimeout(() => {
+                      isLoggingOutFlag = false;
+                    }, 100);
+                  }
                 }}
-                className="flex items-center space-x-1.5 px-3 py-1.5 bg-rose-50 border border-rose-100 font-bold hover:bg-rose-100 hover:border-rose-200 text-rose-700 rounded-full text-[11px] transition-all cursor-pointer active:scale-95"
+                disabled={isLoggingOut}
+                className="flex items-center space-x-1.5 px-3 py-1.5 bg-rose-50 border border-rose-100 font-bold hover:bg-rose-100 hover:border-rose-200 text-rose-700 rounded-full text-[11px] transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Cerrar Sesión"
               >
                 <LogOut className="w-3.5 h-3.5 text-rose-600" />
@@ -375,130 +507,146 @@ export default function App() {
             </div>
           </header>
         )}
-        
+
         {/* Main Screen Router Box with smooth fades */}
         <div className="flex-1">
           <AnimatePresence mode="wait">
             <motion.div
-              key={currentPage}
+              key={location.pathname}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.15, ease: 'easeOut' }}
             >
-              {currentPage === 'inicio' && (
-                <LandingScreen
-                  reports={reports}
-                  contributors={INITIAL_CONTRIBUTORS}
-                  setCurrentPage={handleSetPage}
-                  onSelectReportId={handleSelectReportId}
-                />
-              )}
-
-              {currentPage === 'dashboard' && (
-                <DashboardScreen
-                  reports={reports}
-                  userProfile={userProfile}
-                  setCurrentPage={handleSetPage}
-                  setIsLoggedIn={setIsLoggedIn}
-                  onSelectReportId={handleSelectReportId}
-                />
-              )}
-
-              {currentPage === 'reportes' && (
-                <ExploreReportsScreen
-                  reports={reports}
-                  setCurrentPage={handleSetPage}
-                  onSelectReportId={handleSelectReportId}
-                />
-              )}
-
-              {currentPage === 'comunidad' && (
-                <CommunityScreen
-                  setCurrentPage={handleSetPage}
-                  userProfile={userProfile}
-                  isLoggedIn={isLoggedIn}
-                  reports={reports}
-                  onSelectReportId={handleSelectReportId}
-                />
-              )}
-
-              {currentPage === 'reportar' && (
-                <ReportFormScreen
-                  onAddReport={handleAddReport}
-                  setCurrentPage={handleSetPage}
-                  onSelectReportId={handleSelectReportId}
-                  currentUser={userProfile}
-                  prefilledLocation={prefilledLocation}
-                  onClearPrefilledLocation={() => setPrefilledLocation(null)}
-                />
-              )}
-
-              {currentPage === 'detalles-incidencia' && (
-                <ReportDetailScreen
-                  report={activeReport}
-                  setCurrentPage={handleSetPage}
-                  onAddComment={handleAddComment}
-                  currentUser={userProfile}
-                />
-              )}
-
-              {currentPage === 'login' && (
-                <LoginScreen
-                  setCurrentPage={handleSetPage}
-                  setIsLoggedIn={setIsLoggedIn}
-                  authMessage={authMessage}
-                />
-              )}
-
-              {currentPage === 'signup' && (
-                <SignupScreen
-                  setCurrentPage={handleSetPage}
-                  setIsLoggedIn={setIsLoggedIn}
-                  setUserProfile={setUserProfile}
-                />
-              )}
-
-              {currentPage === 'acerca-de' && (
-                <AboutScreen 
-                  setCurrentPage={handleSetPage} 
-                />
-              )}
-
-              {currentPage === 'mis-reportes' && (
-                <MyReportsScreen
-                  reports={reports}
-                  userProfile={userProfile}
-                  setCurrentPage={handleSetPage}
-                  onSelectReportId={handleSelectReportId}
-                />
-              )}
-
-              {currentPage === 'explorar-mapa' && (
-                <ExplorarMapaScreen
-                  reports={reports}
-                  setCurrentPage={handleSetPage}
-                  onSelectReportId={handleSelectReportId}
-                  focusedReportId={selectedReportId}
-                  onReportLocation={handleReportAtLocation}
-                />
-              )}
-
-              {currentPage === 'editar-perfil' && (
-                <EditProfileScreen
-                  userProfile={userProfile}
-                  setUserProfile={setUserProfile}
-                  setCurrentPage={handleSetPage}
-                />
-              )}
+               <Routes>
+                <Route path="/" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LandingScreen reports={reports} />} />
+                <Route path="/login" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LoginScreen setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} onShowVerification={handleShowVerification} />} />
+                <Route path="/signup" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <SignupScreen setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} onShowVerification={handleShowVerification} />} />
+                <Route path="/reset-password" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <ResetPasswordScreen />} />
+                <Route path="/acerca-de" element={<AboutScreen />} />
+                <Route path="/dashboard" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para acceder a esta sección.">
+                    <DashboardScreen reports={reports} userProfile={userProfile} setIsLoggedIn={setIsLoggedIn} />
+                  </PrivateRoute>
+                } />
+                <Route path="/reportar" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para poder reportar una incidencia ambiental.">
+                    <ReportFormScreen onAddReport={handleAddReport} currentUser={userProfile} prefilledLocation={prefilledLocation} onClearPrefilledLocation={() => setPrefilledLocation(null)} />
+                  </PrivateRoute>
+                } />
+                <Route path="/reportes" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para poder explorar e inspeccionar el mapa de incidencias.">
+                    <ExploreReportsScreen reports={reports} />
+                  </PrivateRoute>
+                } />
+                <Route path="/mis-reportes" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para ver tus reportes.">
+                    <MyReportsScreen reports={reports} userProfile={userProfile} />
+                  </PrivateRoute>
+                } />
+                <Route path="/explorar-mapa" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para poder explorar e inspeccionar el mapa de incidencias.">
+                    <ExplorarMapaScreen reports={reports} onReportLocation={handleReportAtLocation} />
+                  </PrivateRoute>
+                } />
+                <Route path="/comunidad" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para ver los perfiles de la comunidad y repasar sus reportes.">
+                    <CommunityScreen userProfile={userProfile} isLoggedIn={isLoggedIn} reports={reports} />
+                  </PrivateRoute>
+                } />
+                <Route path="/editar-perfil" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para modificar tu perfil.">
+                    <EditProfileScreen userProfile={userProfile} setUserProfile={setUserProfile} />
+                  </PrivateRoute>
+                } />
+                <Route path="/reporte/:id" element={
+                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para poder explorar e inspeccionar el mapa de incidencias.">
+                    <ReportDetailScreen reports={reports} onAddComment={handleAddComment} currentUser={userProfile} />
+                  </PrivateRoute>
+                } />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
             </motion.div>
           </AnimatePresence>
         </div>
 
         {/* Persistent Brand Footer */}
-        <Footer setCurrentPage={handleSetPage} />
+        <Footer />
       </div>
 
+      {/* Verification Modal Popup */}
+      <AnimatePresence>
+        {showVerificationModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0A1F10]/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-[#CDE1D1]"
+            >
+              <div className="bg-gradient-to-tr from-[#1E8344] via-[#33A25A] to-[#8AD690] p-6 text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-full mx-auto flex items-center justify-center backdrop-blur-md mb-4 shadow-lg border border-white/30">
+                  <Mail className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-black text-white tracking-tight">Verifica tu Correo</h3>
+              </div>
+              <div className="p-8 text-center space-y-6">
+                <div className="space-y-2">
+                  <p className="text-sm text-[#4F6C56] font-medium leading-relaxed">
+                    Hemos enviado un enlace de confirmación a:
+                  </p>
+                  <p className="font-bold text-[#143B20] bg-[#F3FAF4] border border-[#CDE1D1] py-2 px-4 rounded-xl inline-block truncate max-w-full text-sm">
+                    {verificationEmail || "tu correo"}
+                  </p>
+                </div>
+                <p className="text-xs text-[#557C5E] font-medium leading-relaxed">
+                  Por favor, revisa tu bandeja de entrada o carpeta de spam y haz click en el enlace para activar tu cuenta. Una vez verificada, podrás iniciar sesión.
+                </p>
+                <div className="pt-2">
+                  <button
+                    onClick={() => {
+                      setShowVerificationModal(false);
+                      navigate('/login');
+                    }}
+                    className="w-full bg-[#1E8344] hover:bg-[#166634] text-white font-bold py-3.5 rounded-xl transition-all shadow-md active:scale-95 text-sm uppercase tracking-wider cursor-pointer"
+                  >
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {isLoggingOut && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[#0A1F10]/70 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full border border-[#CDE1D1] text-center"
+            >
+              <div className="mx-auto w-16 h-16 bg-[#F3FAF4] rounded-full flex items-center justify-center mb-4 border border-[#CDE1D1]">
+                <Loader2 className="w-8 h-8 text-[#1E8344] animate-spin" />
+              </div>
+              <h3 className="text-xl font-black text-[#143B20] tracking-tight mb-2">Cerrando sesión</h3>
+              <p className="text-sm text-[#557B5E] font-medium leading-relaxed">
+                Por favor espera un momento mientras cerramos tu sesión de forma segura...
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
