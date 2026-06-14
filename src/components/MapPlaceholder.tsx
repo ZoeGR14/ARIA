@@ -4,8 +4,9 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MAP_PINS, INITIAL_REPORTS } from '../data/mockData';
+import { MAP_PINS } from '../data/mockData';
 import { IncidentReport } from '../types';
+import { getReportesActivos } from '../services/reportesService';
 import { 
   Trash2, Droplets, Factory, Plus, Minus, Target, X, 
   Search, Layers, Share2, Copy, Check, Info, Compass, Loader2
@@ -156,7 +157,9 @@ export default function MapPlaceholder({
   const searchMarkerRef = useRef<L.Marker | null>(null);
   const routePolylineRef = useRef<L.Polyline | null>(null);
 
-  const activePin = (reports || INITIAL_REPORTS).find(r => r.id === selectedPinId);
+  const [localReports, setLocalReports] = useState<IncidentReport[]>([]);
+
+  const activePin = (reports ?? localReports).find(r => r.id === selectedPinId);
 
   const fetchNominatimQuery = async (queryText: string) => {
     if (queryText.trim().length <= 2) {
@@ -209,6 +212,10 @@ export default function MapPlaceholder({
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, showSuggestions]);
+
+  useEffect(() => {
+    getReportesActivos().then(setLocalReports);
+  }, []);
 
   // Initialize Map
   useEffect(() => {
@@ -305,7 +312,7 @@ export default function MapPlaceholder({
       'ENV-2023-8399': [19.4200, -99.1400],
     };
 
-    const activeList = reports || INITIAL_REPORTS;
+    const activeList = reports ?? localReports;
     const foundRep = activeList.find(r => r.id === focusedReportId);
 
     if (foundRep) {
@@ -315,7 +322,7 @@ export default function MapPlaceholder({
         map.setView(coords, 14, { animate: true, duration: 0.8 });
       }
     }
-  }, [focusedReportId, reports]);
+  }, [focusedReportId, reports, localReports]);
 
   // Sync Markers & Click Actions with Solid Symbology (Colored bubbles with solid coloring)
   useEffect(() => {
@@ -328,7 +335,7 @@ export default function MapPlaceholder({
     });
     markersRef.current = {};
 
-    const activeList = reports || INITIAL_REPORTS;
+    const activeList = reports ?? localReports;
 
     const REPORT_COORDINATES: Record<string, [number, number]> = {
       'ENV-2023-8472': [19.4150, -99.1620],
@@ -343,14 +350,19 @@ export default function MapPlaceholder({
     activeList.forEach((rep) => {
       const coords = REPORT_COORDINATES[rep.id] || parseCoordinates(rep.coordinates);
 
-      // Match colors perfectly with the legendary symbols in the legend
-      let pinColor = '#DC2626'; // High-severity Residuos default
+      // Color by severity: Alta=Rojo, Media=Naranja, Baja=Amarillo
+      let pinColor = '#DC2626';
+      if (rep.severity.toLowerCase().includes('media')) {
+        pinColor = '#F97316';
+      } else if (rep.severity.toLowerCase().includes('baja')) {
+        pinColor = '#EAB308';
+      }
+
+      // Emoji by category
       let pinEmoji = '🗑️';
       if (rep.category === 'Agua Contaminada' || rep.category === 'Agua') {
-        pinColor = '#F97316';
         pinEmoji = '💧';
       } else if (rep.category === 'Calidad del Aire') {
-        pinColor = '#2563EB';
         pinEmoji = '🏭';
       }
 
@@ -386,7 +398,7 @@ export default function MapPlaceholder({
 
       markersRef.current[rep.id] = marker;
     });
-  }, [reports]);
+  }, [reports, localReports]);
 
   // Handle address searches mimicking Google Maps search queries
   const handleCalculateRoute = () => {
@@ -916,7 +928,11 @@ export default function MapPlaceholder({
           'ENV-2023-8399': [19.4200, -99.1400],
         };
         const coords = REPORT_COORDINATES[activePin.id] || parseCoordinates(activePin.coordinates);
-        const isHighSeverity = activePin.severity.toUpperCase().includes('ALTA');
+        const pinSeverityColor = activePin.severity.toLowerCase().includes('alta')
+          ? '#DC2626'
+          : activePin.severity.toLowerCase().includes('media')
+          ? '#F97316'
+          : '#EAB308';
 
         return (
           <div className="absolute right-4 top-4 w-[300px] bg-white rounded-2xl shadow-2xl border border-[#CBDCD0] overflow-hidden z-20 sm:block hidden transition-all max-h-[480px] flex flex-col animate-slide-up">
@@ -939,9 +955,7 @@ export default function MapPlaceholder({
                 referrerPolicy="no-referrer"
               />
               {/* Severity Card floating badge */}
-              <span className={`absolute top-3 right-3 text-[10px] font-black px-2.5 py-1 rounded-full tracking-wide shadow-sm text-white uppercase ${
-                isHighSeverity ? 'bg-[#DC2626]' : 'bg-[#F97316]'
-              }`}>
+              <span className="absolute top-3 right-3 text-[10px] font-black px-2.5 py-1 rounded-full tracking-wide shadow-sm text-white uppercase" style={{ backgroundColor: pinSeverityColor }}>
                 {activePin.severity}
               </span>
             </div>

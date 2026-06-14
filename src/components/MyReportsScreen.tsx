@@ -4,7 +4,8 @@
  */
 
 import React, { useMemo } from 'react';
-import { PageId, IncidentReport } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { IncidentReport } from '../types';
 import { Trash2, Droplets, Wind, MapPin, Calendar, PlusCircle, ArrowRight, Eye, MessageSquare, FileText } from 'lucide-react';
 
 interface MyReportsScreenProps {
@@ -15,16 +16,13 @@ interface MyReportsScreenProps {
     role: string;
     level: string;
   };
-  setCurrentPage: (page: PageId) => void;
-  onSelectReportId: (id: string) => void;
 }
 
 export default function MyReportsScreen({
   reports,
   userProfile,
-  setCurrentPage,
-  onSelectReportId,
 }: MyReportsScreenProps) {
+  const navigate = useNavigate();
   // Filter reports specifically created by Carlos Mendoza (or logged in user)
   const myReports = useMemo(() => {
     return reports.filter((report) => report.authorName === userProfile.name);
@@ -69,7 +67,7 @@ export default function MyReportsScreen({
           </div>
           
           <button
-            onClick={() => setCurrentPage('reportar')}
+            onClick={() => navigate('/reportar')}
             className="self-start sm:self-auto bg-[#05682C] text-white font-bold py-3 px-5 rounded-full hover:bg-[#045524] transition-colors flex items-center space-x-2 text-xs shadow-md shadow-[#05682C]/10 cursor-pointer"
           >
             <PlusCircle className="w-4.5 h-4.5" />
@@ -173,10 +171,7 @@ export default function MyReportsScreen({
                     </div>
 
                     <button
-                      onClick={() => {
-                        onSelectReportId(report.id);
-                        setCurrentPage('detalles-incidencia');
-                      }}
+                      onClick={() => navigate('/reporte/' + report.id)}
                       className="inline-flex items-center gap-1.5 text-xs font-black text-[#1E8344] hover:text-[#143B20] transition-colors cursor-pointer"
                     >
                       <span>Ver Detalles</span>
@@ -197,7 +192,7 @@ export default function MyReportsScreen({
               Aún no has enviado ningún reporte ambiental. ¡Sé un agente de cambio y reporta tu primera incidencia ahora mismo!
             </p>
             <button
-              onClick={() => setCurrentPage('reportar')}
+              onClick={() => navigate('/reportar')}
               className="bg-[#05682C] text-white hover:bg-[#045524] transition-colors font-bold py-3 px-6 rounded-full text-xs shadow-md mt-2 inline-flex items-center gap-1.5 cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />

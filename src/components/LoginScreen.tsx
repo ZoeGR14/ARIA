@@ -4,24 +4,23 @@
  */
 
 import React, { useState } from 'react';
-import { PageId } from '../types';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 interface LoginScreenProps {
-  setCurrentPage: (page: PageId) => void;
   setIsLoggedIn: (login: boolean) => void;
-  authMessage?: string | null;
   setUserProfile: (profile: any) => void;
   onShowVerification: (email: string) => void;
 }
 
-export default function LoginScreen({ 
-  setCurrentPage, 
+export default function LoginScreen({
   setIsLoggedIn,
-  authMessage = null,
   setUserProfile,
-  onShowVerification
+  onShowVerification,
 }: LoginScreenProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const authMessage = (location.state as any)?.authMessage ?? null;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -82,7 +81,7 @@ export default function LoginScreen({
 
       setUserProfile(userProfile);
       setIsLoggedIn(true);
-      setCurrentPage('dashboard');
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Error de red. Intenta de nuevo.');
     } finally {
@@ -223,12 +222,13 @@ export default function LoginScreen({
               </button>
 
 
+
               {/* Redirect footer */}
               <div className="text-center pt-2 text-xs font-bold text-[#4F6C56]">
                 <span>¿No tienes cuenta? </span>
                 <button
                   type="button"
-                  onClick={() => setCurrentPage('signup')}
+                  onClick={() => navigate('/signup')}
                   className="text-[#1E8344] hover:underline"
                 >
                   Regístrate

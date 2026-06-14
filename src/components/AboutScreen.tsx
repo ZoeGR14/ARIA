@@ -4,7 +4,7 @@
  */
 
 import React from "react";
-import { PageId } from "../types";
+import { useNavigate } from "react-router-dom";
 import {
    ShieldCheck,
    Heart,
@@ -14,11 +14,8 @@ import {
    CheckCircle2,
 } from "lucide-react";
 
-interface AboutScreenProps {
-   setCurrentPage: (page: PageId) => void;
-}
-
-export default function AboutScreen({ setCurrentPage }: AboutScreenProps) {
+export default function AboutScreen() {
+   const navigate = useNavigate();
    return (
       <div className="bg-[#FAFDF9] py-12 px-4 md:px-8 min-h-[calc(100vh-68px)]">
          <div className="max-w-4xl mx-auto space-y-12">
@@ -118,7 +115,7 @@ export default function AboutScreen({ setCurrentPage }: AboutScreenProps) {
             {/* Back navigation CTA */}
             <div className="text-center">
                <button
-                  onClick={() => setCurrentPage("inicio")}
+                  onClick={() => navigate("/")}
                   className="bg-[#05682C] text-white font-bold py-3.5 px-6 rounded-full hover:bg-[#045524] transition-all text-sm shadow-md"
                >
                   ← Ir a Inicio
