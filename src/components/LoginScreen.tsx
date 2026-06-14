@@ -21,12 +21,17 @@ export default function LoginScreen({
   const navigate = useNavigate();
   const location = useLocation();
   const authMessage = (location.state as any)?.authMessage ?? null;
+  const [view, setView] = useState<'login' | 'forgot-password'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMessage, setForgotMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [isForgotLoading, setIsForgotLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +94,35 @@ export default function LoginScreen({
     }
   };
 
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotMessage(null);
+    setIsForgotLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:3001/api/auth/solicitar-recuperacion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ correoElectronico: forgotEmail }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.mensaje || 'Error al solicitar recuperación');
+      }
+
+      setForgotMessage({ type: 'success', text: data.mensaje || 'Enlace enviado al correo' });
+      setForgotEmail('');
+    } catch (err: any) {
+      setForgotMessage({ type: 'error', text: err.message || 'Error de red al conectar' });
+    } finally {
+      setIsForgotLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-68px)] bg-[#FCFDFB] flex flex-col justify-between">
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12">
@@ -135,14 +169,14 @@ export default function LoginScreen({
               </div>
             )}
 
-            {/* Inputs & Fields */}
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="text-center space-y-1">
-                <h1 className="text-2xl font-bold text-[#143B20] tracking-tight">Bienvenido de nuevo</h1>
-                <p className="text-xs text-[#557B5E] font-medium leading-relaxed">
-                  Ingresa tus credenciales para acceder a la plataforma ambiental
-                </p>
-              </div>
+            {view === 'login' ? (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="text-center space-y-1">
+                  <h1 className="text-2xl font-bold text-[#143B20] tracking-tight">Bienvenido de nuevo</h1>
+                  <p className="text-xs text-[#557B5E] font-medium leading-relaxed">
+                    Ingresa tus credenciales para acceder a la plataforma ambiental
+                  </p>
+                </div>
 
               {/* Email field */}
               <div className="space-y-1.5">
@@ -206,7 +240,11 @@ export default function LoginScreen({
                 </label>
                 <button 
                   type="button"
-                  className="text-[#1E8344] hover:underline"
+                  onClick={() => {
+                    setView('forgot-password');
+                    setError(null);
+                  }}
+                  className="text-[#1E8344] hover:underline cursor-pointer"
                 >
                   Olvidé mi contraseña
                 </button>
@@ -229,12 +267,78 @@ export default function LoginScreen({
                 <button
                   type="button"
                   onClick={() => navigate('/signup')}
-                  className="text-[#1E8344] hover:underline"
+                  className="text-[#1E8344] hover:underline cursor-pointer"
                 >
                   Regístrate
                 </button>
               </div>
             </form>
+            ) : (
+              <form onSubmit={handleForgotSubmit} className="space-y-6">
+                <div className="text-center space-y-1">
+                  <h1 className="text-2xl font-bold text-[#143B20] tracking-tight">Recuperar contraseña</h1>
+                  <p className="text-xs text-[#557B5E] font-medium leading-relaxed">
+                    Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña
+                  </p>
+                </div>
+
+                {forgotMessage && (
+                  <div className={`${
+                    forgotMessage.type === 'success' 
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                      : 'bg-rose-50 border-rose-200 text-rose-800'
+                    } border rounded-xl p-3.5 flex items-start gap-2.5 text-xs shadow-xs`}
+                  >
+                    <span className="text-sm shrink-0 mt-0.5">
+                      {forgotMessage.type === 'success' ? '✓' : '⚠️'}
+                    </span>
+                    <div className="font-semibold leading-relaxed">
+                      {forgotMessage.text}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-[#143B20] block uppercase tracking-wider">
+                    Correo electrónico
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                      <Mail className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="email"
+                      required
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="tu@correo.com"
+                      className="w-full bg-[#FAFDFC] border border-[#CDE1D1] rounded-xl py-3 pl-10 pr-4 text-sm text-[#143B20] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1E8344]/20 focus:border-[#1E8344]"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 space-y-3">
+                  <button
+                    type="submit"
+                    disabled={isForgotLoading}
+                    className="w-full bg-[#05682C] text-white font-bold py-3.5 rounded-xl hover:bg-[#045524] disabled:opacity-70 disabled:cursor-not-allowed hover:shadow-md transition-all text-sm tracking-wide cursor-pointer"
+                  >
+                    {isForgotLoading ? 'Enviando enlace...' : 'Enviar enlace'}
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView('login');
+                      setForgotMessage(null);
+                    }}
+                    className="w-full bg-white text-[#143B20] border border-[#CDE1D1] font-bold py-3.5 rounded-xl hover:bg-[#F3FAF4] transition-all text-sm tracking-wide cursor-pointer"
+                  >
+                    Volver a iniciar sesión
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </div>

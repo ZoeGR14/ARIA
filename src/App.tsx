@@ -14,6 +14,7 @@ import LandingScreen from './components/LandingScreen';
 import DashboardScreen from './components/DashboardScreen';
 import LoginScreen from './components/LoginScreen';
 import SignupScreen from './components/SignupScreen';
+import ResetPasswordScreen from './components/ResetPasswordScreen';
 import ReportFormScreen from './components/ReportFormScreen';
 import ReportDetailScreen from './components/ReportDetailScreen';
 import ExploreReportsScreen from './components/ExploreReportsScreen';
@@ -521,6 +522,7 @@ export default function App() {
                 <Route path="/" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LandingScreen reports={reports} />} />
                 <Route path="/login" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LoginScreen setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} onShowVerification={handleShowVerification} />} />
                 <Route path="/signup" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <SignupScreen setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} onShowVerification={handleShowVerification} />} />
+                <Route path="/reset-password" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <ResetPasswordScreen />} />
                 <Route path="/acerca-de" element={<AboutScreen />} />
                 <Route path="/dashboard" element={
                   <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para acceder a esta sección.">
