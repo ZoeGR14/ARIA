@@ -42,8 +42,13 @@ const CARLOS_MENDOZA_PROFILE = {
   contributionsCount: 34,
 };
 
+let isLoggingOutFlag = false;
+
 function PrivateRoute({ children, isLoggedIn, message }: { children: React.ReactNode; isLoggedIn: boolean; message?: string }) {
-  if (!isLoggedIn) return <Navigate to="/login" state={{ authMessage: message }} replace />;
+  if (!isLoggedIn) {
+    if (isLoggingOutFlag) return null;
+    return <Navigate to="/login" state={{ authMessage: message }} replace />;
+  }
   return <>{children}</>;
 }
 
@@ -452,6 +457,7 @@ export default function App() {
               {/* Logout button */}
               <button
                 onClick={async () => {
+                  isLoggingOutFlag = true;
                   setIsLoggingOut(true);
                   try {
                     const currentToken = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
@@ -484,7 +490,10 @@ export default function App() {
                     sessionStorage.removeItem('aria_user');
                     setIsLoggedIn(false);
                     setIsLoggingOut(false);
-                    navigate('/');
+                    navigate('/', { replace: true });
+                    setTimeout(() => {
+                      isLoggingOutFlag = false;
+                    }, 100);
                   }
                 }}
                 disabled={isLoggingOut}
