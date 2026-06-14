@@ -8,8 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import { IncidentReport, Contributor } from '../types';
 import MapPlaceholder from './MapPlaceholder';
 import { getContributores } from '../services/rankingService';
-import { motion } from 'motion/react';
-import { ClipboardList, ShieldCheck, Users, Globe, Trash2, Droplets, Factory, ArrowRight, Award, Target } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { ClipboardList, ShieldCheck, Users, Globe, Trash2, Droplets, Factory, ArrowRight, Award, Target, MapPinOff, X, MapPin } from 'lucide-react';
 
 interface LandingScreenProps {
   reports: IncidentReport[];
@@ -28,22 +28,37 @@ export default function LandingScreen({
   // Estado para la ubicación
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
 
+  // Modal de alerta de permisos de ubicación
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationModalMessage, setLocationModalMessage] = useState('');
+  const [locationModalTitle, setLocationModalTitle] = useState('Aviso de Ubicación');
+  const [locationModalIcon, setLocationModalIcon] = useState<'error' | 'success'>('error');
+
   const handleGoToMyCurrentLocation = () => {
     if (!navigator.geolocation) {
-      alert("Tu navegador no soporta geolocalización.");
+      setLocationModalTitle("Geolocalización No Soportada");
+      setLocationModalMessage("Tu navegador no soporta geolocalización. Por favor, intenta usar otro navegador o ingresa la dirección manualmente.");
+      setLocationModalIcon("error");
+      setShowLocationModal(true);
       return;
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
         setUserLocation({ lat: latitude, lng: longitude });
-        alert(`Ubicación detectada: ${latitude}, ${longitude}`);
+        setLocationModalTitle("Ubicación Detectada");
+        setLocationModalMessage(`Hemos detectado tu ubicación en: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}.`);
+        setLocationModalIcon("success");
+        setShowLocationModal(true);
         // NOTA: Para que el mapa se mueva, MapPlaceholder necesita recibir 
         // estas coordenadas. Por ahora, esto confirma que el GPS funciona.
       },
       (err) => {
         console.error(err);
-        alert("No pudimos obtener tu ubicación.");
+        setLocationModalTitle("Permiso de Ubicación Denegado");
+        setLocationModalMessage("No pudimos obtener tu ubicación. Asegúrate de otorgar permisos de geolocalización en tu navegador.");
+        setLocationModalIcon("error");
+        setShowLocationModal(true);
       },
       { enableHighAccuracy: false, timeout: 10000 }
     );
@@ -274,6 +289,54 @@ export default function LandingScreen({
           </div>
         </div>
       </section>
+      {/* Location Permission Modal */}
+      <AnimatePresence>
+        {showLocationModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0A1F10]/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-[#CDE1D1]"
+            >
+              <div className="bg-gradient-to-tr from-[#E1ECE3] to-[#F3FAF4] p-6 text-center border-b border-[#CDE1D1] relative">
+                <button 
+                  onClick={() => setShowLocationModal(false)}
+                  className="absolute top-4 right-4 p-1 rounded-full text-[#557B5E] hover:bg-white hover:text-[#143B20] transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center shadow-sm border border-[#CDE1D1] mb-4">
+                  {locationModalIcon === 'error' ? (
+                    <MapPinOff className="w-8 h-8 text-[#E84C3D]" />
+                  ) : (
+                    <MapPin className="w-8 h-8 text-[#1E8344]" />
+                  )}
+                </div>
+                <h3 className="text-xl font-black text-[#143B20] tracking-tight">{locationModalTitle}</h3>
+              </div>
+              <div className="p-8 text-center space-y-6">
+                <p className="text-sm text-[#4F6C56] font-medium leading-relaxed">
+                  {locationModalMessage}
+                </p>
+                <div className="pt-2">
+                  <button
+                    onClick={() => setShowLocationModal(false)}
+                    className="w-full bg-[#1E8344] hover:bg-[#166634] text-white font-bold py-3.5 rounded-xl transition-all shadow-md active:scale-95 text-sm uppercase tracking-wider cursor-pointer"
+                  >
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
-} 
+}

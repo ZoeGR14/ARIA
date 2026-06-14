@@ -8,8 +8,9 @@ import { useNavigate } from 'react-router-dom';
 import { IncidentReport, ReportCategory } from '../types';
 import {
   Trash2, Droplets, Wind, Search, MapPin, Target, Send, Image as ImageIcon,
-  CheckCircle, Loader2, Compass
+  CheckCircle, Loader2, Compass, MapPinOff, AlertTriangle, X
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { crearReporte } from '../services/reportesService';
@@ -90,6 +91,12 @@ export default function ReportFormScreen({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [dynamicSuggestions, setDynamicSuggestions] = useState<typeof SUGGESTIONS>([]);
   const [isSearchingSuggestions, setIsSearchingSuggestions] = useState(false);
+
+  // Modal de alertas generales (ubicación, éxito, errores)
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationModalMessage, setLocationModalMessage] = useState('');
+  const [locationModalTitle, setLocationModalTitle] = useState('Aviso de Ubicación');
+  const [locationModalIcon, setLocationModalIcon] = useState<'error' | 'success'>('error');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -312,7 +319,10 @@ export default function ReportFormScreen({
     setAddress('Buscando señal de satélite GPS...');
 
     if (!navigator.geolocation) {
-      alert("Tu navegador no soporta geolocalización");
+      setLocationModalTitle("Geolocalización No Soportada");
+      setLocationModalMessage("Tu navegador no soporta geolocalización. Por favor, intenta usar otro navegador o ingresa la dirección manualmente.");
+      setLocationModalIcon("error");
+      setShowLocationModal(true);
       setIsLocating(false);
       return;
     }
@@ -342,7 +352,10 @@ export default function ReportFormScreen({
       },
       (error) => {
         console.error("Error GPS:", error);
-        alert("No pudimos obtener tu ubicación real. Revisa los permisos.");
+        setLocationModalTitle("Permiso de Ubicación Denegado");
+        setLocationModalMessage("No pudimos obtener tu ubicación real. Asegúrate de otorgar permisos de geolocalización en tu navegador para usar esta función.");
+        setLocationModalIcon("error");
+        setShowLocationModal(true);
         setIsLocating(false);
       },
       { enableHighAccuracy: true }
@@ -358,11 +371,17 @@ export default function ReportFormScreen({
 
   const processFile = (file: File) => {
     if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
-      alert("Error: Solo se aceptan formatos JPEG o PNG.");
+      setLocationModalTitle("Formato no Válido");
+      setLocationModalMessage("Solo se aceptan archivos en formato JPEG o PNG.");
+      setLocationModalIcon("error");
+      setShowLocationModal(true);
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert("Error: El archivo supera los 5MB permitidos.");
+      setLocationModalTitle("Archivo muy Grande");
+      setLocationModalMessage("El archivo supera el límite de 5MB permitidos.");
+      setLocationModalIcon("error");
+      setShowLocationModal(true);
       return;
     }
 
@@ -415,11 +434,14 @@ export default function ReportFormScreen({
     }
 
     try {
-        const token = localStorage.getItem('token') || '';
+        const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token') || '';
         const dataDelBackend = await crearReporte(formData, token);
 
         console.log("¡Reporte guardado en BD!", dataDelBackend);
-        alert("¡Reporte enviado y guardado exitosamente!");
+        setLocationModalTitle("¡Reporte Enviado!");
+        setLocationModalMessage("Tu reporte ha sido enviado y guardado exitosamente.");
+        setLocationModalIcon("success");
+        setShowLocationModal(true);
 
         const newId = dataDelBackend.id || `ENV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
         
@@ -466,7 +488,10 @@ export default function ReportFormScreen({
 
     } catch (error) {
         console.error("Error de envío:", error);
-        alert("Hubo un problema conectando con el backend.");
+        setLocationModalTitle("Error de Envío");
+        setLocationModalMessage("Hubo un problema conectando con el servidor. Por favor, intenta de nuevo.");
+        setLocationModalIcon("error");
+        setShowLocationModal(true);
     } finally {
         setIsSubmitting(false);
     }
@@ -770,6 +795,55 @@ export default function ReportFormScreen({
         </form>
 
       </div>
+
+      {/* Location Permission Modal */}
+      <AnimatePresence>
+        {showLocationModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0A1F10]/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-[#CDE1D1]"
+            >
+              <div className="bg-gradient-to-tr from-[#E1ECE3] to-[#F3FAF4] p-6 text-center border-b border-[#CDE1D1] relative">
+                <button 
+                  onClick={() => setShowLocationModal(false)}
+                  className="absolute top-4 right-4 p-1 rounded-full text-[#557B5E] hover:bg-white hover:text-[#143B20] transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center shadow-sm border border-[#CDE1D1] mb-4">
+                  {locationModalIcon === 'error' ? (
+                    <MapPinOff className="w-8 h-8 text-[#E84C3D]" />
+                  ) : (
+                    <CheckCircle className="w-8 h-8 text-[#1E8344]" />
+                  )}
+                </div>
+                <h3 className="text-xl font-black text-[#143B20] tracking-tight">{locationModalTitle}</h3>
+              </div>
+              <div className="p-8 text-center space-y-6">
+                <p className="text-sm text-[#4F6C56] font-medium leading-relaxed">
+                  {locationModalMessage}
+                </p>
+                <div className="pt-2">
+                  <button
+                    onClick={() => setShowLocationModal(false)}
+                    className="w-full bg-[#1E8344] hover:bg-[#166634] text-white font-bold py-3.5 rounded-xl transition-all shadow-md active:scale-95 text-sm uppercase tracking-wider cursor-pointer"
+                  >
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
