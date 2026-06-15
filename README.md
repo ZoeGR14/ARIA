@@ -792,6 +792,107 @@ Content-Type: multipart/form-data
 
 ---
 
+### Obtener mis reportes (Usuario Autenticado)
+
+#### Endpoint
+
+```http
+GET /reportes/mis-reportes
+```
+
+#### Headers
+
+```http
+Authorization: Bearer <JWT>
+```
+
+#### Respuesta
+
+```json
+[
+  {
+    "id": 2,
+    "descripcion": "Fuga de agua en banqueta pública",
+    "fecha_creacion": "2026-06-13T19:22:15.000Z",
+    "fecha_actualizacion": "2026-06-13T19:22:15.000Z",
+    "severidad": "Media",
+    "url_evidencia_foto": "http://localhost:3001/uploads/1718345732000-987654321.jpg",
+    "puntos_asignados": 0,
+    "estado_puntos": "Pendiente",
+    "usuario_id": 1,
+    "estado_id": 1,
+    "categoria_id": 2,
+    "latitude": 19.4150,
+    "longitude": -99.1620,
+    "categoria": {
+      "id": 2,
+      "nombre": "Agua y Alcantarillado",
+      "color_hex": "#33A8FF"
+    },
+    "estado": {
+      "id": 1,
+      "nombre": "Recibido"
+    },
+    "usuario": {
+      "id": 1,
+      "nombre_completo": "Juan Pérez"
+    }
+  }
+]
+```
+
+---
+
+### Obtener reportes de un usuario específico
+
+#### Endpoint
+
+```http
+GET /reportes/usuario/:userId
+```
+
+Ejemplo:
+```http
+GET /reportes/usuario/1
+```
+
+#### Respuesta
+
+```json
+[
+  {
+    "id": 1,
+    "descripcion": "Acumulación de basura en la esquina del parque principal.",
+    "fecha_creacion": "2026-06-13T19:20:14.466Z",
+    "fecha_actualizacion": "2026-06-13T19:20:14.466Z",
+    "severidad": "Media",
+    "url_evidencia_foto": "http://localhost:3001/uploads/1718345732000-987654321.jpg",
+    "puntos_asignados": 0,
+    "estado_puntos": "Pendiente",
+    "usuario_id": 1,
+    "estado_id": 1,
+    "categoria_id": 1,
+    "latitude": 19.4150,
+    "longitude": -99.1620,
+    "categoria": {
+      "id": 1,
+      "nombre": "Residuos Sólidos",
+      "color_hex": "#FF5733"
+    },
+    "estado": {
+      "id": 1,
+      "nombre": "Recibido"
+    },
+    "usuario": {
+      "id": 1,
+      "nombre_completo": "Juan Pérez"
+    }
+  }
+]
+```
+
+---
+
 ### Cómo probar los reportes con Postman o Thunder Client
 
 1. **Iniciar Sesión**: Envía un `POST` a `/auth/login` con las credenciales de prueba para obtener el token `JWT`.
@@ -803,6 +904,8 @@ Content-Type: multipart/form-data
    - Registra las claves (`descripcion`, `latitude`, `longitude`, `severidad`, `categoria_id`) como texto.
    - Registra la clave **`foto`**, cambia su tipo a **File/Archivo** en la herramienta de pruebas, y selecciona una imagen JPG/PNG del equipo.
    - Presiona enviar y valida que retorne la URL de acceso a la imagen subida en `url_evidencia_foto`.
+4. **Consultar mis reportes**: Envía un `GET` a `/reportes/mis-reportes` agregando la cabecera `Authorization` con valor `Bearer <TU_JWT_TOKEN>`.
+5. **Consultar reportes de otro usuario**: Envía un `GET` a `/reportes/usuario/:userId` (por ejemplo, `/reportes/usuario/1`).
 
 ---
 
