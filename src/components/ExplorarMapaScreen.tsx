@@ -55,7 +55,6 @@ export default function ExplorarMapaScreen({
             
             <MapPlaceholder
               reports={reports}
-              onSelectReportId={(id) => navigate('/reporte/' + id)}
               onReportLocation={onReportLocation}
             />
           </div>
