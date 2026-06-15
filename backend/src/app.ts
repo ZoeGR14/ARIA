@@ -11,6 +11,8 @@ import dashboardRoutes from "./routes/dashboardRoutes";
 import FCMRoutes from "./routes/FCMRoutes";
 import reportRoutes from "./routes/reportRoutes";
 
+import notificacionRoutes from "./routes/notificacionRoutes";
+
 const app = express();
 
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -30,5 +32,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/fcm",FCMRoutes);
 
 app.use("/api/reportes", reportRoutes);
+
+app.use("/api/notificaciones", notificacionRoutes);
 
 export default app;

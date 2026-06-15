@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../config/prisma";
+import { enviarNotificacionFCM } from "../services/fcm.service";
 
 export const getReportesActivos = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -187,7 +188,55 @@ export const crearReporte = async (req: Request, res: Response): Promise<void> =
             RETURNING id
         `;
 
-        res.status(201).json({ mensaje: "Reporte creado", id: result[0]?.id });
+        const newId = result[0]?.id;
+
+        if (severidadDb === "Alta" || severidadDb === "Critica") {
+            try {
+                const administradores = await prisma.$queryRaw<any[]>`
+                    SELECT u.id 
+                    FROM usuario u
+                    INNER JOIN administrador a ON u.id = a.id
+                `;
+
+                if (administradores.length > 0) {
+                    const adminIds = administradores.map(a => a.id);
+                    const mensajeAlerta = `¡Alerta! Nuevo reporte de severidad ${severidadDb}: ${descripcion.substring(0, 50)}...`;
+
+                    await prisma.notificacion.createMany({
+                        data: adminIds.map(id => ({
+                            usuario_id: id,
+                            mensaje: mensajeAlerta,
+                            tipo: 'SISTEMA_ALERTA',
+                            reporte_id: newId
+                        }))
+                    });
+
+                    const dispositivos = await prisma.dispositivo_usuario.findMany({
+                        where: { usuario_id: { in: adminIds } },
+                        select: { fcm_token: true }
+                    });
+
+                    const tokens = dispositivos.map(d => d.fcm_token);
+
+                    if (tokens.length > 0) {
+                        await enviarNotificacionFCM(
+                            tokens,
+                            `Reporte ${severidadDb} detectado`,
+                            mensajeAlerta,
+                            newId.toString()
+                        );
+                    }
+                }
+            } catch (notifyError) {
+                console.error("Error enviando notificaciones a administradores:", notifyError);
+            }
+        }
+
+        res.status(201).json({
+            mensaje: "Reporte creado exitosamente",
+            id: newId,
+            url_evidencia_foto: photoUrl
+        });
     } catch (error) {
         console.error("Error al crear reporte:", error);
         res.status(500).json({ mensaje: "Error al crear el reporte" });

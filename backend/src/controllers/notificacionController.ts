@@ -164,3 +164,66 @@ export const obtenerMisDispositivos = async (
     }
 
 };
+
+export const obtenerNotificaciones = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const usuarioId = req.user?.id;
+        if (!usuarioId) {
+            res.status(401).json({ mensaje: "No autenticado" });
+            return;
+        }
+
+        const notificaciones = await prisma.notificacion.findMany({
+            where: { usuario_id: usuarioId },
+            orderBy: { fecha_hora: 'desc' },
+            take: 50
+        });
+
+        res.json(notificaciones);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ mensaje: "Error al obtener notificaciones" });
+    }
+};
+
+export const marcarNotificacionLeida = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const usuarioId = req.user?.id;
+        const { id } = req.params;
+
+        if (!usuarioId) {
+            res.status(401).json({ mensaje: "No autenticado" });
+            return;
+        }
+
+        await prisma.notificacion.updateMany({
+            where: { id: parseInt(id), usuario_id: usuarioId },
+            data: { leido: true }
+        });
+
+        res.json({ mensaje: "Notificación marcada como leída" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ mensaje: "Error al marcar notificación" });
+    }
+};
+
+export const marcarTodasLeidas = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const usuarioId = req.user?.id;
+        if (!usuarioId) {
+            res.status(401).json({ mensaje: "No autenticado" });
+            return;
+        }
+
+        await prisma.notificacion.updateMany({
+            where: { usuario_id: usuarioId, leido: false },
+            data: { leido: true }
+        });
+
+        res.json({ mensaje: "Todas las notificaciones marcadas como leídas" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ mensaje: "Error al marcar notificaciones" });
+    }
+};
