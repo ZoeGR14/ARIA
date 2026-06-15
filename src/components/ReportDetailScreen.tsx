@@ -40,7 +40,7 @@ export default function ReportDetailScreen({
 }: ReportDetailScreenProps) {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const report = reports.find(r => r.id === id) ?? null;
+  const report = reports.find(r => String(r.id) === String(id)) ?? null;
   const [commentText, setCommentText] = useState('');
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);

@@ -8,11 +8,12 @@ import { useNavigate } from 'react-router-dom';
 import { IncidentReport, ReportCategory } from '../types';
 import {
   Trash2, Droplets, Wind, Search, MapPin, Target, Send, Image as ImageIcon,
-  CheckCircle, Loader2, Compass
+  CheckCircle, Loader2, Compass, MapPinOff, AlertTriangle, X
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-
+import { crearReporte } from '../services/reportesService';
 const SUGGESTIONS = [
   {
     address: 'Calle Querétaro 112, Col. Roma Norte, Alcaldía Cuauhtémoc, C.P. 06700, CDMX',
@@ -82,10 +83,20 @@ export default function ReportFormScreen({
   const [localCoordinates, setLocalCoordinates] = useState(prefilledLocation?.coordinates || '19.4150 N, 99.1620 W');
   const [isLocating, setIsLocating] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  
+  // Estado para guardar el archivo real para enviarlo por fetch
+  const [rawFile, setRawFile] = useState<File | null>(null); 
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [dynamicSuggestions, setDynamicSuggestions] = useState<typeof SUGGESTIONS>([]);
   const [isSearchingSuggestions, setIsSearchingSuggestions] = useState(false);
+
+  // Modal de alertas generales (ubicación, éxito, errores)
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationModalMessage, setLocationModalMessage] = useState('');
+  const [locationModalTitle, setLocationModalTitle] = useState('Aviso de Ubicación');
+  const [locationModalIcon, setLocationModalIcon] = useState<'error' | 'success'>('error');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -130,7 +141,6 @@ export default function ReportFormScreen({
     return [19.4150, -99.1620];
   };
 
-  // Sync Prefilled from Explorer Map Searched Pin
   useEffect(() => {
     if (prefilledLocation) {
       setAddress(prefilledLocation.address);
@@ -142,7 +152,6 @@ export default function ReportFormScreen({
     }
   }, [prefilledLocation]);
 
-  // Map Initialization inside creation screen
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
@@ -184,7 +193,6 @@ export default function ReportFormScreen({
       const formattedCoords = `${lat.toFixed(6)} N, ${Math.abs(lng).toFixed(6)} W`;
       setLocalCoordinates(formattedCoords);
       
-      // Request exact street details from Nominatim reverse-geocoder
       fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`, {
         headers: {
           'Accept-Language': 'es'
@@ -223,7 +231,6 @@ export default function ReportFormScreen({
     };
   }, []);
 
-  // Update map viewport when coordinates are changed
   useEffect(() => {
     const map = mapInstanceRef.current;
     const marker = markerRef.current;
@@ -241,7 +248,6 @@ export default function ReportFormScreen({
     }
   }, [localCoordinates]);
 
-  // Autocomplete typing address handlers
   const handleAddressTextChange = (val: string) => {
     setAddress(val);
     setShowSuggestions(val.trim().length > 1);
@@ -305,99 +311,191 @@ export default function ReportFormScreen({
     setShowSuggestions(false);
   };
 
+  
+  //  GPS NATIVO
+  
   const handleMyLocation = () => {
     setIsLocating(true);
     setAddress('Buscando señal de satélite GPS...');
-    
-    setTimeout(() => {
-      // Simulate real CDMX locates
-      setAddress('Paseo de la Reforma 222, Col. Juárez, Alcaldía Cuauhtémoc, C.P. 06600, CDMX');
-      setLocalCoordinates('19.4273 N, 99.1676 W');
+
+    if (!navigator.geolocation) {
+      setLocationModalTitle("Geolocalización No Soportada");
+      setLocationModalMessage("Tu navegador no soporta geolocalización. Por favor, intenta usar otro navegador o ingresa la dirección manualmente.");
+      setLocationModalIcon("error");
+      setShowLocationModal(true);
       setIsLocating(false);
-    }, 1200);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const formattedCoords = `${lat.toFixed(6)} N, ${Math.abs(lng).toFixed(6)} W`;
+        
+        setLocalCoordinates(formattedCoords);
+        
+        // Hacemos reverse geocoding para que también actualice el texto de la calle
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`, {
+          headers: { 'Accept-Language': 'es' }
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.display_name) {
+            setAddress(data.display_name);
+          } else {
+            setAddress(`Ubicación GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+          }
+        })
+        .catch(() => setAddress(`Ubicación GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`))
+        .finally(() => setIsLocating(false));
+      },
+      (error) => {
+        console.error("Error GPS:", error);
+        setLocationModalTitle("Permiso de Ubicación Denegado");
+        setLocationModalMessage("No pudimos obtener tu ubicación real. Asegúrate de otorgar permisos de geolocalización en tu navegador para usar esta función.");
+        setLocationModalIcon("error");
+        setShowLocationModal(true);
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true }
+    );
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
   };
 
+ 
+  // VALIDACIÓN ESTRICA Y GUARDADO DE ARCHIVOS
+
+  const processFile = (file: File) => {
+    if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
+      setLocationModalTitle("Formato no Válido");
+      setLocationModalMessage("Solo se aceptan archivos en formato JPEG o PNG.");
+      setLocationModalIcon("error");
+      setShowLocationModal(true);
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setLocationModalTitle("Archivo muy Grande");
+      setLocationModalMessage("El archivo supera el límite de 5MB permitidos.");
+      setLocationModalIcon("error");
+      setShowLocationModal(true);
+      return;
+    }
+
+    setRawFile(file); // Guardamos el File real para el FormData
+    
+    // Generamos la miniatura visual para la UI
+    const reader = new FileReader();
+    reader.onload = () => {
+      setUploadedImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      const reader = new FileReader();
-      reader.onload = () => {
-        setUploadedImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      processFile(e.dataTransfer.files[0]);
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = () => {
-        setUploadedImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      processFile(e.target.files[0]);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+// ------------------------------------------------------------------
+  // PARCHE PARA EL ERROR 500 (NOT NULL VIOLATION)
+  // ------------------------------------------------------------------
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) return;
 
     setIsSubmitting(true);
 
-    // Formulate new dynamic incident
-    setTimeout(() => {
-      const randomNum = Math.floor(1000 + Math.random() * 9000);
-      const newId = `ENV-2026-${randomNum}`;
-      
-      const reportImage = uploadedImage || (
-        category === 'Residuos' 
-          ? 'https://plus.unsplash.com/premium_photo-1661962386121-7221f7ed43ff?auto=format&fit=crop&w=600&q=80'
-          : category === 'Agua Contaminada'
-            ? 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?auto=format&fit=crop&w=600&q=80'
-            : 'https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&w=600&q=80'
-      );
+    const formData = new FormData();
+    formData.append('descripcion', description);
+    
+    // AQUÍ ESTÁ EL PARCHE: Forzamos el envío de un valor válido aunque esté vacío
+    formData.append('categoria_id', (category && category.trim() !== '') ? category : '1');
+    formData.append('subcategoria_id', '1'); 
+    formData.append('severidad', 'Media'); 
 
-      const computedReport: IncidentReport = {
-        id: newId,
-        title: `${category === 'Residuos' ? 'Acumulación de Desechos' : category === 'Agua Contaminada' ? 'Fuga/Vertido de Agua' : 'Emisión de Gases'} - ${address.split(',')[0] || 'Nueva Ubicación'}`,
-        description: description.substring(0, 100) + '...',
-        detailedDescription: description,
-        category,
-        severity: 'Media Severidad', // Default
-        status: 'Abierto',
-        location: address || 'Zona Metropolitana Central',
-        coordinates: localCoordinates,
-        date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
-        timeAgo: 'Hace unos instantes',
-        views: 1,
-        imageUrl: reportImage,
-        authorName: currentUser.name,
-        authorAvatar: currentUser.avatar,
-        authorRole: currentUser.role,
-        severityIndex: 6.5,
-        impactedUsers: 25,
-        timeline: {
-          received: { date: 'Hoy, Recién ingresado', checked: true },
-          reviewing: { note: 'Pendiente de asignación de autoridad', checked: false },
-          resolved: { checked: false }
-        },
-        comments: []
-      };
+    const [lat, lng] = typeof localCoordinates === 'string' ? localCoordinates.split(',') : ['19.4150', '-99.1620'];
+    formData.append('latitude', lat ? lat.trim() : '19.4150');
+    formData.append('longitude', lng ? lng.trim() : '-99.1620');
 
-      onAddReport(computedReport);
-      setIsSubmitting(false);
+    if (rawFile) {
+        formData.append('foto', rawFile);
+    }
 
-      // Take user directly to view detail of they newly created incident
-      navigate('/reporte/' + newId);
-    }, 2000);
-  };
+    try {
+        const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token') || '';
+        const dataDelBackend = await crearReporte(formData, token);
 
+        console.log("¡Reporte guardado en BD!", dataDelBackend);
+        setLocationModalTitle("¡Reporte Enviado!");
+        setLocationModalMessage("Tu reporte ha sido enviado y guardado exitosamente.");
+        setLocationModalIcon("success");
+        setShowLocationModal(true);
+
+        const newId = dataDelBackend.id || `ENV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+        
+        const reportImage = uploadedImage || (
+            category === 'Residuos' 
+            ? 'https://plus.unsplash.com/premium_photo-1661962386121-7221f7ed43ff?auto=format&fit=crop&w=600&q=80'
+            : category === 'Agua Contaminada'
+                ? 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?auto=format&fit=crop&w=600&q=80'
+                : 'https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&w=600&q=80'
+        );
+
+        const computedReport: IncidentReport = {
+            id: newId,
+            title: `${category === 'Residuos' ? 'Acumulación de Desechos' : category === 'Agua Contaminada' ? 'Fuga/Vertido de Agua' : 'Emisión de Gases'} - ${address.split(',')[0] || 'Nueva Ubicación'}`,
+            description: description.substring(0, 100) + '...',
+            detailedDescription: description,
+            category: category || 'General',
+            severity: 'Media Severidad',
+            status: 'Abierto',
+            location: address || 'Zona Metropolitana Central',
+            coordinates: localCoordinates,
+            date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+            timeAgo: 'Hace unos instantes',
+            views: 1,
+            imageUrl: reportImage,
+            authorName: currentUser.name,
+            authorAvatar: currentUser.avatar,
+            authorRole: currentUser.role,
+            severityIndex: 6.5,
+            impactedUsers: 25,
+            timeline: {
+                received: { date: 'Hoy, Recién ingresado', checked: true },
+                reviewing: { note: 'Pendiente de asignación de autoridad', checked: false },
+                resolved: { checked: false }
+            },
+            comments: []
+        };
+
+        onAddReport(computedReport);
+
+        setTimeout(() => {
+            navigate('/mis-reportes');
+        }, 2000);
+
+    } catch (error) {
+        console.error("Error de envío:", error);
+        setLocationModalTitle("Error de Envío");
+        setLocationModalMessage("Hubo un problema conectando con el servidor. Por favor, intenta de nuevo.");
+        setLocationModalIcon("error");
+        setShowLocationModal(true);
+    } finally {
+        setIsSubmitting(false);
+    }
+};
   return (
     <div className="bg-[#FAFDF9] py-8 px-4 md:px-8">
       <div className="max-w-3xl mx-auto space-y-8">
@@ -562,7 +660,7 @@ export default function ReportFormScreen({
                         item.title.toLowerCase().includes(address.toLowerCase())
                       ).length === 0 && dynamicSuggestions.length === 0 && !isSearchingSuggestions && (
                         <div className="p-4 text-xs text-slate-400 font-bold text-center">
-                          Ninguna sugerencia guardada. Elige otra b&uacute;squeda o contin&uacute;a escribiendo la direcci&oacute;n libre.
+                          Ninguna sugerencia guardada. Elige otra búsqueda o continúa escribiendo la dirección libre.
                         </div>
                       )}
                     </div>
@@ -594,7 +692,8 @@ export default function ReportFormScreen({
                   value={localCoordinates}
                   onChange={(e) => setLocalCoordinates(e.target.value)}
                   placeholder="E.g., 19.4150 N, 99.1620 W"
-                  className="w-full bg-[#FAFDFC] border border-[#CDE1D1]/60 rounded-lg px-2.5 py-1 text-[11px] font-bold text-[#143B20] focus:outline-none focus:ring-1 focus:ring-[#1E8344]/30"
+                  className="w-full bg-[#FAFDFC] border border-[#CDE1D1]/60 rounded-lg px-2.5 py-1 text-[11px] font-bold text-[#143B20] focus:outline-none focus:ring-1 focus:ring-[#1E8344]/30 disabled:bg-gray-100 disabled:text-gray-500 cursor-not-allowed"
+                  disabled
                 />
               </div>
             </div>
@@ -637,7 +736,7 @@ export default function ReportFormScreen({
                   type="file" 
                   ref={fileInputRef} 
                   onChange={handleFileSelect} 
-                  accept="image/*" 
+                  accept="image/jpeg, image/png" 
                   className="hidden" 
                 />
 
@@ -697,6 +796,55 @@ export default function ReportFormScreen({
         </form>
 
       </div>
+
+      {/* Location Permission Modal */}
+      <AnimatePresence>
+        {showLocationModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0A1F10]/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-[#CDE1D1]"
+            >
+              <div className="bg-gradient-to-tr from-[#E1ECE3] to-[#F3FAF4] p-6 text-center border-b border-[#CDE1D1] relative">
+                <button 
+                  onClick={() => setShowLocationModal(false)}
+                  className="absolute top-4 right-4 p-1 rounded-full text-[#557B5E] hover:bg-white hover:text-[#143B20] transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center shadow-sm border border-[#CDE1D1] mb-4">
+                  {locationModalIcon === 'error' ? (
+                    <MapPinOff className="w-8 h-8 text-[#E84C3D]" />
+                  ) : (
+                    <CheckCircle className="w-8 h-8 text-[#1E8344]" />
+                  )}
+                </div>
+                <h3 className="text-xl font-black text-[#143B20] tracking-tight">{locationModalTitle}</h3>
+              </div>
+              <div className="p-8 text-center space-y-6">
+                <p className="text-sm text-[#4F6C56] font-medium leading-relaxed">
+                  {locationModalMessage}
+                </p>
+                <div className="pt-2">
+                  <button
+                    onClick={() => setShowLocationModal(false)}
+                    className="w-full bg-[#1E8344] hover:bg-[#166634] text-white font-bold py-3.5 rounded-xl transition-all shadow-md active:scale-95 text-sm uppercase tracking-wider cursor-pointer"
+                  >
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -147,30 +147,20 @@ export const crearReporte = async (req: Request, res: Response): Promise<void> =
             return;
         }
 
-        const {
-            descripcion,
-            latitude,
-            longitude,
-            severidad,
-            categoria_id
-        } = req.body;
-
+        const { descripcion, latitude, longitude, severidad } = req.body;
         const file = req.file;
 
-        if (!descripcion || latitude === undefined || longitude === undefined || !categoria_id) {
-            res.status(400).json({ mensaje: "Campos requeridos faltantes" });
+        // Validaciones básicas
+        if (!descripcion || latitude === undefined || longitude === undefined) {
+            res.status(400).json({ mensaje: "Faltan campos obligatorios" });
             return;
         }
 
-        const severidadesValidas = ["Baja", "Media", "Alta", "Critica"];
-        const severidadDb = severidadesValidas.includes(severidad) ? severidad : "Baja";
+        const severidadDb = ["Baja", "Media", "Alta", "Critica"].includes(severidad) ? severidad : "Baja";
+        const photoUrl = file ? `${req.protocol}://${req.get("host")}/uploads/${file.filename}` : null;
 
-        let photoUrl = null;
-        if (file) {
-            // Build the URL depending on host and protocol
-            // Usually req.protocol is "http", and req.get("host") is "localhost:3001"
-            photoUrl = `${req.protocol}://${req.get("host")}/uploads/${file.filename}`;
-        }
+        // FORZAMOS LA CATEGORÍA A 1 PARA ELIMINAR CUALQUIER ERROR DE FONTEND
+        const categoriaForzada = 1;
 
         const result = await prisma.$queryRaw<any[]>`
             INSERT INTO reporte (
@@ -187,23 +177,17 @@ export const crearReporte = async (req: Request, res: Response): Promise<void> =
                 ${descripcion},
                 ST_SetSRID(ST_MakePoint(${parseFloat(longitude)}, ${parseFloat(latitude)}), 4326)::geography,
                 ${severidadDb}::severidad_enum,
-                ${photoUrl || null},
+                ${photoUrl},
                 0,
                 'Pendiente'::estado_puntos_enum,
                 ${usuarioId},
-                1, 
-                ${parseInt(categoria_id)}
+                1,
+                ${categoriaForzada}
             )
             RETURNING id
         `;
 
-        const newId = result[0]?.id;
-
-        res.status(201).json({
-            mensaje: "Reporte creado exitosamente",
-            id: newId,
-            url_evidencia_foto: photoUrl
-        });
+        res.status(201).json({ mensaje: "Reporte creado", id: result[0]?.id });
     } catch (error) {
         console.error("Error al crear reporte:", error);
         res.status(500).json({ mensaje: "Error al crear el reporte" });

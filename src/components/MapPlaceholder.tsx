@@ -9,8 +9,9 @@ import { IncidentReport } from '../types';
 import { getReportesActivos } from '../services/reportesService';
 import { 
   Trash2, Droplets, Factory, Plus, Minus, Target, X, 
-  Search, Layers, Share2, Copy, Check, Info, Compass, Loader2
+  Search, Layers, Share2, Copy, Check, Info, Compass, Loader2, MapPinOff, MapPin
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -158,6 +159,12 @@ export default function MapPlaceholder({
   const routePolylineRef = useRef<L.Polyline | null>(null);
 
   const [localReports, setLocalReports] = useState<IncidentReport[]>([]);
+
+  // Modal de alertas generales (ubicación, éxito, errores)
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationModalMessage, setLocationModalMessage] = useState('');
+  const [locationModalTitle, setLocationModalTitle] = useState('Aviso de Ubicación');
+  const [locationModalIcon, setLocationModalIcon] = useState<'error' | 'success'>('error');
 
   const activePin = (reports ?? localReports).find(r => r.id === selectedPinId);
 
@@ -652,6 +659,32 @@ export default function MapPlaceholder({
     setSearchedCoordinates(null);
     mapInstanceRef.current?.setView([19.4150, -99.1620], 12, { animate: true, duration: 0.8 });
   };
+  const handleLocateUser = () => {
+    if (!mapInstanceRef.current) return;
+    
+    if (!navigator.geolocation) {
+      setLocationModalTitle("Geolocalización No Soportada");
+      setLocationModalMessage("Tu navegador no soporta geolocalización. Por favor, intenta usar otro navegador.");
+      setLocationModalIcon("error");
+      setShowLocationModal(true);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        mapInstanceRef.current!.setView([latitude, longitude], 15, { animate: true });
+        const marker = L.marker([latitude, longitude]).addTo(mapInstanceRef.current!).bindPopup("¡Estás aquí!").openPopup();
+        setTimeout(() => marker.remove(), 4000);
+      },
+      (err) => {
+        setLocationModalTitle("Permiso de Ubicación Denegado");
+        setLocationModalMessage("No pudimos obtener tu ubicación. Asegúrate de otorgar permisos de geolocalización en tu navegador.");
+        setLocationModalIcon("error");
+        setShowLocationModal(true);
+      }
+    );
+  };
 
   // Copy unique share link to clipboard
   const handleCopyShareLink = (pinId: string) => {
@@ -1050,10 +1083,67 @@ export default function MapPlaceholder({
         </button>
       </div>
 
+<button 
+        onClick={handleLocateUser}
+        className="absolute bottom-6 right-6 z-[999] bg-white text-[#1E8344] font-bold px-4 py-2 rounded-full shadow-lg border border-[#1E8344] hover:bg-emerald-50 transition-all flex items-center gap-2 text-xs"
+        title="Centrar en mi ubicación"
+      >
+        <Target className="w-4 h-4" />
+        <span>Mi ubicación</span>
+      </button>
+
       {/* Leaflet Live Tile Map status indicator watermark */}
       <span className="absolute right-4 bottom-4 bg-[#779A81]/90 backdrop-blur-md text-white text-[9px] font-mono font-bold px-2.5 py-1 rounded shadow-md tracking-wider z-20 select-none">
         🗺️ LIVE TERRANOVA MAP API
       </span>
+      {/* Location Permission Modal */}
+      <AnimatePresence>
+        {showLocationModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0A1F10]/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-[#CDE1D1]"
+            >
+              <div className="bg-gradient-to-tr from-[#E1ECE3] to-[#F3FAF4] p-6 text-center border-b border-[#CDE1D1] relative">
+                <button 
+                  onClick={() => setShowLocationModal(false)}
+                  className="absolute top-4 right-4 p-1 rounded-full text-[#557B5E] hover:bg-white hover:text-[#143B20] transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center shadow-sm border border-[#CDE1D1] mb-4">
+                  {locationModalIcon === 'error' ? (
+                    <MapPinOff className="w-8 h-8 text-[#E84C3D]" />
+                  ) : (
+                    <MapPin className="w-8 h-8 text-[#1E8344]" />
+                  )}
+                </div>
+                <h3 className="text-xl font-black text-[#143B20] tracking-tight">{locationModalTitle}</h3>
+              </div>
+              <div className="p-8 text-center space-y-6">
+                <p className="text-sm text-[#4F6C56] font-medium leading-relaxed">
+                  {locationModalMessage}
+                </p>
+                <div className="pt-2">
+                  <button
+                    onClick={() => setShowLocationModal(false)}
+                    className="w-full bg-[#1E8344] hover:bg-[#166634] text-white font-bold py-3.5 rounded-xl transition-all shadow-md active:scale-95 text-sm uppercase tracking-wider cursor-pointer"
+                  >
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

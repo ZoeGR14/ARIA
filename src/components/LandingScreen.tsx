@@ -8,8 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import { IncidentReport, Contributor } from '../types';
 import MapPlaceholder from './MapPlaceholder';
 import { getContributores } from '../services/rankingService';
-import { motion } from 'motion/react';
-import { ClipboardList, ShieldCheck, Users, Globe, Trash2, Droplets, Factory, ArrowRight, Award } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { ClipboardList, ShieldCheck, Users, Globe, Trash2, Droplets, Factory, ArrowRight, Award, Target, MapPinOff, X, MapPin } from 'lucide-react';
 
 interface LandingScreenProps {
   reports: IncidentReport[];
@@ -25,7 +25,46 @@ export default function LandingScreen({
     getContributores().then(setContributors);
   }, []);
   
-  // Recent reports for the landing page grid (let's pick the top 3 with varying timelines)
+  // Estado para la ubicación
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+
+  // Modal de alerta de permisos de ubicación
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationModalMessage, setLocationModalMessage] = useState('');
+  const [locationModalTitle, setLocationModalTitle] = useState('Aviso de Ubicación');
+  const [locationModalIcon, setLocationModalIcon] = useState<'error' | 'success'>('error');
+
+  const handleGoToMyCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationModalTitle("Geolocalización No Soportada");
+      setLocationModalMessage("Tu navegador no soporta geolocalización. Por favor, intenta usar otro navegador o ingresa la dirección manualmente.");
+      setLocationModalIcon("error");
+      setShowLocationModal(true);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+        setLocationModalTitle("Ubicación Detectada");
+        setLocationModalMessage(`Hemos detectado tu ubicación en: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}.`);
+        setLocationModalIcon("success");
+        setShowLocationModal(true);
+        // NOTA: Para que el mapa se mueva, MapPlaceholder necesita recibir 
+        // estas coordenadas. Por ahora, esto confirma que el GPS funciona.
+      },
+      (err) => {
+        console.error(err);
+        setLocationModalTitle("Permiso de Ubicación Denegado");
+        setLocationModalMessage("No pudimos obtener tu ubicación. Asegúrate de otorgar permisos de geolocalización en tu navegador.");
+        setLocationModalIcon("error");
+        setShowLocationModal(true);
+      },
+      { enableHighAccuracy: false, timeout: 10000 }
+    );
+  };
+
+  // Recent reports for the landing page grid
   const recentReports = reports.slice(0, 3);
 
   const getCategoryIcon = (category: string) => {
@@ -94,7 +133,7 @@ export default function LandingScreen({
           </div>
 
           {/* Interactive Map Visual Platform on Right */}
-          <div id="map" className="lg:col-span-7 flex flex-col space-y-4">
+          <div id="map" className="lg:col-span-7 flex flex-col space-y-4 relative">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-[#143B20] tracking-wider uppercase flex items-center gap-1.5">
                 <Globe className="w-4 h-4 text-[#1E8344]" />
@@ -120,7 +159,6 @@ export default function LandingScreen({
               <p className="text-xs text-[#557B5E] font-medium">Reportes activos</p>
             </div>
           </div>
-
           <div className="flex items-center space-x-3.5 border-r border-[#E1ECE3] last:border-none p-2 align-middle">
             <div className="w-10 h-10 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
               <ShieldCheck className="w-5 h-5" />
@@ -130,7 +168,6 @@ export default function LandingScreen({
               <p className="text-xs text-[#557B5E] font-medium">Problemas resueltos</p>
             </div>
           </div>
-
           <div className="flex items-center space-x-3.5 border-r border-[#E1ECE3] last:border-none p-2 align-middle">
             <div className="w-10 h-10 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
               <Users className="w-5 h-5" />
@@ -140,7 +177,6 @@ export default function LandingScreen({
               <p className="text-xs text-[#557B5E] font-medium">Usuarios activos</p>
             </div>
           </div>
-
           <div className="flex items-center space-x-3.5 last:border-none p-2 align-middle">
             <div className="w-10 h-10 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
               <Globe className="w-5 h-5" />
@@ -153,9 +189,8 @@ export default function LandingScreen({
         </div>
       </section>
 
-      {/* Split Details Section: Recent Reports vs Top Contributors */}
+      {/* Split Details Section */}
       <section className="px-4 py-12 md:px-8 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8">
-        {/* Recent reports list (Left, width 7/12) */}
         <div className="md:col-span-7 space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-[#12301A] font-sans tracking-tight">Reportes recientes</h3>
@@ -167,7 +202,6 @@ export default function LandingScreen({
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
-
           <div className="bg-white rounded-2xl border border-[#E1ECE3] shadow-sm divide-y divide-[#E1ECE3] overflow-hidden">
             {recentReports.map((report) => (
               <div 
@@ -175,15 +209,12 @@ export default function LandingScreen({
                 onClick={() => navigate('/reporte/' + report.id)}
                 className="p-5 flex items-start space-x-4 hover:bg-[#FAFDFC] transition-all cursor-pointer group"
               >
-                {/* Thumb icon/image */}
                 <img 
                   src={report.imageUrl} 
                   alt={report.title} 
                   className="w-16 h-16 object-cover rounded-xl border border-[#C5DDCB] flex-shrink-0"
                   referrerPolicy="no-referrer"
                 />
-
-                {/* Info Text */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {getCategoryIcon(report.category)}
@@ -192,14 +223,11 @@ export default function LandingScreen({
                     </span>
                     <span className="text-xs text-slate-400 font-medium">• {report.timeAgo}</span>
                   </div>
-                  
                   <h4 className="text-sm font-bold text-[#143B20] mt-1 line-clamp-1 group-hover:text-[#1E8344] transition-colors">
                     {report.title}
                   </h4>
                   <p className="text-xs text-[#557B5E] mt-0.5 font-medium">📍 {report.location}</p>
                 </div>
-
-                {/* Severity Badge */}
                 <span className={`text-[10px] font-bold px-2.5 py-1 border rounded-full uppercase tracking-tight ${getSeverityBadgeClass(report.severity)}`}>
                   {report.severity.replace(' Severidad', '')}
                 </span>
@@ -207,8 +235,6 @@ export default function LandingScreen({
             ))}
           </div>
         </div>
-
-        {/* Top Contributors Ranking (Right, width 5/12) */}
         <div className="md:col-span-5 space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-[#12301A] font-sans tracking-tight flex items-center gap-2">
@@ -222,28 +248,24 @@ export default function LandingScreen({
               Ver ranking completo
             </button>
           </div>
-
           <div className="bg-white rounded-2xl border border-[#E1ECE3] shadow-sm p-6 space-y-4">
             {contributors.map((contrib, index) => (
               <div 
                 key={contrib.id}
                 className="flex items-center justify-between border-b border-[#F0F6F1] last:border-none pb-4 last:pb-0"
               >
-                {/* Ranking Index, Avatar, Name */}
                 <div className="flex items-center space-x-3">
                   <span className={`text-base font-black italic w-6 text-center ${
                     index === 0 ? 'text-[#C49B2F]' : index === 1 ? 'text-[#778B8D]' : 'text-[#A07044]'
                   }`}>
                     {index + 1}
                   </span>
-
                   <img 
                     src={contrib.avatar} 
                     alt={contrib.name} 
                     className="w-10 h-10 rounded-full object-cover border border-[#C5DDCB]"
                     referrerPolicy="no-referrer"
                   />
-
                   <div>
                     <h4 className="text-sm font-bold text-[#143B20] flex items-center gap-1 leading-tight">
                       {contrib.name}
@@ -258,8 +280,6 @@ export default function LandingScreen({
                     <p className="text-[11px] text-[#557B5E] font-medium">Investigador Ciudadano</p>
                   </div>
                 </div>
-
-                {/* Score tally */}
                 <div className="text-right">
                   <span className="text-sm font-black text-[#143B20] tracking-tight">{contrib.points.toLocaleString()}</span>
                   <span className="text-[10px] text-[#557B5E] font-bold block leading-none">pts</span>
@@ -269,6 +289,54 @@ export default function LandingScreen({
           </div>
         </div>
       </section>
+      {/* Location Permission Modal */}
+      <AnimatePresence>
+        {showLocationModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0A1F10]/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-[#CDE1D1]"
+            >
+              <div className="bg-gradient-to-tr from-[#E1ECE3] to-[#F3FAF4] p-6 text-center border-b border-[#CDE1D1] relative">
+                <button 
+                  onClick={() => setShowLocationModal(false)}
+                  className="absolute top-4 right-4 p-1 rounded-full text-[#557B5E] hover:bg-white hover:text-[#143B20] transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center shadow-sm border border-[#CDE1D1] mb-4">
+                  {locationModalIcon === 'error' ? (
+                    <MapPinOff className="w-8 h-8 text-[#E84C3D]" />
+                  ) : (
+                    <MapPin className="w-8 h-8 text-[#1E8344]" />
+                  )}
+                </div>
+                <h3 className="text-xl font-black text-[#143B20] tracking-tight">{locationModalTitle}</h3>
+              </div>
+              <div className="p-8 text-center space-y-6">
+                <p className="text-sm text-[#4F6C56] font-medium leading-relaxed">
+                  {locationModalMessage}
+                </p>
+                <div className="pt-2">
+                  <button
+                    onClick={() => setShowLocationModal(false)}
+                    className="w-full bg-[#1E8344] hover:bg-[#166634] text-white font-bold py-3.5 rounded-xl transition-all shadow-md active:scale-95 text-sm uppercase tracking-wider cursor-pointer"
+                  >
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
