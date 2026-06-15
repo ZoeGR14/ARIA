@@ -483,7 +483,7 @@ export default function ReportFormScreen({
         onAddReport(computedReport);
 
         setTimeout(() => {
-            navigate('/reporte/' + newId);
+            navigate('/mis-reportes');
         }, 2000);
 
     } catch (error) {
@@ -692,7 +692,8 @@ export default function ReportFormScreen({
                   value={localCoordinates}
                   onChange={(e) => setLocalCoordinates(e.target.value)}
                   placeholder="E.g., 19.4150 N, 99.1620 W"
-                  className="w-full bg-[#FAFDFC] border border-[#CDE1D1]/60 rounded-lg px-2.5 py-1 text-[11px] font-bold text-[#143B20] focus:outline-none focus:ring-1 focus:ring-[#1E8344]/30"
+                  className="w-full bg-[#FAFDFC] border border-[#CDE1D1]/60 rounded-lg px-2.5 py-1 text-[11px] font-bold text-[#143B20] focus:outline-none focus:ring-1 focus:ring-[#1E8344]/30 disabled:bg-gray-100 disabled:text-gray-500 cursor-not-allowed"
+                  disabled
                 />
               </div>
             </div>

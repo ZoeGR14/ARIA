@@ -250,7 +250,7 @@ export default function ExploreReportsScreen({
                     </button>
                     
                     <span className="text-[10px] text-slate-400 font-mono">
-                      #{report.id.split('-').pop()}
+                      #{String(report.id).split('-').pop()}
                     </span>
                   </div>
                 </div>
