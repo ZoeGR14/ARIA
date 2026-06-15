@@ -102,7 +102,7 @@ export const getReporteById = async (req: Request, res: Response): Promise<void>
         }
 
         const r = reports[0];
-        
+
         const formattedReport = {
             id: r.id,
             descripcion: r.descripcion,
@@ -191,5 +191,143 @@ export const crearReporte = async (req: Request, res: Response): Promise<void> =
     } catch (error) {
         console.error("Error al crear reporte:", error);
         res.status(500).json({ mensaje: "Error al crear el reporte" });
+    }
+};
+
+export const getMisReportes = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const usuarioId = req.user?.id;
+        if (!usuarioId) {
+            res.status(401).json({ mensaje: "Usuario no autenticado" });
+            return;
+        }
+
+        const reports = await prisma.$queryRaw<any[]>`
+            SELECT 
+                r.id,
+                r.descripcion,
+                r.fecha_creacion,
+                r.fecha_actualizacion,
+                r.severidad,
+                r.url_evidencia_foto,
+                r.puntos_asignados,
+                r.estado_puntos,
+                r.usuario_id,
+                r.estado_id,
+                r.categoria_id,
+                ST_X(r.ubicacion::geometry) as longitude,
+                ST_Y(r.ubicacion::geometry) as latitude,
+                c.nombre as categoria_nombre,
+                c.color_hex as categoria_color,
+                e.nombre as estado_nombre,
+                u.nombre_completo as usuario_nombre
+            FROM reporte r
+            LEFT JOIN categoria c ON r.categoria_id = c.id
+            LEFT JOIN estado e ON r.estado_id = e.id
+            LEFT JOIN usuario u ON r.usuario_id = u.id
+            WHERE r.usuario_id = ${usuarioId}
+            ORDER BY r.fecha_creacion DESC
+        `;
+
+        const formattedReports = reports.map((r: any) => ({
+            id: r.id,
+            descripcion: r.descripcion,
+            fecha_creacion: r.fecha_creacion,
+            fecha_actualizacion: r.fecha_actualizacion,
+            severidad: r.severidad,
+            url_evidencia_foto: r.url_evidencia_foto,
+            puntos_asignados: r.puntos_asignados,
+            estado_puntos: r.estado_puntos,
+            usuario_id: r.usuario_id,
+            estado_id: r.estado_id,
+            categoria_id: r.categoria_id,
+            latitude: r.latitude,
+            longitude: r.longitude,
+            categoria: {
+                id: r.categoria_id,
+                nombre: r.categoria_nombre,
+                color_hex: r.categoria_color
+            },
+            estado: {
+                id: r.estado_id,
+                nombre: r.estado_nombre
+            },
+            usuario: {
+                id: r.usuario_id,
+                nombre_completo: r.usuario_nombre
+            }
+        }));
+
+        res.status(200).json(formattedReports);
+    } catch (error) {
+        console.error("Error al obtener mis reportes:", error);
+        res.status(500).json({ mensaje: "Error al obtener mis reportes" });
+    }
+};
+
+export const getReportesByUsuario = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { userId } = req.params;
+
+        const reports = await prisma.$queryRaw<any[]>`
+            SELECT 
+                r.id,
+                r.descripcion,
+                r.fecha_creacion,
+                r.fecha_actualizacion,
+                r.severidad,
+                r.url_evidencia_foto,
+                r.puntos_asignados,
+                r.estado_puntos,
+                r.usuario_id,
+                r.estado_id,
+                r.categoria_id,
+                ST_X(r.ubicacion::geometry) as longitude,
+                ST_Y(r.ubicacion::geometry) as latitude,
+                c.nombre as categoria_nombre,
+                c.color_hex as categoria_color,
+                e.nombre as estado_nombre,
+                u.nombre_completo as usuario_nombre
+            FROM reporte r
+            LEFT JOIN categoria c ON r.categoria_id = c.id
+            LEFT JOIN estado e ON r.estado_id = e.id
+            LEFT JOIN usuario u ON r.usuario_id = u.id
+            WHERE r.usuario_id = ${parseInt(userId as string)}
+            ORDER BY r.fecha_creacion DESC
+        `;
+
+        const formattedReports = reports.map((r: any) => ({
+            id: r.id,
+            descripcion: r.descripcion,
+            fecha_creacion: r.fecha_creacion,
+            fecha_actualizacion: r.fecha_actualizacion,
+            severidad: r.severidad,
+            url_evidencia_foto: r.url_evidencia_foto,
+            puntos_asignados: r.puntos_asignados,
+            estado_puntos: r.estado_puntos,
+            usuario_id: r.usuario_id,
+            estado_id: r.estado_id,
+            categoria_id: r.categoria_id,
+            latitude: r.latitude,
+            longitude: r.longitude,
+            categoria: {
+                id: r.categoria_id,
+                nombre: r.categoria_nombre,
+                color_hex: r.categoria_color
+            },
+            estado: {
+                id: r.estado_id,
+                nombre: r.estado_nombre
+            },
+            usuario: {
+                id: r.usuario_id,
+                nombre_completo: r.usuario_nombre
+            }
+        }));
+
+        res.status(200).json(formattedReports);
+    } catch (error) {
+        console.error("Error al obtener reportes del usuario:", error);
+        res.status(500).json({ mensaje: "Error al obtener reportes del usuario" });
     }
 };

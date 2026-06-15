@@ -4,7 +4,9 @@ import path from "path";
 import {
     getReportesActivos,
     getReporteById,
-    crearReporte
+    crearReporte,
+    getMisReportes,
+    getReportesByUsuario
 } from "../controllers/reportController";
 import { authMiddleware } from "../middleware/authMiddleware";
 
@@ -28,6 +30,12 @@ const upload = multer({
 
 // GET all active reports
 router.get("/activos", getReportesActivos);
+
+// GET reports for the authenticated user
+router.get("/mis-reportes", authMiddleware, getMisReportes);
+
+// GET reports for a specific user ID
+router.get("/usuario/:userId", getReportesByUsuario);
 
 // GET a specific report by ID
 router.get("/:id", getReporteById);
