@@ -6,7 +6,8 @@ import {
     getReporteById,
     crearReporte,
     getMisReportes,
-    getReportesByUsuario
+    getReportesByUsuario,
+    actualizarReporte
 } from "../controllers/reportController";
 import { authMiddleware } from "../middleware/authMiddleware";
 
@@ -23,7 +24,7 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ 
+const upload = multer({
     storage,
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
@@ -43,5 +44,8 @@ router.get("/:id", getReporteById);
 // POST a new report (requires authentication)
 // "foto" is the field name we expect the client to use for the image file
 router.post("/", authMiddleware, upload.single("foto"), crearReporte);
+
+// PATCH to update a report (requires authentication)
+router.patch("/:id", authMiddleware, actualizarReporte);
 
 export default router;

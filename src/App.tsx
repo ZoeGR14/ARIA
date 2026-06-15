@@ -120,15 +120,22 @@ export default function App() {
         })
         .then(res => res.json())
         .then(data => {
-           if (Array.isArray(data)) {
-             const mapped = data.map(n => ({
-               id: String(n.id),
-               title: n.tipo === 'SISTEMA_ALERTA' ? 'Alerta Crítica' : 'Notificación',
-               message: n.mensaje,
-               time: new Date(n.fecha_hora).toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }),
-               read: n.leido,
-               reportId: n.reporte_id ? String(n.reporte_id) : undefined
-             }));
+             if (Array.isArray(data)) {
+             const mapped = data.map(n => {
+               let title = 'Notificación';
+               if (n.tipo === 'SISTEMA_ALERTA') title = 'Alerta Crítica';
+               else if (n.tipo === 'ESTADO_REPORTE') title = 'Actualización de tu reporte 📋';
+               else if (n.tipo === 'PUNTOS_OTORGADOS') title = '¡Puntos ganados! 🌟';
+               
+               return {
+                 id: String(n.id),
+                 title: title,
+                 message: n.mensaje,
+                 time: new Date(n.fecha_hora).toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }),
+                 read: n.leido,
+                 reportId: n.reporte_id ? String(n.reporte_id) : undefined
+               };
+             });
              setNotifications(mapped);
            }
         })
@@ -161,10 +168,15 @@ export default function App() {
             };
             setNotifications((prev) => [newNotify, ...prev]);
 
+            let toastType: 'info' | 'success' | 'warning' | 'error' = 'info';
+            if (newNotify.title.includes('Alerta')) toastType = 'error';
+            else if (newNotify.title.includes('Puntos') || newNotify.title.includes('registrado')) toastType = 'success';
+            else if (newNotify.title.includes('Actualización')) toastType = 'info';
+
             addToast({
               title: newNotify.title,
               message: newNotify.message,
-              type: 'info',
+              type: toastType,
               duration: 6000
             });
           }
