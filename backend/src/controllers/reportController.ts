@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../config/prisma";
+import { enviarNotificacionFCM } from "../services/fcm.service";
 
 export const getReportesActivos = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -187,7 +188,55 @@ export const crearReporte = async (req: Request, res: Response): Promise<void> =
             RETURNING id
         `;
 
-        res.status(201).json({ mensaje: "Reporte creado", id: result[0]?.id });
+        const newId = result[0]?.id;
+
+        if (severidadDb === "Alta" || severidadDb === "Critica") {
+            try {
+                const administradores = await prisma.$queryRaw<any[]>`
+                    SELECT u.id 
+                    FROM usuario u
+                    INNER JOIN administrador a ON u.id = a.id
+                `;
+
+                if (administradores.length > 0) {
+                    const adminIds = administradores.map(a => a.id);
+                    const mensajeAlerta = `¡Alerta! Nuevo reporte de severidad ${severidadDb}: ${descripcion.substring(0, 50)}...`;
+
+                    await prisma.notificacion.createMany({
+                        data: adminIds.map(id => ({
+                            usuario_id: id,
+                            mensaje: mensajeAlerta,
+                            tipo: 'SISTEMA_ALERTA',
+                            reporte_id: newId
+                        }))
+                    });
+
+                    const dispositivos = await prisma.dispositivo_usuario.findMany({
+                        where: { usuario_id: { in: adminIds } },
+                        select: { fcm_token: true }
+                    });
+
+                    const tokens = dispositivos.map(d => d.fcm_token);
+
+                    if (tokens.length > 0) {
+                        await enviarNotificacionFCM(
+                            tokens,
+                            `Reporte ${severidadDb} detectado`,
+                            mensajeAlerta,
+                            newId.toString()
+                        );
+                    }
+                }
+            } catch (notifyError) {
+                console.error("Error enviando notificaciones a administradores:", notifyError);
+            }
+        }
+
+        res.status(201).json({
+            mensaje: "Reporte creado exitosamente",
+            id: newId,
+            url_evidencia_foto: photoUrl
+        });
     } catch (error) {
         console.error("Error al crear reporte:", error);
         res.status(500).json({ mensaje: "Error al crear el reporte" });
@@ -329,5 +378,139 @@ export const getReportesByUsuario = async (req: Request, res: Response): Promise
     } catch (error) {
         console.error("Error al obtener reportes del usuario:", error);
         res.status(500).json({ mensaje: "Error al obtener reportes del usuario" });
+    }
+}
+export const actualizarReporte = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const reporteId = parseInt(id);
+
+        if (isNaN(reporteId)) {
+            res.status(400).json({ mensaje: "ID de reporte inválido" });
+            return;
+        }
+
+        const { estado_id, estado_puntos, puntos_asignados } = req.body;
+
+        // Verify if report exists and get its creator
+        const reporteActual = await prisma.reporte.findUnique({
+            where: { id: reporteId },
+            include: { estado: true }
+        });
+
+        if (!reporteActual) {
+            res.status(404).json({ mensaje: "Reporte no encontrado" });
+            return;
+        }
+
+        const updateData: any = {};
+
+        let notificarEstado = false;
+        let notificarPuntos = false;
+        let nuevoEstadoNombre = "";
+
+        if (estado_id !== undefined && estado_id !== reporteActual.estado_id) {
+            updateData.estado_id = parseInt(estado_id);
+            const nuevoEstado = await prisma.estado.findUnique({ where: { id: parseInt(estado_id) } });
+            if (nuevoEstado) {
+                notificarEstado = true;
+                nuevoEstadoNombre = nuevoEstado.nombre;
+            }
+        }
+
+        if (estado_puntos !== undefined && estado_puntos !== reporteActual.estado_puntos) {
+            updateData.estado_puntos = estado_puntos;
+            if (puntos_asignados !== undefined) {
+                updateData.puntos_asignados = parseInt(puntos_asignados);
+            }
+            if (estado_puntos === 'Otorgado' && (updateData.puntos_asignados > 0 || (reporteActual.puntos_asignados !== null && reporteActual.puntos_asignados > 0))) {
+                notificarPuntos = true;
+                if (updateData.puntos_asignados === undefined) {
+                    updateData.puntos_asignados = reporteActual.puntos_asignados;
+                }
+            }
+        } else if (puntos_asignados !== undefined && puntos_asignados !== reporteActual.puntos_asignados) {
+            updateData.puntos_asignados = parseInt(puntos_asignados);
+            if (reporteActual.estado_puntos === 'Otorgado') {
+                notificarPuntos = true; // Notificamos si ya estaba otorgado pero cambiaron los puntos
+            }
+        }
+
+        // Si no hay nada que actualizar
+        if (Object.keys(updateData).length === 0) {
+            res.status(200).json({ mensaje: "No hay cambios para actualizar", reporte: reporteActual });
+            return;
+        }
+
+        updateData.fecha_actualizacion = new Date();
+
+        // Update the report
+        const reporteActualizado = await prisma.reporte.update({
+            where: { id: reporteId },
+            data: updateData
+        });
+
+        const usuarioId = reporteActual.usuario_id;
+        const notificacionesACrear: any[] = [];
+        const mensajesFCM: { title: string, body: string }[] = [];
+
+        // Lógica de gamificación y notificación de puntos
+        if (notificarPuntos) {
+            const puntosAgregados = updateData.puntos_asignados || 0;
+
+            // Sumar puntos al usuario
+            const usuarioUpdate = await prisma.usuario.update({
+                where: { id: usuarioId },
+                data: { puntos_totales: { increment: puntosAgregados } }
+            });
+
+            const mensajePuntos = `¡Has ganado ${puntosAgregados} puntos por tu reporte! Tu puntaje total es ahora de ${usuarioUpdate.puntos_totales} puntos.`;
+            notificacionesACrear.push({
+                usuario_id: usuarioId,
+                mensaje: mensajePuntos,
+                tipo: 'PUNTOS_OTORGADOS',
+                reporte_id: reporteId
+            });
+            mensajesFCM.push({ title: '¡Puntos ganados! 🌟', body: mensajePuntos });
+        }
+
+        // Lógica de notificación de cambio de estado
+        if (notificarEstado) {
+            const mensajeEstado = `Tu reporte ha cambiado de estado a "${nuevoEstadoNombre}".`;
+            notificacionesACrear.push({
+                usuario_id: usuarioId,
+                mensaje: mensajeEstado,
+                tipo: 'ESTADO_REPORTE',
+                reporte_id: reporteId
+            });
+            mensajesFCM.push({ title: 'Actualización de tu reporte 📋', body: mensajeEstado });
+        }
+
+        // Enviar notificaciones
+        if (notificacionesACrear.length > 0) {
+            await prisma.notificacion.createMany({ data: notificacionesACrear });
+
+            const dispositivos = await prisma.dispositivo_usuario.findMany({
+                where: { usuario_id: usuarioId },
+                select: { fcm_token: true }
+            });
+
+            const tokens = dispositivos.map(d => d.fcm_token);
+
+            if (tokens.length > 0) {
+                // Enviar FCMs de forma asíncrona
+                for (const msg of mensajesFCM) {
+                    await enviarNotificacionFCM(tokens, msg.title, msg.body, reporteId.toString());
+                }
+            }
+        }
+
+        res.status(200).json({
+            mensaje: "Reporte actualizado exitosamente",
+            reporte: reporteActualizado
+        });
+    } catch (error) {
+        console.error("Error al actualizar reporte:", error);
+        res.status(500).json({ mensaje: "Error al actualizar el reporte" });
     }
 };
