@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MAP_PINS } from '../data/mockData';
 import { IncidentReport } from '../types';
 import { getReportesActivos } from '../services/reportesService';
@@ -119,17 +120,16 @@ export const parseCoordinates = (str: string | undefined): [number, number] => {
 
 interface MapPlaceholderProps {
   reports?: IncidentReport[];
-  onSelectReportId: (id: string) => void;
   focusedReportId?: string;
   onReportLocation?: (address: string, coordinates: string) => void;
 }
 
-export default function MapPlaceholder({ 
-  reports, 
-  onSelectReportId, 
-  focusedReportId, 
-  onReportLocation 
+export default function MapPlaceholder({
+  reports,
+  focusedReportId,
+  onReportLocation
 }: MapPlaceholderProps) {
+  const navigate = useNavigate();
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   
   // Custom states matching maps
@@ -1046,7 +1046,7 @@ export default function MapPlaceholder({
                 <button
                   type="button"
                   onClick={() => {
-                    onSelectReportId(activePin.id);
+                    navigate('/reporte/' + activePin.id);
                   }}
                   className="flex items-center justify-center bg-[#05682C] hover:bg-[#045524] text-white rounded-xl py-2 px-2 text-[10.5px] font-black transition-colors cursor-pointer shadow-xs active:scale-95"
                 >

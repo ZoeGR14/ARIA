@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { IncidentReport, Comment } from './types';
-import { INITIAL_REPORTS } from './data/mockData';
+import { getReportesActivos } from './services/reportesService';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -61,7 +61,7 @@ export default function App() {
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [userProfile, setUserProfile] = useState(CARLOS_MENDOZA_PROFILE);
-  const [reports, setReports] = useState<IncidentReport[]>(INITIAL_REPORTS);
+  const [reports, setReports] = useState<IncidentReport[]>([]);
   const [prefilledLocation, setPrefilledLocation] = useState<{ address: string; coordinates: string } | null>(null);
   const { addToast } = useToast();
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -290,6 +290,10 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [location.pathname]);
+
+  useEffect(() => {
+    getReportesActivos().then(setReports);
+  }, []);
 
   const handleReportAtLocation = (address: string, coordinates: string) => {
     setPrefilledLocation({ address, coordinates });
