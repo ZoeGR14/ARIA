@@ -142,7 +142,7 @@ export default function LandingScreen({
               <span className="text-xs text-[#557B5E] font-mono">En vivo</span>
             </div>
             
-            <MapPlaceholder reports={reports} onSelectReportId={(id) => navigate('/reporte/' + id)} />
+            <MapPlaceholder reports={reports} />
           </div>
         </div>
       </section>

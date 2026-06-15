@@ -18,6 +18,24 @@ export async function getReportesActivos(): Promise<IncidentReport[]> {
     return INITIAL_REPORTS;
   }
 }
+export async function getReportePorId(id: string): Promise<IncidentReport | null> {
+  const apiUrl = import.meta.env.VITE_API_URL;
+
+  if (!apiUrl) {
+    return INITIAL_REPORTS.find(r => String(r.id) === String(id)) ?? null;
+  }
+
+  try {
+    const response = await fetch(`${apiUrl}/reportes/${id}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return (await response.json()) as IncidentReport;
+  } catch {
+    return INITIAL_REPORTS.find(r => String(r.id) === String(id)) ?? null;
+  }
+}
+
 export async function crearReporte(formData: FormData, token: string) {
     const apiUrl = import.meta.env.VITE_API_URL;
     
