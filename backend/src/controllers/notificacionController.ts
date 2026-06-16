@@ -197,7 +197,7 @@ export const marcarNotificacionLeida = async (req: Request, res: Response): Prom
         }
 
         await prisma.notificacion.updateMany({
-            where: { id: parseInt(id), usuario_id: usuarioId },
+            where: { id: parseInt(id as string), usuario_id: usuarioId },
             data: { leido: true }
         });
 

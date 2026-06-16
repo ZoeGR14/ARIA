@@ -253,8 +253,8 @@ export default function CommunityScreen({
                               <div className="space-y-1.5 font-sans">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className={`text-[9px] font-black uppercase tracking-wider rounded-md px-2 py-0.5 ${
-                                    item.category === 'Residuos' ? 'bg-red-50 text-red-700' :
-                                    item.category === 'Agua' || item.category === 'Agua Contaminada' ? 'bg-amber-50 text-amber-700' :
+                                    item.category === 'Acumulación de Basura' ? 'bg-red-50 text-red-700' :
+                                    item.category === 'Fuga de Agua' ? 'bg-amber-50 text-amber-700' :
                                     'bg-blue-50 text-blue-700'
                                   }`}>
                                     {item.category}
@@ -283,8 +283,8 @@ export default function CommunityScreen({
                             <div className="flex flex-col items-start md:items-end justify-between self-stretch md:text-right">
                               {/* Status colored label overlay */}
                               <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 shrink-0 ${
-                                item.status === 'Resuelto' ? 'bg-emerald-100 text-emerald-800' :
-                                item.status === 'En progreso' || item.status === 'En Progreso' ? 'bg-blue-100 text-blue-800' :
+                                item.status === 'Atendido' ? 'bg-emerald-100 text-emerald-800' :
+                                item.status === 'En Revisión' ? 'bg-blue-100 text-blue-800' :
                                 'bg-amber-100 text-amber-800'
                               }`}>
                                 <CheckCircle2 className="w-3 h-3" />
@@ -438,7 +438,7 @@ export default function CommunityScreen({
                               )}
                             </div>
                             <p className="text-[10.5px] text-[#557B5E] font-bold">
-                              {contrib.nivel_ranking || 'EcoGuardián Voluntario'}
+                              {contrib.nivel_ranking || 'Novato'}
                             </p>
                           </div>
                         </div>

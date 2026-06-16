@@ -14,40 +14,50 @@ function calcularTimeAgo(fechaIso: string): string {
 }
 
 function adaptarReporte(raw: any): IncidentReport {
-  const sev = (raw.severidad ?? '').toLowerCase();
-  let severity: IncidentReport['severity'] = 'Baja';
-  if (sev === 'critica' || sev === 'alta') severity = 'Alta';
-  else if (sev === 'media') severity = 'Media';
+  // Mapping to DB types directly with fallbacks
+  const severity: IncidentReport['severity'] = raw.severidad || 'Baja';
+  const category: IncidentReport['category'] = raw.categoria?.nombre || 'Acumulación de Basura';
+  const status: IncidentReport['status'] = raw.estado?.nombre || 'Recibido';
 
-  const catNombre: string = raw.categoria?.nombre ?? '';
-  let category: IncidentReport['category'] = 'Residuos';
-  if (catNombre.includes('Contaminada')) category = 'Agua Contaminada';
-  else if (catNombre.includes('Agua')) category = 'Agua';
-  else if (catNombre.includes('Aire')) category = 'Calidad del Aire';
+  // Format short date for title (e.g. 15/06)
+  let fechaFormateada = '';
+  if (raw.fecha_creacion) {
+    const d = new Date(raw.fecha_creacion);
+    const day = d.getDate().toString().padStart(2, '0');
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    fechaFormateada = `${day}/${month}`;
+  } else {
+    fechaFormateada = 'Hoy';
+  }
 
-  const estadoNombre: string = raw.estado?.nombre ?? '';
-  let status: IncidentReport['status'] = 'Abierto';
-  if (estadoNombre === 'En Revisión') status = 'En progreso';
-  else if (estadoNombre === 'Resuelto') status = 'Resuelto';
+  // Format location briefly
+  const latStr = raw.latitude ? Number(raw.latitude).toFixed(4) : '';
+  const lngStr = raw.longitude ? Number(raw.longitude).toFixed(4) : '';
+  const locationStr = (latStr && lngStr) ? `${latStr}, ${lngStr}` : '';
 
   return {
     id: String(raw.id),
-    title: raw.descripcion,
+    title: `${category} - ${fechaFormateada}`,
     description: raw.descripcion,
     category,
     severity,
     status,
-    location: `${raw.latitude}, ${raw.longitude}`,
+    location: locationStr,
     coordinates: `${raw.latitude} N, ${raw.longitude} W`,
     date: raw.fecha_creacion,
-    timeAgo: calcularTimeAgo(raw.fecha_creacion),
-    views: 0,
+    timeAgo: raw.fecha_creacion ? calcularTimeAgo(raw.fecha_creacion) : '',
+    views: 0, // Retained for compatibility but will be removed from UI
     imageUrl: raw.url_evidencia_foto ?? '',
     authorName: raw.usuario?.nombre_completo ?? 'Usuario',
     authorAvatar: raw.usuario?.avatar_url === ''
-        ? "https://tse4.mm.bing.net/th/id/OIP.dDKYQqVBsG1tIt2uJzEJHwHaHa?cb=thfc1falcon2&rs=1&pid=ImgDetMain&o=7&rm=3"
-        : raw.usuario?.avatar_url,
-    authorRole: 'Ciudadano',
+      ? "https://tse4.mm.bing.net/th/id/OIP.dDKYQqVBsG1tIt2uJzEJHwHaHa?cb=thfc1falcon2&rs=1&pid=ImgDetMain&o=7&rm=3"
+      : raw.usuario?.avatar_url,
+    authorRole: raw.usuario?.rol || 'Ciudadano',
+    authorLevel: raw.usuario?.nivel_ranking || 'Novato',
+    latitude: raw.latitude,
+    longitude: raw.longitude,
+    puntos_asignados: raw.puntos_asignados || 0,
+    estado_puntos: raw.estado_puntos || 'Pendiente'
   };
 }
 
@@ -101,8 +111,32 @@ export async function crearReporte(formData: FormData, token: string) {
     body: formData,
   });
 
+  return await response.json();
+}
+
+export async function actualizarReporte(
+  id: string,
+  updateData: {
+    estado_id?: number;
+    estado_puntos?: 'Pendiente' | 'Otorgado' | 'Rechazado';
+    puntos_asignados?: number;
+  },
+  token: string
+) {
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (!apiUrl) return null;
+
+  const response = await fetch(`${apiUrl}/reportes/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(updateData)
+  });
+
   if (!response.ok) {
-    throw new Error(`Error al enviar el reporte: ${response.status}`);
+    throw new Error(`Error al actualizar el reporte: ${response.status}`);
   }
 
   return await response.json();

@@ -77,7 +77,8 @@ export default function ReportFormScreen({
   onClearPrefilledLocation,
 }: ReportFormScreenProps) {
   const navigate = useNavigate();
-  const [category, setCategory] = useState<ReportCategory>('Residuos');
+  const [category, setCategory] = useState<ReportCategory>('Acumulación de Basura');
+  const [severity, setSeverity] = useState<'Baja' | 'Media' | 'Alta' | 'Critica'>('Media');
   const [address, setAddress] = useState(prefilledLocation?.address || '');
   const [description, setDescription] = useState('');
   const [localCoordinates, setLocalCoordinates] = useState(prefilledLocation?.coordinates || '19.4150 N, 99.1620 W');
@@ -104,22 +105,28 @@ export default function ReportFormScreen({
 
   const categories: { id: ReportCategory; label: string; icon: React.ReactNode; desc: string }[] = [
     {
-      id: 'Residuos',
-      label: 'Residuos',
+      id: 'Acumulación de Basura',
+      label: 'Acumulación de Basura',
       icon: <Trash2 className="w-6 h-6" />,
       desc: 'Basura acumulada, vertederos clandestinos, residuos tóxicos.'
     },
     {
-      id: 'Agua Contaminada',
-      label: 'Agua Contaminada',
+      id: 'Fuga de Agua',
+      label: 'Fuga de Agua',
       icon: <Droplets className="w-6 h-6" />,
-      desc: 'Fugas de agua potable, vertidos industriales en ríos, espuma, aguas negras.'
+      desc: 'Fugas de agua potable, tuberías rotas o desperdicio masivo.'
     },
     {
-      id: 'Calidad del Aire',
-      label: 'Calidad del Aire',
+      id: 'Tala Ilegal / Áreas Verdes',
+      label: 'Tala Ilegal / Áreas Verdes',
+      icon: <Compass className="w-6 h-6" />,
+      desc: 'Tala de árboles no autorizada o daño severo a parques.'
+    },
+    {
+      id: 'Contaminación del Aire',
+      label: 'Contaminación del Aire',
       icon: <Wind className="w-6 h-6" />,
-      desc: 'Emisiones de humo negro, gases tóxicos, polvo olores nocivos persistentes.'
+      desc: 'Emisiones de humo negro, gases tóxicos o quema de basura.'
     },
   ];
 
@@ -420,13 +427,18 @@ export default function ReportFormScreen({
     formData.append('descripcion', description);
 
     // AQUÍ ESTÁ EL PARCHE: Forzamos el envío de un valor válido aunque esté vacío
-    formData.append('categoria_id', (category && category.trim() !== '') ? category : '1');
-    formData.append('subcategoria_id', '1');
-    formData.append('severidad', 'Media');
+    let catId = '1';
+    if (category === 'Fuga de Agua') catId = '2';
+    else if (category === 'Tala Ilegal / Áreas Verdes') catId = '3';
+    else if (category === 'Contaminación del Aire') catId = '4';
 
-    const [lat, lng] = typeof localCoordinates === 'string' ? localCoordinates.split(',') : ['19.4150', '-99.1620'];
-    formData.append('latitude', lat ? lat.trim() : '19.4150');
-    formData.append('longitude', lng ? lng.trim() : '-99.1620');
+    formData.append('categoria_id', catId);
+    formData.append('subcategoria_id', '1');
+    formData.append('severidad', severity);
+
+    const [latVal, lngVal] = parseCoordinatesStr(localCoordinates);
+    formData.append('latitude', latVal.toString());
+    formData.append('longitude', lngVal.toString());
 
     if (rawFile) {
       formData.append('foto', rawFile);
@@ -445,23 +457,27 @@ export default function ReportFormScreen({
       const newId = dataDelBackend.id || `ENV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
 
       const reportImage = uploadedImage || (
-        category === 'Residuos'
+        category === 'Acumulación de Basura'
           ? 'https://plus.unsplash.com/premium_photo-1661962386121-7221f7ed43ff?auto=format&fit=crop&w=600&q=80'
-          : category === 'Agua Contaminada'
+          : category === 'Fuga de Agua'
             ? 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?auto=format&fit=crop&w=600&q=80'
             : 'https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&w=600&q=80'
       );
 
       const computedReport: IncidentReport = {
         id: newId,
-        title: `${category === 'Residuos' ? 'Acumulación de Desechos' : category === 'Agua Contaminada' ? 'Fuga/Vertido de Agua' : 'Emisión de Gases'} - ${address.split(',')[0] || 'Nueva Ubicación'}`,
+        title: `${category} - ${address.split(',')[0] || 'Nueva Ubicación'}`,
         description: description.substring(0, 100) + '...',
         detailedDescription: description,
-        category: category || 'General',
-        severity: 'Media Severidad',
-        status: 'Abierto',
+        category: category,
+        severity: severity,
+        status: 'Recibido',
         location: address || 'Zona Metropolitana Central',
         coordinates: localCoordinates,
+        latitude: latVal,
+        longitude: lngVal,
+        puntos_asignados: 0,
+        estado_puntos: 'Pendiente',
         date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
         timeAgo: 'Hace unos instantes',
         views: 1,
@@ -469,8 +485,8 @@ export default function ReportFormScreen({
         authorName: currentUser.name,
         authorAvatar: currentUser.avatar,
         authorRole: currentUser.role,
-        severityIndex: 6.5,
-        impactedUsers: 25,
+        severityIndex: 5.0,
+        impactedUsers: 10,
         timeline: {
           received: { date: 'Hoy, Recién ingresado', checked: true },
           reviewing: { note: 'Pendiente de asignación de autoridad', checked: false },
@@ -515,7 +531,7 @@ export default function ReportFormScreen({
               1. Categoría del Problema
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {categories.map((cat) => {
                 const isSelected = category === cat.id;
                 return (
@@ -542,6 +558,27 @@ export default function ReportFormScreen({
                   </button>
                 );
               })}
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-[#F0F6F1] space-y-1.5">
+              <label className="text-xs font-bold text-[#143B20] uppercase tracking-wider block mb-2">
+                Nivel de Severidad
+              </label>
+              <div className="flex gap-2">
+                {['Baja', 'Media', 'Alta', 'Critica'].map(sev => (
+                  <button
+                    key={sev}
+                    type="button"
+                    onClick={() => setSeverity(sev as any)}
+                    className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${severity === sev
+                      ? (sev === 'Critica' || sev === 'Alta' ? 'bg-rose-50 border-rose-500 text-rose-700' : 'bg-[#1E8344] border-[#1E8344] text-white')
+                      : 'bg-white border-[#CDE1D1] text-[#557B5E] hover:bg-slate-50'
+                      }`}
+                  >
+                    {sev}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
