@@ -51,8 +51,8 @@ export default function DashboardScreen({
         if (!token) return;
 
         const endpoint = isAdmin 
-          ? 'http://localhost:3001/api/dashboard/admin-stats' 
-          : 'http://localhost:3001/api/dashboard/user-stats';
+          ? '/api/dashboard/admin-stats' 
+          : '/api/dashboard/user-stats';
         
         const res = await fetch(endpoint, {
           headers: { 'Authorization': `Bearer ${token}` }

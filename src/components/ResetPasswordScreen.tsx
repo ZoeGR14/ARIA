@@ -42,7 +42,7 @@ export default function ResetPasswordScreen() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/auth/restablecer-password', {
+      const response = await fetch('/api/auth/restablecer-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

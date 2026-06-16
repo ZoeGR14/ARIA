@@ -54,7 +54,7 @@ export default function ChangePasswordScreen() {
 
         try {
             // Ajusta la URL según la ruta exacta de tu endpoint
-            const response = await fetch('http://localhost:3001/api/auth/password', {
+            const response = await fetch('/api/auth/password', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

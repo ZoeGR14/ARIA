@@ -31,7 +31,7 @@ export default function VerifyEmailScreen() {
             try {
 
                 const response = await fetch(
-                    `http://localhost:3001/api/auth/verificar/${token}`
+                    `/api/auth/verificar/${token}`
                 );
 
                 const data = await response.json();

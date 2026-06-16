@@ -50,7 +50,7 @@ export default function EditProfileScreen({
         formData.append("avatar", selectedFile);
       }
 
-      const response = await fetch("http://localhost:3001/api/auth/perfil", {
+      const response = await fetch("/api/auth/perfil", {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`
@@ -84,7 +84,7 @@ export default function EditProfileScreen({
             }).catch(() => null);
 
             if (fcmToken) {
-              await fetch('http://localhost:3001/api/fcm/fcm-token', {
+              await fetch('/api/fcm/fcm-token', {
                 method: 'DELETE',
                 headers: {
                   'Content-Type': 'application/json',

@@ -19,6 +19,16 @@ export default defineConfig(() => {
          watch: process.env.DISABLE_HMR === "true" ? null : {
             usePolling: true,
          },
+         proxy: {
+            "/api": {
+               target: "http://localhost:3001",
+               changeOrigin: true,
+            },
+            "/uploads": {
+               target: "http://localhost:3001",
+               changeOrigin: true,
+            },
+         },
       },
    };
 });
