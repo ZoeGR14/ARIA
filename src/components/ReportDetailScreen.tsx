@@ -50,6 +50,7 @@ export default function ReportDetailScreen({
   const [adminStatus, setAdminStatus] = useState<string>(report?.status || 'Recibido');
   const [adminPointsStatus, setAdminPointsStatus] = useState<string>(report?.estado_puntos || 'Pendiente');
   const [adminPoints, setAdminPoints] = useState<number>(report?.puntos_asignados || 0);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     if (report) {
@@ -85,7 +86,7 @@ export default function ReportDetailScreen({
         estado_puntos: adminPointsStatus as any,
         puntos_asignados: adminPoints
       });
-      alert('Reporte actualizado correctamente');
+      setShowSuccessModal(true);
     } catch (error) {
       console.error(error);
       alert('Error al actualizar el reporte');
@@ -548,6 +549,28 @@ export default function ReportDetailScreen({
         </div>
 
       </div>
+      
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-[#143B20]/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-xl border border-[#DDE7DE] animate-in fade-in zoom-in duration-300">
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-[#EBF7EE] mb-6">
+              <CheckCircle2 className="h-10 w-10 text-[#1E8344]" />
+            </div>
+            <h3 className="text-xl font-extrabold text-[#143B20] mb-2">¡Reporte Actualizado!</h3>
+            <p className="text-sm text-[#4F6C56] font-medium mb-8">
+              Los puntos y el estado del reporte han sido guardados exitosamente.
+            </p>
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full bg-[#05682C] text-white font-bold py-3.5 px-4 rounded-xl hover:bg-[#045524] transition-all cursor-pointer shadow-md"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
