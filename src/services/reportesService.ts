@@ -87,20 +87,20 @@ export async function getReportePorId(id: string): Promise<IncidentReport | null
 }
 
 export async function crearReporte(formData: FormData, token: string) {
-    const apiUrl = import.meta.env.VITE_API_URL;
-    
-    const response = await fetch(`${apiUrl}/reportes`, {
-        method: 'POST',
-        headers: {
-            // Nota: Aquí no lleva Content-Type, el navegador lo pone solo
-            'Authorization': `Bearer ${token}` 
-        },
-        body: formData,
-    });
+  const apiUrl = import.meta.env.VITE_API_URL;
 
-    if (!response.ok) {
-        throw new Error(`Error al enviar el reporte: ${response.status}`);
-    }
+  const response = await fetch(`${apiUrl}/reportes`, {
+    method: 'POST',
+    headers: {
+      // Nota: Aquí no lleva Content-Type, el navegador lo pone solo
+      'Authorization': `Bearer ${token}`
+    },
+    body: formData,
+  });
 
-    return await response.json();
+  if (!response.ok) {
+    throw new Error(`Error al enviar el reporte: ${response.status}`);
+  }
+
+  return await response.json();
 }
