@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
   const navigate = useNavigate();
@@ -26,34 +27,25 @@ export default function Footer() {
 
         {/* Links */}
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-[#3b5341] tracking-wide">
-          <button
+        <button
             type="button"
-            onClick={() => navigate('/acerca-de')}
-            className="hover:text-[#1E8344] transition-colors"
+            onClick={() => navigate('/privacidad?tab=privacidad')}
+            className="hover:text-[#1E8344] transition-colors focus:outline-none"
           >
             Privacidad
           </button>
+          
           <button
             type="button"
-            onClick={() => navigate('/acerca-de')}
-            className="hover:text-[#1E8344] transition-colors"
+            onClick={() => navigate('/privacidad?tab=terminos')}
+            className="hover:text-[#1E8344] transition-colors focus:outline-none"
           >
             Términos
           </button>
-          <button
-            type="button"
-            onClick={() => navigate('/acerca-de')}
-            className="hover:text-[#1E8344] transition-colors"
-          >
-            Contacto
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/acerca-de')}
-            className="hover:text-[#1E8344] text-[#1E8344] border-l border-[#C1D2C5] pl-6 transition-colors"
-          >
-            Impacto 2023
-          </button>
+          
+          <span className="cursor-default">
+            Contacto: terranovatech@gmail.com
+          </span>
         </div>
       </div>
     </footer>

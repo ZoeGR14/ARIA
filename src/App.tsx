@@ -27,7 +27,7 @@ import CommunityScreen from './components/CommunityScreen';
 import ChangePasswordScreen from './components/EditPassword';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, Bell, Inbox, Check, Sparkles, Mail, Loader2 } from 'lucide-react';
-
+import PrivacyScreen from './components/PrivacyScreen';
 import { getToken, deleteToken, onMessage, isSupported } from 'firebase/messaging';
 import { messaging } from './firebase';
 import { useToast } from './contexts/ToastContext';
@@ -573,6 +573,7 @@ export default function App() {
               transition={{ duration: 0.15, ease: 'easeOut' }}
             >
                <Routes>
+                <Route path="/privacidad" element={<PrivacyScreen />} />
                 <Route path="/" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LandingScreen reports={reports} />} />
                 <Route path="/login" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LoginScreen setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} onShowVerification={handleShowVerification} />} />
                  <Route path="/verificar-correo/:token" element={<VerifyEmailScreen />}/>
