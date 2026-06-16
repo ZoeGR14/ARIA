@@ -9,6 +9,8 @@ function adaptarContribuidor(raw: any, index: number): Contributor {
     points: raw.puntos_totales ?? 0,
     avatar: "",
     verified: raw.email_verificado ?? false,
+    nivel_ranking: raw.nivel_ranking ?? "",
+    reportCount: raw._count?.reporte ?? 0,
   };
 }
 
