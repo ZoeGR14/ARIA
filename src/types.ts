@@ -54,4 +54,6 @@ export interface Contributor {
   points: number;
   avatar: string;
   verified: boolean;
+  nivel_ranking: string;
+  reportCount: number;
 }
