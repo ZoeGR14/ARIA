@@ -13,6 +13,8 @@ export const INITIAL_CONTRIBUTORS: Contributor[] = [
     points: 2450,
     avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80',
     verified: true,
+    nivel_ranking: 'Experto',
+    reportCount: 45,
   },
   {
     id: 'c2',
@@ -21,6 +23,8 @@ export const INITIAL_CONTRIBUTORS: Contributor[] = [
     points: 1870,
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
     verified: true,
+    nivel_ranking: 'Protector',
+    reportCount: 32,
   },
   {
     id: 'c3',
@@ -29,6 +33,8 @@ export const INITIAL_CONTRIBUTORS: Contributor[] = [
     points: 1560,
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
     verified: true,
+    nivel_ranking: 'Colaborador',
+    reportCount: 18,
   },
 ];
 

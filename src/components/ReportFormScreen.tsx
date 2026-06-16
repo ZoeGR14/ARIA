@@ -466,7 +466,7 @@ export default function ReportFormScreen({
 
       const computedReport: IncidentReport = {
         id: newId,
-        title: `${category} - ${new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}`,
+        title: `${category} - ${address.split(',')[0] || 'Nueva Ubicación'}`,
         description: description.substring(0, 100) + '...',
         detailedDescription: description,
         category: category,
@@ -485,27 +485,8 @@ export default function ReportFormScreen({
         authorName: currentUser.name,
         authorAvatar: currentUser.avatar,
         authorRole: currentUser.role,
-      };
-
-      const computedReport: IncidentReport = {
-        id: newId,
-        title: `${category === 'Residuos' ? 'Acumulación de Desechos' : category === 'Agua Contaminada' ? 'Fuga/Vertido de Agua' : 'Emisión de Gases'} - ${address.split(',')[0] || 'Nueva Ubicación'}`,
-        description: description.substring(0, 100) + '...',
-        detailedDescription: description,
-        category: category || 'General',
-        severity: 'Media Severidad',
-        status: 'Abierto',
-        location: address || 'Zona Metropolitana Central',
-        coordinates: localCoordinates,
-        date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
-        timeAgo: 'Hace unos instantes',
-        views: 1,
-        imageUrl: reportImage,
-        authorName: currentUser.name,
-        authorAvatar: currentUser.avatar,
-        authorRole: currentUser.role,
-        severityIndex: 6.5,
-        impactedUsers: 25,
+        severityIndex: 5.0,
+        impactedUsers: 10,
         timeline: {
           received: { date: 'Hoy, Recién ingresado', checked: true },
           reviewing: { note: 'Pendiente de asignación de autoridad', checked: false },
@@ -590,8 +571,8 @@ export default function ReportFormScreen({
                     type="button"
                     onClick={() => setSeverity(sev as any)}
                     className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${severity === sev
-                        ? (sev === 'Critica' || sev === 'Alta' ? 'bg-rose-50 border-rose-500 text-rose-700' : 'bg-[#1E8344] border-[#1E8344] text-white')
-                        : 'bg-white border-[#CDE1D1] text-[#557B5E] hover:bg-slate-50'
+                      ? (sev === 'Critica' || sev === 'Alta' ? 'bg-rose-50 border-rose-500 text-rose-700' : 'bg-[#1E8344] border-[#1E8344] text-white')
+                      : 'bg-white border-[#CDE1D1] text-[#557B5E] hover:bg-slate-50'
                       }`}
                   >
                     {sev}
