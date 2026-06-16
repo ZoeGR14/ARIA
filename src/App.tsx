@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { IncidentReport, Comment } from './types';
-import { INITIAL_REPORTS } from './data/mockData';
+import { getReportesActivos } from './services/reportesService';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -29,6 +29,7 @@ import { LogOut, Bell, Inbox, Check, Sparkles, Mail, Loader2 } from 'lucide-reac
 
 import { getToken, deleteToken, onMessage, isSupported } from 'firebase/messaging';
 import { messaging } from './firebase';
+import { useToast } from './contexts/ToastContext';
 
 const CARLOS_MENDOZA_PROFILE = {
   name: 'Carlos Mendoza',
@@ -60,33 +61,11 @@ export default function App() {
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [userProfile, setUserProfile] = useState(CARLOS_MENDOZA_PROFILE);
-  const [reports, setReports] = useState<IncidentReport[]>(INITIAL_REPORTS);
+  const [reports, setReports] = useState<IncidentReport[]>([]);
   const [prefilledLocation, setPrefilledLocation] = useState<{ address: string; coordinates: string } | null>(null);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 'n1',
-      title: 'Oficial asignado',
-      message: 'Un inspector de Terranova Tech ha sido enviado a la Colonia Roma Norte para revisar el reporte ENV-2023-8472.',
-      time: 'Hace 1 hora',
-      read: false,
-      reportId: 'ENV-2023-8472',
-    },
-    {
-      id: 'n2',
-      title: 'Comunidad activa',
-      message: 'Se añadieron nuevos comentarios y firmas oficiales al reporte de emisiones industriales.',
-      time: 'Hace 3 horas',
-      read: true,
-      reportId: 'ENV-2023-1120',
-    },
-    {
-      id: 'n3',
-      title: '¡Te damos la bienvenida!',
-      message: 'Gracias por unirte a Terranova Tech. Comienza a registrar incidencias y cuidar el medio ambiente.',
-      time: 'Hace 1 día',
-      read: true,
-    }
-  ]);
+  const { addToast } = useToast();
+  const [notifications, setNotifications] = useState<any[]>([]);
+
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
@@ -131,6 +110,42 @@ export default function App() {
     }
   }, []);
 
+  // Cargar notificaciones reales al iniciar sesión
+  useEffect(() => {
+    if (isLoggedIn) {
+      const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
+      if (token) {
+        fetch('http://localhost:3001/api/notificaciones', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(data => {
+             if (Array.isArray(data)) {
+             const mapped = data.map(n => {
+               let title = 'Notificación';
+               if (n.tipo === 'SISTEMA_ALERTA') title = 'Alerta Crítica';
+               else if (n.tipo === 'ESTADO_REPORTE') title = 'Actualización de tu reporte 📋';
+               else if (n.tipo === 'PUNTOS_OTORGADOS') title = '¡Puntos ganados! 🌟';
+               
+               return {
+                 id: String(n.id),
+                 title: title,
+                 message: n.mensaje,
+                 time: new Date(n.fecha_hora).toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }),
+                 read: n.leido,
+                 reportId: n.reporte_id ? String(n.reporte_id) : undefined
+               };
+             });
+             setNotifications(mapped);
+           }
+        })
+        .catch(console.error);
+      }
+    } else {
+      setNotifications([]);
+    }
+  }, [isLoggedIn]);
+
   // Listen for FCM messages
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
@@ -152,6 +167,18 @@ export default function App() {
               reportId: message.data?.reportId,
             };
             setNotifications((prev) => [newNotify, ...prev]);
+
+            let toastType: 'info' | 'success' | 'warning' | 'error' = 'info';
+            if (newNotify.title.includes('Alerta')) toastType = 'error';
+            else if (newNotify.title.includes('Puntos') || newNotify.title.includes('registrado')) toastType = 'success';
+            else if (newNotify.title.includes('Actualización')) toastType = 'info';
+
+            addToast({
+              title: newNotify.title,
+              message: newNotify.message,
+              type: toastType,
+              duration: 6000
+            });
           }
         });
       } catch (err) {
@@ -264,6 +291,10 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [location.pathname]);
 
+  useEffect(() => {
+    getReportesActivos().then(setReports);
+  }, []);
+
   const handleReportAtLocation = (address: string, coordinates: string) => {
     setPrefilledLocation({ address, coordinates });
     navigate('/reportar');
@@ -288,6 +319,12 @@ export default function App() {
       reportId: newReport.id,
     };
     setNotifications((prev) => [newNotify, ...prev]);
+    addToast({
+      title: newNotify.title,
+      message: newNotify.message,
+      type: 'success',
+      duration: 5000
+    });
   };
 
   // Handle appending comments on detail screen
@@ -383,6 +420,11 @@ export default function App() {
                           <button
                             onClick={() => {
                               setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                              const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
+                              fetch('http://localhost:3001/api/notificaciones/leer-todas', {
+                                method: 'PATCH',
+                                headers: { 'Authorization': `Bearer ${token}` }
+                              }).catch(console.error);
                             }}
                             className="text-[10px] font-black text-[#1E8344] hover:text-[#0b5425] transition-colors cursor-pointer"
                           >
@@ -404,6 +446,13 @@ export default function App() {
                               onClick={() => {
                                 setNotifications(prev => prev.map(notif => notif.id === n.id ? { ...notif, read: true } : notif));
                                 setShowNotificationsDropdown(false);
+                                if (!n.read && !n.id.toString().startsWith('n-')) {
+                                  const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
+                                  fetch(`http://localhost:3001/api/notificaciones/${n.id}/leer`, {
+                                    method: 'PATCH',
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                  }).catch(console.error);
+                                }
                                 if (n.reportId) {
                                   navigate('/reporte/' + n.reportId);
                                 }

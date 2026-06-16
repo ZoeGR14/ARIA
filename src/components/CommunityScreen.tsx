@@ -145,6 +145,8 @@ export default function CommunityScreen({
     rank: idx + 1,
   }));
 
+  const totalPuntos = localContributors.reduce((sum, c) => sum + c.points, 0);
+
   const getRankBadge = (rank: number) => {
     switch (rank) {
       case 1:
@@ -415,24 +417,11 @@ export default function CommunityScreen({
           /* ————————————————— 2) ROOT COMMUNITY LEADERBOARD LIST (DEFAULT VIEW) ————————————————— */
           <>
             {/* Global Impact Summary Cards Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-3xl border border-[#DDE7DE] p-6 relative overflow-hidden flex flex-col justify-between">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Validación Ciudadana</span>
-                  <h3 className="text-2xl font-black text-[#143B20]">94.2% Eficacia</h3>
-                </div>
-                <p className="text-xs text-[#557B5E] mt-3 leading-relaxed">
-                  Los reportes ambientales cuentan con la tasa más alta de corroboración comunitaria de la región.
-                </p>
-                <div className="absolute right-4 bottom-4 opacity-5">
-                  <ShieldCheck className="w-16 h-16 text-[#143B20]" />
-                </div>
-              </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-3xl border border-[#DDE7DE] p-6 relative overflow-hidden flex flex-col justify-between">
                 <div className="space-y-1">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Esfuerzo Conjunto</span>
-                  <h3 className="text-2xl font-black text-[#1E8344]">12,870 Puntos</h3>
+                  <h3 className="text-2xl font-black text-[#1E8344]">{totalPuntos.toLocaleString()} Puntos</h3>
                 </div>
                 <p className="text-xs text-[#557B5E] mt-3 leading-relaxed">
                   Puntos ecológicos globales sumados por el vecindario este mes a través de reportes resueltos.
@@ -486,11 +475,7 @@ export default function CommunityScreen({
               </div>
             </div>
 
-            {/* 2-Column Split: Leaderboard left, Challenges right */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              
-              {/* Leaderboard panel (7cols) */}
-              <div className="lg:col-span-7 bg-white rounded-3xl border border-[#DDE7DE] p-6 space-y-6 shadow-xs">
+            <div className="bg-white rounded-3xl border border-[#DDE7DE] p-6 space-y-6 shadow-xs">
                 <div className="flex items-center justify-between pb-4 border-b border-[#F0F5F1]">
                   <div className="flex items-center space-x-2">
                     <Trophy className="w-5 h-5 text-[#C49B2F]" />
@@ -574,69 +559,6 @@ export default function CommunityScreen({
                     );
                   })}
                 </div>
-              </div>
-
-              {/* Active Challenges list panel (5cols) */}
-              <div className="lg:col-span-5 space-y-6">
-                
-                <div className="bg-white rounded-3xl border border-[#DDE7DE] p-6 space-y-6 shadow-xs">
-                  <div className="flex items-center justify-between pb-3 border-b border-[#F0F5F1]">
-                    <div className="flex items-center space-x-2">
-                      <Sparkles className="w-4.5 h-4.5 text-[#1E8344]" />
-                      <h3 className="text-base font-extrabold text-[#143B20]">Misiones Activas</h3>
-                    </div>
-                    <span title="Al cumplir estas metas grupales recibes bonos de impacto">
-                      <HelpCircle className="w-4 h-4 text-slate-300" />
-                    </span>
-                  </div>
-
-                  <div className="space-y-4">
-                    {COMMUNITY_CHALLENGES.map((challenge) => (
-                      <div 
-                        key={challenge.id}
-                        className="p-4 rounded-2xl border border-dashed border-[#CDE1D1] bg-[#FAFDF9] space-y-3"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[9px] font-black tracking-wider uppercase bg-[#EBF7EE] text-[#1E8344] px-2 py-0.5 rounded-md">
-                            {challenge.tag}
-                          </span>
-                          <span className="text-xs font-black text-[#1E8344]">
-                            {challenge.points}
-                          </span>
-                        </div>
-
-                        <div className="space-y-1">
-                          <h4 className="text-sm font-extrabold text-[#143B20] leading-tight">
-                            {challenge.title}
-                          </h4>
-                          <p className="text-xs text-[#557B5E] leading-relaxed">
-                            {challenge.description}
-                          </p>
-                        </div>
-
-                        {/* Simple progress bar metric */}
-                        <div className="space-y-1.5 pt-1.5">
-                          <div className="flex items-center justify-between text-[10px] font-medium text-slate-400">
-                            <span>Progreso Comunitario</span>
-                            <span className="font-bold text-[#143B20]">{challenge.progress}%</span>
-                          </div>
-                          <div className="w-full bg-[#EBF6EE] h-1.5 rounded-full overflow-hidden">
-                            <div 
-                              className="bg-gradient-to-r from-[#1E8344] to-[#45AA6D] h-full rounded-full"
-                              style={{ width: `${challenge.progress}%` }}
-                            />
-                          </div>
-                          <span className="text-[9.5px] font-bold text-[#557B5E] block">
-                            👥 {challenge.participants} vecinos participando activamente.
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-              </div>
-
             </div>
           </>
         )}

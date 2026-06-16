@@ -35,27 +35,87 @@ export default function EditProfileScreen({
   const [role, setRole] = useState(userProfile.role);
   const [level, setLevel] = useState(userProfile.level);
   const [avatar, setAvatar] = useState(userProfile.avatar);
-  const [custUrl, setCustUrl] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showSavedMsg, setShowSavedMsg] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (
+      e: React.FormEvent
+  ) => {
+
     e.preventDefault();
-    if (!name.trim()) return;
-    
-    setUserProfile((prev: any) => ({
-      ...prev,
-      name: name.trim(),
-      role: role.trim(),
-      level: level.trim(),
-      avatar: avatar,
-    }));
-    
-    setShowSavedMsg(true);
-    setTimeout(() => {
-      setShowSavedMsg(false);
-      // Automatically redirect they to dashboard (Inicio Perfil)
-      navigate('/dashboard');
-    }, 1500);
+
+    try {
+
+      const token =
+          localStorage.getItem("token") ??
+          sessionStorage.getItem("token");
+
+      const formData =
+          new FormData();
+
+      formData.append(
+          "nombreCompleto",
+          name
+      );
+
+      if (selectedFile) {
+
+        formData.append(
+            "avatar",
+            selectedFile
+        );
+
+      }
+
+      const response =
+          await fetch(
+              "http://localhost:3001/api/auth/perfil",
+              {
+                method: "PUT",
+                headers: {
+                  Authorization:
+                      `Bearer ${token}`
+                },
+                body: formData
+              }
+          );
+
+      const data =
+          await response.json();
+
+      if (!response.ok) {
+
+        throw new Error(
+            data.mensaje
+        );
+
+      }
+
+      setUserProfile(
+          (prev: any) => ({
+            ...prev,
+            name:
+            data.usuario.nombre_completo,
+            avatar:
+                data.usuario.avatar_url ??
+                prev.avatar
+          })
+      );
+
+      setShowSavedMsg(true);
+
+      setTimeout(() => {
+
+        navigate("/dashboard");
+
+      }, 1500);
+
+    } catch (error) {
+
+      console.error(error);
+
+    }
+
   };
 
   return (
@@ -82,87 +142,66 @@ export default function EditProfileScreen({
         {/* Form Container cards layout */}
         <div className="bg-white rounded-3xl border border-[#DDE7DE] p-6 md:p-8 shadow-xs">
           <form onSubmit={handleSave} className="space-y-8">
-            
-            {/* 1. Avatar selector layout */}
+
+            {/* Avatar */}
             <div className="space-y-4">
               <label className="text-[10px] font-black text-slate-400 block uppercase tracking-wider pl-1">
                 Imagen de Perfil
               </label>
 
               <div className="flex flex-col md:flex-row items-center gap-6 pb-6 border-b border-[#F0F5F1]">
-                {/* Current avatar indicator */}
+
                 <div className="relative group">
-                  <img 
-                    src={avatar} 
-                    alt="Vista Previa de Avatar" 
-                    className="w-24 h-24 rounded-full border-4 border-[#CCE8C6] object-cover shadow-md"
-                    referrerPolicy="no-referrer"
+                  <img
+                      src={
+                        selectedFile
+                            ? URL.createObjectURL(selectedFile)
+                            : avatar
+                      }
+                      alt="Vista previa"
+                      className="w-24 h-24 rounded-full border-4 border-[#CCE8C6] object-cover shadow-md"
                   />
+
                   <div className="absolute inset-0 bg-[#143B20]/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Camera className="w-6 h-6 text-white" />
                   </div>
                 </div>
 
-                {/* Grid selection list */}
-                <div className="flex-1 space-y-3.5 w-full">
-                  <p className="text-xs text-[#557B5E] font-bold">
-                    Selecciona uno de nuestros avatares ecológicos predefinidos:
-                  </p>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
-                    {PRESET_AVATARS.map((pSet) => {
-                      const isSelected = avatar === pSet.url;
-                      return (
-                        <button
-                          key={pSet.name}
-                          type="button"
-                          onClick={() => setAvatar(pSet.url)}
-                          className={`relative rounded-xl overflow-hidden aspect-square border-2 cursor-pointer transition-all ${
-                            isSelected 
-                              ? 'border-[#1E8344] scale-102 shadow-md ring-2 ring-[#1E8344]/20' 
-                              : 'border-slate-200 hover:border-[#CCE8C6]'
-                          }`}
-                        >
-                          <img 
-                            src={pSet.url} 
-                            alt={pSet.name} 
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                          {isSelected && (
-                            <div className="absolute inset-0 bg-[#1E8344]/30 flex items-center justify-center">
-                              <div className="bg-white rounded-full p-0.5">
-                                <Check className="w-3 h-3 text-[#1E8344]" />
-                              </div>
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div className="flex-1 w-full space-y-3">
 
-                  {/* Input field for custom image link */}
-                  <div className="pt-2">
-                    <div className="flex gap-2">
-                      <input
-                        type="url"
-                        placeholder="Pegar URL de imagen personalizada..."
-                        value={custUrl}
-                        onChange={(e) => setCustUrl(e.target.value)}
-                        className="flex-1 bg-[#F3FAF4] border border-[#CDE1D1] text-[#143B20] text-xs font-semibold py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E8344]/15"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (custUrl.trim()) {
-                            setAvatar(custUrl.trim());
-                            setCustUrl('');
+                  <p className="text-xs text-[#557B5E] font-bold">
+                    Selecciona una imagen desde tu dispositivo
+                  </p>
+
+                  <div className="space-y-3">
+
+                    <label
+                        htmlFor="avatar-upload"
+                        className="inline-flex items-center justify-center bg-[#05682C] text-white font-bold px-5 py-3 rounded-xl cursor-pointer hover:bg-[#045524] transition-colors"
+                    >
+                      Seleccionar imagen
+                    </label>
+
+                    <input
+                        id="avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            setSelectedFile(e.target.files[0]);
                           }
                         }}
-                        className="bg-[#EDF2EE] border border-[#CDE1D1] text-[#143B20] text-xs font-bold px-4 py-2 rounded-xl hover:bg-[#DCE7DD] transition-colors cursor-pointer"
-                      >
-                        Aplicar
-                      </button>
+                    />
+
+                    <div className="bg-[#F3FAF4] border border-[#CDE1D1] rounded-xl px-4 py-3 text-sm text-[#143B20]">
+
+                      {selectedFile
+                          ? selectedFile.name
+                          : "Ninguna imagen seleccionada"}
+
                     </div>
+
                   </div>
                 </div>
               </div>

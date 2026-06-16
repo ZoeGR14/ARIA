@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { IncidentReport, Comment } from '../types';
+import { getReportePorId } from '../services/reportesService';
 import {
   ArrowLeft, Clock, Calendar, CheckCircle2, ShieldAlert, Users,
   MapPin, Compass, Play, Send, Shield, User
@@ -40,8 +41,17 @@ export default function ReportDetailScreen({
 }: ReportDetailScreenProps) {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const report = reports.find(r => r.id === id) ?? null;
+  const [report, setReport] = useState<IncidentReport | null>(
+    reports.find(r => String(r.id) === String(id)) ?? null
+  );
   const [commentText, setCommentText] = useState('');
+
+  useEffect(() => {
+    if (!id) return;
+    getReportePorId(id).then(r => {
+      if (r) setReport(r);
+    });
+  }, [id]);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
