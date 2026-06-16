@@ -11,7 +11,8 @@ export const getContributores = async (req: Request, res: Response): Promise<voi
                 nombre_completo: true,
                 puntos_totales: true,
                 nivel_ranking: true,
-                email_verificado: true
+                email_verificado: true,
+                _count: { select: { reporte: true } }
             }
         });
 
