@@ -85,31 +85,19 @@ export default function AboutScreen() {
                   Plataforma Terranova Tech
                </h2>
                <p className="text-sm text-[#384C3E] leading-relaxed">
-                  <strong>Terranova Tech</strong> nació como un proyecto
-                  colaborativo en conjunto con universidades e institutos de
-                  ecología en América Latina. La plataforma empodera a los
-                  ciudadanos en distritos urbanos para convertirse en
-                  científicos ciudadanos activos, reportando anomalías en su
-                  entorno con tan solo un dispositivo móvil.
+                  <strong>Terranova Tech</strong> es un proyecto colaborativo que nació en el ámbito universitario con el objetivo de resolver un problema real:
+                   la falta de canales directos y eficientes para reportar problemas ambientales en nuestras comunidades. Sabemos que los procesos reportes tradicionales
+                   suelen ser lentos, burocráticos y frustrantes, por lo que decidimos crear una alternativa tecnológica accesible para cualquiera que tenga un teléfono móvil.
+                   La plataforma funciona como una red de ciencia ciudadana. No prometemos resolver los problemas de inmediato, pero sí garantizamos visibilizarlos.
+                  Permitimos que los vecinos documenten y ubiquen geográficamente en un mapa los focos de contaminación, tiraderos clandestinos o fugas de agua en sus colonias,
+                   transformando las quejas individuales en un registro de datos ordenado, público y transparente.
                </p>
                <p className="text-sm text-[#384C3E] leading-relaxed">
-                  A través de algoritmos geográficos inteligentes y la
-                  participación de investigadores universitarios (como el
-                  doctorado de Carlos Mendoza), aceleramos la velocidad de
-                  respuesta municipal a problemas de derrames químicos y
-                  basureros ilegales en más de un 140%.
+                 Nuestra tecnología no hace magia; simplemente organiza la información de forma óptima. A través de herramientas de mapeo y georreferenciación,
+                 estructuramos los reportes para que dejen de ser reportes aislados y se conviertan en mapas de calor de las zonas más afectadas.
+                 El verdadero valor de Terranova Tech no está solo en el código, sino en la participación de la comunidad: entre más personas usen la plataforma
+                 para reportar lo que pasa en sus calles, más presión y mejores herramientas tendrán las autoridades locales para atender las prioridades reales de cada distrito urbano.
                </p>
-
-               <div className="flex gap-4 pt-4 border-t border-[#F0F6F1] items-center text-xs font-semibold text-[#1E8344]">
-                  <span className="flex items-center gap-1">
-                     <Milestone className="w-4 h-4 text-[#1E8344]" />
-                     Más de 6,400 hectáreas protegidas
-                  </span>
-                  <span className="flex items-center gap-1 border-l border-[#CDE1D1] pl-4">
-                     <Award className="w-4 h-4 text-[#1E8344]" />
-                     Premio Innovación Ecotecnológica 2023
-                  </span>
-               </div>
             </div>
 
             {/* Back navigation CTA */}
