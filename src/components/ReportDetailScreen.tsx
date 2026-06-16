@@ -333,7 +333,7 @@ export default function ReportDetailScreen({
                       {report.authorName}
                     </h4>
                     <span className="text-[10px] text-[#557B5E] font-medium block mt-1">
-                      {report.authorRole} • {report.authorName.includes('Elena') ? '42 Reportes' : 'Nivel 3'}
+                      {report.authorRole} • Nivel: {report.authorLevel || 'Novato'}
                     </span>
                   </div>
                 </div>

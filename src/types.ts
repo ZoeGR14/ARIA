@@ -40,6 +40,7 @@ export interface IncidentReport {
   authorName: string;
   authorAvatar: string;
   authorRole: string;
+  authorLevel?: string;
   actionTaken?: string;
   severityIndex?: number;
   impactedUsers?: number;

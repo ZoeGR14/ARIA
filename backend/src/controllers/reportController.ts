@@ -23,11 +23,14 @@ export const getReportesActivos = async (req: Request, res: Response): Promise<v
                 c.color_hex as categoria_color,
                 e.nombre as estado_nombre,
                 u.nombre_completo as usuario_nombre,
-                u.avatar_url as avatar
+                u.avatar_url as avatar,
+                u.nivel_ranking as usuario_nivel_ranking,
+                CASE WHEN a.id IS NOT NULL THEN 'Administrador' ELSE 'Ciudadano' END as usuario_rol
             FROM reporte r
             LEFT JOIN categoria c ON r.categoria_id = c.id
             LEFT JOIN estado e ON r.estado_id = e.id
             LEFT JOIN usuario u ON r.usuario_id = u.id
+            LEFT JOIN administrador a ON u.id = a.id
             ORDER BY r.fecha_creacion DESC
         `;
 
@@ -59,6 +62,8 @@ export const getReportesActivos = async (req: Request, res: Response): Promise<v
                     id: r.usuario_id,
                     nombre_completo: r.usuario_nombre,
                     avatar_url: r.avatar,
+                    nivel_ranking: r.usuario_nivel_ranking,
+                    rol: r.usuario_rol,
                 }
             };
         });
@@ -92,11 +97,14 @@ export const getReporteById = async (req: Request, res: Response): Promise<void>
                 c.color_hex as categoria_color,
                 e.nombre as estado_nombre,
                 u.nombre_completo as usuario_nombre,
-                u.avatar_url as avatar
+                u.avatar_url as avatar,
+                u.nivel_ranking as usuario_nivel_ranking,
+                CASE WHEN a.id IS NOT NULL THEN 'Administrador' ELSE 'Ciudadano' END as usuario_rol
             FROM reporte r
             LEFT JOIN categoria c ON r.categoria_id = c.id
             LEFT JOIN estado e ON r.estado_id = e.id
             LEFT JOIN usuario u ON r.usuario_id = u.id
+            LEFT JOIN administrador a ON u.id = a.id
             WHERE r.id = ${parseInt(id as string)}
         `;
 
@@ -134,6 +142,8 @@ export const getReporteById = async (req: Request, res: Response): Promise<void>
                 id: r.usuario_id,
                 nombre_completo: r.usuario_nombre,
                 avatar_url: r.avatar,
+                nivel_ranking: r.usuario_nivel_ranking,
+                rol: r.usuario_rol,
             }
         };
 
@@ -291,11 +301,14 @@ export const getMisReportes = async (req: Request, res: Response): Promise<void>
                 c.color_hex as categoria_color,
                 e.nombre as estado_nombre,
                 u.nombre_completo as usuario_nombre,
-                u.avatar_url as avatar
+                u.avatar_url as avatar,
+                u.nivel_ranking as usuario_nivel_ranking,
+                CASE WHEN a.id IS NOT NULL THEN 'Administrador' ELSE 'Ciudadano' END as usuario_rol
             FROM reporte r
             LEFT JOIN categoria c ON r.categoria_id = c.id
             LEFT JOIN estado e ON r.estado_id = e.id
             LEFT JOIN usuario u ON r.usuario_id = u.id
+            LEFT JOIN administrador a ON u.id = a.id
             WHERE r.usuario_id = ${usuarioId}
             ORDER BY r.fecha_creacion DESC
         `;
@@ -326,7 +339,9 @@ export const getMisReportes = async (req: Request, res: Response): Promise<void>
             usuario: {
                 id: r.usuario_id,
                 nombre_completo: r.usuario_nombre,
-                avatar_url: r.avatar
+                avatar_url: r.avatar,
+                nivel_ranking: r.usuario_nivel_ranking,
+                rol: r.usuario_rol,
             }
         }));
 
@@ -360,11 +375,14 @@ export const getReportesByUsuario = async (req: Request, res: Response): Promise
                 c.color_hex as categoria_color,
                 e.nombre as estado_nombre,
                 u.nombre_completo as usuario_nombre,
-                u.avatar_url as avatar
+                u.avatar_url as avatar,
+                u.nivel_ranking as usuario_nivel_ranking,
+                CASE WHEN a.id IS NOT NULL THEN 'Administrador' ELSE 'Ciudadano' END as usuario_rol
             FROM reporte r
             LEFT JOIN categoria c ON r.categoria_id = c.id
             LEFT JOIN estado e ON r.estado_id = e.id
             LEFT JOIN usuario u ON r.usuario_id = u.id
+            LEFT JOIN administrador a ON u.id = a.id
             WHERE r.usuario_id = ${parseInt(userId as string)}
             ORDER BY r.fecha_creacion DESC
         `;
@@ -395,7 +413,9 @@ export const getReportesByUsuario = async (req: Request, res: Response): Promise
             usuario: {
                 id: r.usuario_id,
                 nombre_completo: r.usuario_nombre,
-                avatar_url: r.avatar
+                avatar_url: r.avatar,
+                nivel_ranking: r.usuario_nivel_ranking,
+                rol: r.usuario_rol,
             }
         }));
 
@@ -488,6 +508,30 @@ export const actualizarReporte = async (req: Request, res: Response): Promise<vo
                 where: { id: usuarioId },
                 data: { puntos_totales: { increment: puntosAgregados } }
             });
+
+            // Actualizar nivel_ranking basado en puntos totales
+            let nuevoNivel = "Novato";
+            if (usuarioUpdate.puntos_totales >= 1000) {
+                nuevoNivel = "Experto";
+            } else if (usuarioUpdate.puntos_totales >= 500) {
+                nuevoNivel = "Protector";
+            } else if (usuarioUpdate.puntos_totales >= 100) {
+                nuevoNivel = "Colaborador";
+            }
+
+            if (usuarioUpdate.nivel_ranking !== nuevoNivel) {
+                await prisma.usuario.update({
+                    where: { id: usuarioId },
+                    data: { nivel_ranking: nuevoNivel }
+                });
+                mensajesFCM.push({ title: '¡Has subido de nivel! 🚀', body: `¡Felicidades! Ahora eres de nivel ${nuevoNivel}.` });
+                notificacionesACrear.push({
+                    usuario_id: usuarioId,
+                    mensaje: `¡Felicidades! Has subido al nivel ${nuevoNivel}.`,
+                    tipo: 'SISTEMA_ALERTA',
+                    reporte_id: reporteId
+                });
+            }
 
             const mensajePuntos = `¡Has ganado ${puntosAgregados} puntos por tu reporte! Tu puntaje total es ahora de ${usuarioUpdate.puntos_totales} puntos.`;
             notificacionesACrear.push({

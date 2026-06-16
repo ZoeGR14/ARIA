@@ -52,7 +52,8 @@ function adaptarReporte(raw: any): IncidentReport {
     authorAvatar: raw.usuario?.avatar_url === ''
       ? "https://tse4.mm.bing.net/th/id/OIP.dDKYQqVBsG1tIt2uJzEJHwHaHa?cb=thfc1falcon2&rs=1&pid=ImgDetMain&o=7&rm=3"
       : raw.usuario?.avatar_url,
-    authorRole: 'Ciudadano',
+    authorRole: raw.usuario?.rol || 'Ciudadano',
+    authorLevel: raw.usuario?.nivel_ranking || 'Novato',
     latitude: raw.latitude,
     longitude: raw.longitude,
     puntos_asignados: raw.puntos_asignados || 0,

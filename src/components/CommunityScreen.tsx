@@ -438,7 +438,7 @@ export default function CommunityScreen({
                               )}
                             </div>
                             <p className="text-[10.5px] text-[#557B5E] font-bold">
-                              {contrib.nivel_ranking || 'EcoGuardián Voluntario'}
+                              {contrib.nivel_ranking || 'Novato'}
                             </p>
                           </div>
                         </div>
