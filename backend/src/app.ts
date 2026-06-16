@@ -19,6 +19,12 @@ const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
+if (!fs.existsSync(path.join(uploadsDir,"avatars"))) {
+    fs.mkdirSync(path.join(uploadsDir,"avatars"), { recursive: true });
+}
+
+
 app.use("/uploads", express.static(uploadsDir));
 
 app.use(cors());

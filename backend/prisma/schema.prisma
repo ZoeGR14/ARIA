@@ -101,6 +101,7 @@ model usuario {
   puntos_totales      Int?                  @default(0)
   fecha_registro      DateTime?             @default(now()) @db.Timestamp(6)
   nivel_ranking       String?               @default("Novato") @db.VarChar(50)
+  avatar_url          String?               @default("") @db.VarChar(255)
   administrador       administrador?
   dispositivo_usuario dispositivo_usuario[]
   notificacion        notificacion[]

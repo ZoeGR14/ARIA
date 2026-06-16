@@ -27,7 +27,8 @@ CREATE TABLE USUARIO (
     contrasena_hash VARCHAR(255) NOT NULL,
     puntos_totales INT DEFAULT 0, 
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    nivel_ranking VARCHAR(50) DEFAULT 'Novato'
+    nivel_ranking VARCHAR(50) DEFAULT 'Novato',
+    avatar_url VARCHAR(255) DEFAULT ''
 );
 
 -- Tabla para gestionar tokens de validación y recuperación de contraseñas
