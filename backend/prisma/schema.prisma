@@ -101,7 +101,7 @@ model usuario {
   puntos_totales      Int?                  @default(0)
   fecha_registro      DateTime?             @default(now()) @db.Timestamp(6)
   nivel_ranking       String?               @default("Novato") @db.VarChar(50)
-  avatar_url          String?               @default("") @db.VarChar(255)
+  avatar_url          String?               @default("https://tse4.mm.bing.net/th/id/OIP.dDKYQqVBsG1tIt2uJzEJHwHaHa?cb=thfc1falcon2&rs=1&pid=ImgDetMain&o=7&rm=3") @db.VarChar(255)
   administrador       administrador?
   dispositivo_usuario dispositivo_usuario[]
   notificacion        notificacion[]

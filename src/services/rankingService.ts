@@ -7,7 +7,7 @@ function adaptarContribuidor(raw: any, index: number): Contributor {
     rank: index + 1,
     name: raw.nombre_completo,
     points: raw.puntos_totales ?? 0,
-    avatar: "",
+    avatar: raw.avatar_url ?? '',
     verified: raw.email_verificado ?? false,
     nivel_ranking: raw.nivel_ranking ?? "",
     reportCount: raw._count?.reporte ?? 0,
@@ -27,6 +27,7 @@ export async function getContributores(): Promise<Contributor[]> {
       throw new Error(`HTTP ${response.status}`);
     }
     const data = await response.json();
+    console.log(data);
     return data.map(adaptarContribuidor);
   } catch {
     return INITIAL_CONTRIBUTORS;

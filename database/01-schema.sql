@@ -28,7 +28,7 @@ CREATE TABLE USUARIO (
     puntos_totales INT DEFAULT 0, 
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     nivel_ranking VARCHAR(50) DEFAULT 'Novato',
-    avatar_url VARCHAR(255) DEFAULT ''
+    avatar_url VARCHAR(255) DEFAULT 'https://tse4.mm.bing.net/th/id/OIP.dDKYQqVBsG1tIt2uJzEJHwHaHa?cb=thfc1falcon2&rs=1&pid=ImgDetMain&o=7&rm=3'
 );
 
 -- Tabla para gestionar tokens de validación y recuperación de contraseñas

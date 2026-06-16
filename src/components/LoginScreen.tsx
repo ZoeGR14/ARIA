@@ -75,10 +75,7 @@ export default function LoginScreen({
 
       const userProfile = {
         name: data.usuario.nombre_completo,
-        avatar:
-            data.usuario.avatar_url === ''
-                ? "https://tse4.mm.bing.net/th/id/OIP.dDKYQqVBsG1tIt2uJzEJHwHaHa?cb=thfc1falcon2&rs=1&pid=ImgDetMain&o=7&rm=3"
-                : data.usuario.avatar_url,
+        avatar: data.usuario.avatar_url,
         role:
             data.usuario.rol === "ADMINISTRADOR"
                 ? "Administrador"

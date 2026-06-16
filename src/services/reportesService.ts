@@ -44,7 +44,9 @@ function adaptarReporte(raw: any): IncidentReport {
     views: 0,
     imageUrl: raw.url_evidencia_foto ?? '',
     authorName: raw.usuario?.nombre_completo ?? 'Usuario',
-    authorAvatar: '',
+    authorAvatar: raw.usuario?.avatar_url === ''
+        ? "https://tse4.mm.bing.net/th/id/OIP.dDKYQqVBsG1tIt2uJzEJHwHaHa?cb=thfc1falcon2&rs=1&pid=ImgDetMain&o=7&rm=3"
+        : raw.usuario?.avatar_url,
     authorRole: 'Ciudadano',
   };
 }
@@ -80,6 +82,7 @@ export async function getReportePorId(id: string): Promise<IncidentReport | null
       throw new Error(`HTTP ${response.status}`);
     }
     const data = await response.json();
+    console.log(data);
     return adaptarReporte(data);
   } catch {
     return INITIAL_REPORTS.find(r => String(r.id) === String(id)) ?? null;
