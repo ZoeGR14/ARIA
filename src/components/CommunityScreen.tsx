@@ -7,9 +7,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Contributor, IncidentReport } from '../types';
 import {
-  Award, Users, ShieldCheck, Sparkles, Trophy, Flame,
-  HelpCircle, ArrowRight, ChevronLeft, MapPin, Calendar,
-  Eye, CheckCircle2, AlertTriangle, ShieldAlert
+  Award, Users, ShieldCheck, Trophy, Flame,
+  ArrowRight, ChevronLeft, MapPin, Calendar,
+  CheckCircle2, UserCircle
 } from 'lucide-react';
 import { getContributores } from '../services/rankingService';
 
@@ -55,56 +55,6 @@ const COMMUNITY_CHALLENGES = [
   },
 ];
 
-// Creative bio and stats templates for each contributor ID
-const CONTRIBUTOR_DETAILS: Record<string, { 
-  bio: string; 
-  level: string; 
-  memberSince: string;
-  contributionsCount: number;
-  badges: { label: string; icon: string; color: string; desc: string }[] 
-}> = {
-  'c1': {
-    bio: 'Activista de tiempo completo enfocado en mitigar la acumulación clandestina de residuos en el norte de la CDMX. Coordinador de brigadas vecinales los fines de semana.',
-    level: 'Líder Centinela • Rango Especial',
-    memberSince: 'Marzo 2021',
-    contributionsCount: 14,
-    badges: [
-      { label: 'Maestro Reciclador', icon: '🗑️', color: 'from-red-500 to-rose-600', desc: 'Más de 10 reportes de vertederos clandestinos validados' },
-      { label: 'Árbitro Comunitario', icon: '⚖️', color: 'from-emerald-500 to-teal-600', desc: 'Alta tasa de veracidad en la verificación secundaria de reportes local' },
-      { label: 'Impulso Verde', icon: '🌱', color: 'from-green-500 to-emerald-600', desc: 'Creador de misiones comunitarias' }
-    ]
-  },
-  'c2': {
-    bio: 'Interesado en la sanidad de los ríos urbanos y el cuidado de los canales de agua metropolitanos. Defensor de la conservación hídrica.',
-    level: 'Guardián del Agua • Nivel Superior',
-    memberSince: 'Enero 2022',
-    contributionsCount: 8,
-    badges: [
-      { label: 'Defensor Hídrico', icon: '💧', color: 'from-blue-500 to-indigo-600', desc: 'Identificó fugas mayores de suministro y descargas industriales' },
-      { label: 'Vigilante Activo', icon: '👁️', color: 'from-cyan-500 to-teal-500', desc: 'Monitoreo diario de afluentes locales' }
-    ]
-  },
-  'c3': {
-    bio: 'Ingeniera Ambiental. Monitorea persistentemente las emisiones fabriles y focas de humo denso en los parques industriales del poniente.',
-    level: 'Analista de Calidad del Aire',
-    memberSince: 'Julio 2022',
-    contributionsCount: 11,
-    badges: [
-      { label: 'Ojo de Halcón', icon: '🏭', color: 'from-cyan-600 to-blue-600', desc: 'Mapeó focos de contaminación suspendida' },
-      { label: 'Defensor del Bosque', icon: '🌲', color: 'from-emerald-600 to-green-700', desc: 'Colaborador en protección forestal' }
-    ]
-  },
-  'carlos-active': {
-    bio: 'Ecologista y vecino activo enfocado en reportes verídicos y saneamiento forestal en la Álvaro Obregón y colonias aledañas.',
-    level: 'Investigador Nivel 3',
-    memberSince: 'Abril 2023',
-    contributionsCount: 5,
-    badges: [
-      { label: 'Explorador Urbano', icon: '🧭', color: 'from-green-500 to-emerald-600', desc: 'Registró alertas georreferenciadas con precisión satelital' },
-      { label: 'Compañero Fiel', icon: '🤝', color: 'from-pink-500 to-rose-600', desc: 'Apoyó en comentarios del Río Seco' }
-    ]
-  }
-};
 
 export default function CommunityScreen({
   userProfile,
@@ -127,11 +77,13 @@ export default function CommunityScreen({
     if (!carlosInList) {
       allContributors.push({
         id: 'carlos-active',
-        rank: 4, // Carlos position based on points
+        rank: 4,
         name: userProfile.name,
-        points: 1250, // Carlos baseline points
+        points: 1250,
         avatar: userProfile.avatar,
         verified: true,
+        nivel_ranking: userProfile.level,
+        reportCount: 0,
       });
     }
   }
@@ -201,17 +153,6 @@ export default function CommunityScreen({
         {/* ————————————————— 1) DETAILED PROFILE SECTION (INSPECTOR MODE) ————————————————— */}
         {selectedContributor ? (
           (() => {
-            const extra = CONTRIBUTOR_DETAILS[selectedContributor.id] || {
-              bio: 'Vecino activo comprometido con reportes ecológicos transparentes de alta veracidad.',
-              level: 'EcoGuardián Voluntario',
-              memberSince: 'Junio 2023',
-              contributionsCount: 3,
-              badges: [
-                { label: 'Centinela', icon: '🛡️', color: 'from-green-500 to-teal-600', desc: 'Participante activo de auditoría vecinal' }
-              ]
-            };
-
-            // Filter real-time reports matching this user's name
             const citizenReports = reports.filter(r => r.authorName?.toLowerCase() === selectedContributor.name.toLowerCase());
 
             return (
@@ -225,12 +166,16 @@ export default function CommunityScreen({
 
                   {/* Circular Avatar Avatar Showcase */}
                   <div className="relative">
-                    <img 
-                      src={selectedContributor.avatar} 
-                      alt={selectedContributor.name} 
-                      className="w-24 h-24 rounded-full object-cover border-4 border-slate-100 shadow-lg"
-                      referrerPolicy="no-referrer"
-                    />
+                    {selectedContributor.avatar ? (
+                      <img
+                        src={selectedContributor.avatar}
+                        alt={selectedContributor.name}
+                        className="w-24 h-24 rounded-full object-cover border-4 border-slate-100 shadow-lg"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <UserCircle className="w-24 h-24 text-slate-300" />
+                    )}
                     {selectedContributor.rank <= 3 && (
                       <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-md leading-none border">
                         {getRankBadge(selectedContributor.rank)}
@@ -248,10 +193,7 @@ export default function CommunityScreen({
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-[#557B5E] font-bold tracking-wide uppercase">{extra.level}</p>
-                    <span className="inline-flex items-center justify-center bg-emerald-50 text-[#1E8344] text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-emerald-100 mt-1">
-                      Miembro desde: {extra.memberSince}
-                    </span>
+                    <p className="text-xs text-[#557B5E] font-bold tracking-wide uppercase">{selectedContributor.nivel_ranking}</p>
                   </div>
 
                   {/* Divider line */}
@@ -264,17 +206,9 @@ export default function CommunityScreen({
                       <strong className="text-lg font-black text-[#143B20] mt-0.5 block">{selectedContributor.points.toLocaleString()}</strong>
                     </div>
                     <div className="p-3 bg-gradient-to-br from-[#EBF7EE] to-white rounded-2xl border border-[#DDE7DE]">
-                      <span className="text-[9px] font-black text-slate-400 block uppercase tracking-wider">FICHAS ALERTA</span>
-                      <strong className="text-lg font-black text-[#1E8344] mt-0.5 block">{citizenReports.length + extra.contributionsCount}</strong>
+                      <span className="text-[9px] font-black text-slate-400 block uppercase tracking-wider">Total reportes</span>
+                      <strong className="text-lg font-black text-[#1E8344] mt-0.5 block">{selectedContributor.reportCount}</strong>
                     </div>
-                  </div>
-
-                  {/* Bio Description Box */}
-                  <div className="text-left py-1 w-full bg-[#FAFDF9] border border-dashed border-[#CDE1D1] rounded-2xl p-4">
-                    <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Descripción de Actividad</h5>
-                    <p className="text-xs text-[#4F6C56] leading-relaxed font-semibold">
-                      {extra.bio}
-                    </p>
                   </div>
 
                   {/* Back Action button footer */}
@@ -286,33 +220,8 @@ export default function CommunityScreen({
                   </button>
                 </div>
 
-                {/* Right side: Badges and Reports Lists */}
+                {/* Right side: Reports List */}
                 <div className="lg:col-span-8 space-y-6">
-                  
-                  {/* INSIGNIAS Y MEDALLAS DE HONOR */}
-                  <div className="bg-white rounded-3xl border border-[#DDE7DE] p-6 space-y-4 shadow-sm">
-                    <h3 className="text-sm font-black text-[#143B20] uppercase tracking-wider flex items-center gap-2">
-                      <Award className="w-4.5 h-4.5 text-[#1E8344]" />
-                      <span>Insignias de Impacto Territorial ({extra.badges.length})</span>
-                    </h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {extra.badges.map((b, idx) => (
-                        <div 
-                          key={idx}
-                          className="flex items-start space-x-3 p-3.5 rounded-2xl bg-gradient-to-br from-white to-[#FAFDF9] border border-[#E9F0EA] hover:border-[#1E8344] transition-all"
-                        >
-                          <div className={`w-10 h-10 shrink-0 rounded-full bg-gradient-to-br ${b.color} shadow-sm border border-white flex items-center justify-center text-lg`}>
-                            {b.icon}
-                          </div>
-                          <div className="space-y-0.5">
-                            <h4 className="text-xs font-black text-[#143B20]">{b.label}</h4>
-                            <p className="text-[10px] text-[#557B5E] leading-snug font-semibold">{b.desc}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
 
                   {/* REPORTES CREADOS POR EL USUARIO */}
                   <div className="bg-white rounded-3xl border border-[#DDE7DE] p-6 space-y-4 shadow-sm">
@@ -323,9 +232,6 @@ export default function CommunityScreen({
                           Denuncias Reportadas por {selectedContributor.name} ({citizenReports.length})
                         </h3>
                       </div>
-                      <span className="text-[10px] font-mono bg-[#EBF7EE] text-[#1E8344] font-black uppercase tracking-wider px-2 py-0.5 rounded-md">
-                        Base de Datos Activa
-                      </span>
                     </div>
 
                     {citizenReports.length > 0 ? (
@@ -481,17 +387,6 @@ export default function CommunityScreen({
                     <Trophy className="w-5 h-5 text-[#C49B2F]" />
                     <h3 className="text-base font-extrabold text-[#143B20]">Líderes de Conservación CDMX</h3>
                   </div>
-                  <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-500 py-1 px-2.5 rounded-full uppercase tracking-wider">
-                    interactivo
-                  </span>
-                </div>
-
-                {/* Info Tip highlighting interactions */}
-                <div className="bg-amber-50 text-amber-900 border border-amber-100 text-[11px] p-3 rounded-2xl flex items-start gap-2 font-medium">
-                  <span className="text-sm">💡</span>
-                  <p>
-                    <strong>¡Novedad interactiva!</strong> Presiona sobre cualquier ciudadano o líder en la tabla de clasificación de abajo para <strong>ingresar a su perfil completo</strong> y repasar todas sus denuncias ambientales georreferenciadas.
-                  </p>
                 </div>
 
                 <div className="space-y-4">
@@ -514,12 +409,16 @@ export default function CommunityScreen({
                           </div>
 
                           {/* Avatar */}
-                          <img 
-                            src={contrib.avatar} 
-                            alt={contrib.name} 
-                            className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-xs group-hover:scale-105 transition-transform"
-                            referrerPolicy="no-referrer"
-                          />
+                          {contrib.avatar ? (
+                            <img
+                              src={contrib.avatar}
+                              alt={contrib.name}
+                              className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-xs group-hover:scale-105 transition-transform"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <UserCircle className="w-11 h-11 text-slate-300" />
+                          )}
 
                           {/* Info block */}
                           <div className="space-y-0.5">
@@ -539,7 +438,7 @@ export default function CommunityScreen({
                               )}
                             </div>
                             <p className="text-[10.5px] text-[#557B5E] font-bold">
-                              {contrib.name === 'Carlos Mendoza' ? userProfile?.level : (CONTRIBUTOR_DETAILS[contrib.id]?.level || 'EcoGuardián Voluntario')}
+                              {contrib.nivel_ranking || 'EcoGuardián Voluntario'}
                             </p>
                           </div>
                         </div>
