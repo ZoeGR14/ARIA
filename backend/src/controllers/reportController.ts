@@ -152,7 +152,7 @@ export const crearReporte = async (req: Request, res: Response): Promise<void> =
             return;
         }
 
-        const { descripcion, latitude, longitude, severidad } = req.body;
+        const { descripcion, latitude, longitude, severidad, categoria_id } = req.body;
         const file = req.file;
 
         // Validaciones básicas
@@ -164,8 +164,25 @@ export const crearReporte = async (req: Request, res: Response): Promise<void> =
         const severidadDb = ["Baja", "Media", "Alta", "Critica"].includes(severidad) ? severidad : "Baja";
         const photoUrl = file ? `${req.protocol}://${req.get("host")}/uploads/${file.filename}` : null;
 
-        // FORZAMOS LA CATEGORÍA A 1 PARA ELIMINAR CUALQUIER ERROR DE FONTEND
-        const categoriaForzada = 1;
+        // Mapeo dinámico de categoría a ID
+        let finalCategoriaId = 1;
+        if (categoria_id) {
+            const parsedId = parseInt(categoria_id);
+            if (!isNaN(parsedId)) {
+                finalCategoriaId = parsedId;
+            } else {
+                const catStr = String(categoria_id).toLowerCase();
+                if (catStr.includes("residuo") || catStr.includes("basura")) {
+                    finalCategoriaId = 1;
+                } else if (catStr.includes("agua")) {
+                    finalCategoriaId = 2;
+                } else if (catStr.includes("tala") || catStr.includes("verde")) {
+                    finalCategoriaId = 3;
+                } else if (catStr.includes("aire") || catStr.includes("atm")) {
+                    finalCategoriaId = 4;
+                }
+            }
+        }
 
         const result = await prisma.$queryRaw<any[]>`
             INSERT INTO reporte (
@@ -187,7 +204,7 @@ export const crearReporte = async (req: Request, res: Response): Promise<void> =
                 'Pendiente'::estado_puntos_enum,
                 ${usuarioId},
                 1,
-                ${categoriaForzada}
+                ${finalCategoriaId}
             )
             RETURNING id
         `;
@@ -203,11 +220,11 @@ export const crearReporte = async (req: Request, res: Response): Promise<void> =
                 `;
 
                 if (administradores.length > 0) {
-                    const adminIds = administradores.map(a => a.id);
+                    const adminIds = administradores.map((a: any) => a.id);
                     const mensajeAlerta = `¡Alerta! Nuevo reporte de severidad ${severidadDb}: ${descripcion.substring(0, 50)}...`;
 
                     await prisma.notificacion.createMany({
-                        data: adminIds.map(id => ({
+                        data: adminIds.map((id: number) => ({
                             usuario_id: id,
                             mensaje: mensajeAlerta,
                             tipo: 'SISTEMA_ALERTA',
@@ -220,7 +237,7 @@ export const crearReporte = async (req: Request, res: Response): Promise<void> =
                         select: { fcm_token: true }
                     });
 
-                    const tokens = dispositivos.map(d => d.fcm_token);
+                    const tokens = dispositivos.map((d: any) => d.fcm_token);
 
                     if (tokens.length > 0) {
                         await enviarNotificacionFCM(
@@ -391,7 +408,7 @@ export const getReportesByUsuario = async (req: Request, res: Response): Promise
 export const actualizarReporte = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const reporteId = parseInt(id);
+        const reporteId = parseInt(id as string);
 
         if (isNaN(reporteId)) {
             res.status(400).json({ mensaje: "ID de reporte inválido" });
@@ -503,7 +520,7 @@ export const actualizarReporte = async (req: Request, res: Response): Promise<vo
                 select: { fcm_token: true }
             });
 
-            const tokens = dispositivos.map(d => d.fcm_token);
+            const tokens = dispositivos.map((d: any) => d.fcm_token);
 
             if (tokens.length > 0) {
                 // Enviar FCMs de forma asíncrona

@@ -33,7 +33,7 @@ INSERT INTO REPORTE (descripcion, ubicacion, severidad, url_evidencia_foto, punt
     'Gran acumulación de basura en la esquina del parque',
     ST_GeogFromText('SRID=4326;POINT(-99.1622 19.4204)'),
     'Media',
-    'https://example.com/fotos/basura1.jpg',
+    'http://localhost:3001/uploads/basura.jpg',
     50,
     'Otorgado',
     1, -- Creado por Juan Pérez
@@ -44,7 +44,7 @@ INSERT INTO REPORTE (descripcion, ubicacion, severidad, url_evidencia_foto, punt
     'Fuga de agua potable muy fuerte en la acera',
     ST_GeogFromText('SRID=4326;POINT(-99.1687 19.4056)'),
     'Critica',
-    'https://example.com/fotos/fuga1.jpg',
+    'http://localhost:3001/uploads/fuga_agua.jpeg',
     0,
     'Pendiente',
     2, -- Creado por María Gómez
