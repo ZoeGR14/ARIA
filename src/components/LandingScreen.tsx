@@ -9,7 +9,7 @@ import { IncidentReport, Contributor } from '../types';
 import MapPlaceholder from './MapPlaceholder';
 import { getContributores } from '../services/rankingService';
 import { motion, AnimatePresence } from 'motion/react';
-import { ClipboardList, ShieldCheck, Users, Globe, Trash2, Droplets, Factory, ArrowRight, Award, Target, MapPinOff, X, MapPin } from 'lucide-react';
+import { ClipboardList, ShieldCheck, Users, Globe, Trash2, Droplets, Factory, ArrowRight, Award, Target, MapPinOff, X, MapPin, Camera, Eye } from 'lucide-react';
 
 interface LandingScreenProps {
   reports: IncidentReport[];
@@ -147,48 +147,56 @@ export default function LandingScreen({
         </div>
       </section>
 
-      {/* Grid count ticker details */}
+      {/* Grid: Ciclo de Acción de Terranova Tech */}
       <section className="bg-white py-8 border-b border-[#E1ECE3] px-4 md:px-8">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="flex items-center space-x-3.5 border-r border-[#E1ECE3] last:border-none p-2 align-middle">
-            <div className="w-10 h-10 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
-              <ClipboardList className="w-5 h-5" />
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          {/* Paso 1 */}
+          <div className="flex items-center space-x-3.5 lg:border-r border-[#E1ECE3] lg:last:border-none p-2 align-middle">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
+              <Camera className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xl md:text-2xl font-extrabold text-[#143B20] leading-dense">2,458</p>
-              <p className="text-xs text-[#557B5E] font-medium">Reportes activos</p>
+              <p className="text-lg font-extrabold text-[#143B20] leading-dense">1. Documenta</p>
+              <p className="text-xs text-[#557B5E] font-medium mt-0.5">Evidencia fotográfica</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3.5 border-r border-[#E1ECE3] last:border-none p-2 align-middle">
-            <div className="w-10 h-10 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
+
+          {/* Paso 2 */}
+          <div className="flex items-center space-x-3.5 lg:border-r border-[#E1ECE3] lg:last:border-none p-2 align-middle">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-lg font-extrabold text-[#143B20] leading-dense">2. Localiza</p>
+              <p className="text-xs text-[#557B5E] font-medium mt-0.5">Coordenadas en el mapa</p>
+            </div>
+          </div>
+
+          {/* Paso 3 */}
+          <div className="flex items-center space-x-3.5 lg:border-r border-[#E1ECE3] lg:last:border-none p-2 align-middle">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
+              <Eye className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-lg font-extrabold text-[#143B20] leading-dense">3. Visibiliza</p>
+              <p className="text-xs text-[#557B5E] font-medium mt-0.5">Datos transparentes</p>
+            </div>
+          </div>
+
+          {/* Paso 4 */}
+          <div className="flex items-center space-x-3.5 lg:last:border-none p-2 align-middle">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xl md:text-2xl font-extrabold text-[#143B20] leading-dense">1,289</p>
-              <p className="text-xs text-[#557B5E] font-medium">Problemas resueltos</p>
+              <p className="text-lg font-extrabold text-[#143B20] leading-dense">4. Actúa</p>
+              <p className="text-xs text-[#557B5E] font-medium mt-0.5">Acción con autoridades</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3.5 border-r border-[#E1ECE3] last:border-none p-2 align-middle">
-            <div className="w-10 h-10 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xl md:text-2xl font-extrabold text-[#143B20] leading-dense">3,671</p>
-              <p className="text-xs text-[#557B5E] font-medium">Usuarios activos</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3.5 last:border-none p-2 align-middle">
-            <div className="w-10 h-10 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
-              <Globe className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xl md:text-2xl font-extrabold text-[#143B20] leading-dense">145</p>
-              <p className="text-xs text-[#557B5E] font-medium">Colonias monitoreadas</p>
-            </div>
-          </div>
+
         </div>
       </section>
-
       {/* Split Details Section */}
       <section className="px-4 py-12 md:px-8 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8">
         <div className="md:col-span-7 space-y-6">
