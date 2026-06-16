@@ -24,6 +24,7 @@ import MyReportsScreen from './components/MyReportsScreen';
 import ExplorarMapaScreen from './components/ExplorarMapaScreen';
 import EditProfileScreen from './components/EditProfileScreen';
 import CommunityScreen from './components/CommunityScreen';
+import ChangePasswordScreen from './components/EditPassword';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, Bell, Inbox, Check, Sparkles, Mail, Loader2 } from 'lucide-react';
 
@@ -33,7 +34,7 @@ import { useToast } from './contexts/ToastContext';
 
 const CARLOS_MENDOZA_PROFILE = {
   name: 'Carlos Mendoza',
-  avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+  avatar: "https://tse4.mm.bing.net/th/id/OIP.dDKYQqVBsG1tIt2uJzEJHwHaHa?cb=thfc1falcon2&rs=1&pid=ImgDetMain&o=7&rm=3",
   role: 'Investigador Nivel 3',
   bio: 'Hola, soy Carlos. Me apasiona la naturaleza y desde hace un tiempo dedico mi tiempo libre a documentar y reportar problemas ambientales en mi barrio. Creo que pequeños cambios pueden generar un gran impacto.',
   location: 'Bogotá, CO',
@@ -87,7 +88,10 @@ export default function App() {
           id: user.id,
           name: user.nombre_completo,
           email: user.correo_electronico,
-          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+          avatar:
+              user.avatar_url === ''
+                  ? "https://tse4.mm.bing.net/th/id/OIP.dDKYQqVBsG1tIt2uJzEJHwHaHa?cb=thfc1falcon2&rs=1&pid=ImgDetMain&o=7&rm=3"
+                  : user.avatar_url,
           role: user.rol === 'ADMINISTRADOR' ? 'Administrador' : 'Ciudadano Activo',
           bio: `Hola, soy ${(user.nombre_completo || 'Usuario').split(' ')[0]}. Me interesa el monitoreo ambiental y registrar incidencias para cooperar de manera constructiva con mi comunidad local.`,
           location: 'CDMX, MX',
@@ -605,11 +609,16 @@ export default function App() {
                     <CommunityScreen userProfile={userProfile} isLoggedIn={isLoggedIn} reports={reports} />
                   </PrivateRoute>
                 } />
-                <Route path="/editar-perfil" element={
-                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para modificar tu perfil.">
-                    <EditProfileScreen userProfile={userProfile} setUserProfile={setUserProfile} />
-                  </PrivateRoute>
-                } />
+                 <Route path="/editar-perfil" element={
+                   <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para modificar tu perfil.">
+                     <EditProfileScreen userProfile={userProfile} setUserProfile={setUserProfile} setIsLoggedIn={setIsLoggedIn} />
+                   </PrivateRoute>
+                 } />
+                 <Route path="/cambiar-password" element={
+                   <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para cambiar tu contraseña.">
+                     <ChangePasswordScreen />
+                   </PrivateRoute>
+                 } />
                 <Route path="/reporte/:id" element={
                   <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para poder explorar e inspeccionar el mapa de incidencias.">
                     <ReportDetailScreen reports={reports} onAddComment={handleAddComment} currentUser={userProfile} />
