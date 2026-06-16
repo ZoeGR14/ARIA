@@ -12,6 +12,7 @@ import FCMRoutes from "./routes/FCMRoutes";
 import reportRoutes from "./routes/reportRoutes";
 
 import notificacionRoutes from "./routes/notificacionRoutes";
+import rankingRoutes from "./routes/rankingRoutes";
 
 const app = express();
 
@@ -40,5 +41,7 @@ app.use("/api/fcm",FCMRoutes);
 app.use("/api/reportes", reportRoutes);
 
 app.use("/api/notificaciones", notificacionRoutes);
+
+app.use("/api/ranking", rankingRoutes);
 
 export default app;
