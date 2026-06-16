@@ -74,14 +74,15 @@ export default function LoginScreen({
       }
 
       const userProfile = {
-        id: data.usuario.id,
         name: data.usuario.nombre_completo,
-        email: data.usuario.correo_electronico,
-        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
-        role: data.usuario.rol === 'ADMINISTRADOR' ? 'Administrador' : 'Ciudadano Activo',
-        bio: `Hola, soy ${(data.usuario.nombre_completo || 'Usuario').split(' ')[0]}. Me interesa el monitoreo ambiental y registrar incidencias para cooperar de manera constructiva con mi comunidad local.`,
-        location: 'CDMX, MX',
-        level: data.usuario.nivel_ranking || 'Novato',
+        avatar: data.usuario.avatar_url,
+        role:
+            data.usuario.rol === "ADMINISTRADOR"
+                ? "Administrador"
+                : "Ciudadano Activo",
+        bio: `Hola, soy ${(data.usuario.nombre_completo || "Usuario").split(" ")[0]}.`,
+        location: "CDMX, MX",
+        level: data.usuario.nivel_ranking || "Novato",
         impactScore: data.usuario.puntos_totales || 0,
         pointsThisMonth: data.usuario.puntos_totales || 0,
         totalsCount: 0,

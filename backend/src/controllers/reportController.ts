@@ -22,7 +22,8 @@ export const getReportesActivos = async (req: Request, res: Response): Promise<v
                 c.nombre as categoria_nombre,
                 c.color_hex as categoria_color,
                 e.nombre as estado_nombre,
-                u.nombre_completo as usuario_nombre
+                u.nombre_completo as usuario_nombre,
+                u.avatar_url as avatar
             FROM reporte r
             LEFT JOIN categoria c ON r.categoria_id = c.id
             LEFT JOIN estado e ON r.estado_id = e.id
@@ -56,7 +57,8 @@ export const getReportesActivos = async (req: Request, res: Response): Promise<v
                 },
                 usuario: {
                     id: r.usuario_id,
-                    nombre_completo: r.usuario_nombre
+                    nombre_completo: r.usuario_nombre,
+                    avatar_url: r.avatar,
                 }
             };
         });
@@ -89,7 +91,8 @@ export const getReporteById = async (req: Request, res: Response): Promise<void>
                 c.nombre as categoria_nombre,
                 c.color_hex as categoria_color,
                 e.nombre as estado_nombre,
-                u.nombre_completo as usuario_nombre
+                u.nombre_completo as usuario_nombre,
+                u.avatar_url as avatar
             FROM reporte r
             LEFT JOIN categoria c ON r.categoria_id = c.id
             LEFT JOIN estado e ON r.estado_id = e.id
@@ -129,7 +132,8 @@ export const getReporteById = async (req: Request, res: Response): Promise<void>
             },
             usuario: {
                 id: r.usuario_id,
-                nombre_completo: r.usuario_nombre
+                nombre_completo: r.usuario_nombre,
+                avatar_url: r.avatar,
             }
         };
 
@@ -269,7 +273,8 @@ export const getMisReportes = async (req: Request, res: Response): Promise<void>
                 c.nombre as categoria_nombre,
                 c.color_hex as categoria_color,
                 e.nombre as estado_nombre,
-                u.nombre_completo as usuario_nombre
+                u.nombre_completo as usuario_nombre,
+                u.avatar_url as avatar
             FROM reporte r
             LEFT JOIN categoria c ON r.categoria_id = c.id
             LEFT JOIN estado e ON r.estado_id = e.id
@@ -303,7 +308,8 @@ export const getMisReportes = async (req: Request, res: Response): Promise<void>
             },
             usuario: {
                 id: r.usuario_id,
-                nombre_completo: r.usuario_nombre
+                nombre_completo: r.usuario_nombre,
+                avatar_url: r.avatar
             }
         }));
 
@@ -336,7 +342,8 @@ export const getReportesByUsuario = async (req: Request, res: Response): Promise
                 c.nombre as categoria_nombre,
                 c.color_hex as categoria_color,
                 e.nombre as estado_nombre,
-                u.nombre_completo as usuario_nombre
+                u.nombre_completo as usuario_nombre,
+                u.avatar_url as avatar
             FROM reporte r
             LEFT JOIN categoria c ON r.categoria_id = c.id
             LEFT JOIN estado e ON r.estado_id = e.id
@@ -370,7 +377,8 @@ export const getReportesByUsuario = async (req: Request, res: Response): Promise
             },
             usuario: {
                 id: r.usuario_id,
-                nombre_completo: r.usuario_nombre
+                nombre_completo: r.usuario_nombre,
+                avatar_url: r.avatar
             }
         }));
 

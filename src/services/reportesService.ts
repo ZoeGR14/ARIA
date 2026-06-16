@@ -44,7 +44,9 @@ function adaptarReporte(raw: any): IncidentReport {
     views: 0,
     imageUrl: raw.url_evidencia_foto ?? '',
     authorName: raw.usuario?.nombre_completo ?? 'Usuario',
-    authorAvatar: '',
+    authorAvatar: raw.usuario?.avatar_url === ''
+        ? "https://tse4.mm.bing.net/th/id/OIP.dDKYQqVBsG1tIt2uJzEJHwHaHa?cb=thfc1falcon2&rs=1&pid=ImgDetMain&o=7&rm=3"
+        : raw.usuario?.avatar_url,
     authorRole: 'Ciudadano',
   };
 }
@@ -80,6 +82,7 @@ export async function getReportePorId(id: string): Promise<IncidentReport | null
       throw new Error(`HTTP ${response.status}`);
     }
     const data = await response.json();
+    console.log(data);
     return adaptarReporte(data);
   } catch {
     return INITIAL_REPORTS.find(r => String(r.id) === String(id)) ?? null;
@@ -87,20 +90,20 @@ export async function getReportePorId(id: string): Promise<IncidentReport | null
 }
 
 export async function crearReporte(formData: FormData, token: string) {
-    const apiUrl = import.meta.env.VITE_API_URL;
-    
-    const response = await fetch(`${apiUrl}/reportes`, {
-        method: 'POST',
-        headers: {
-            // Nota: Aquí no lleva Content-Type, el navegador lo pone solo
-            'Authorization': `Bearer ${token}` 
-        },
-        body: formData,
-    });
+  const apiUrl = import.meta.env.VITE_API_URL;
 
-    if (!response.ok) {
-        throw new Error(`Error al enviar el reporte: ${response.status}`);
-    }
+  const response = await fetch(`${apiUrl}/reportes`, {
+    method: 'POST',
+    headers: {
+      // Nota: Aquí no lleva Content-Type, el navegador lo pone solo
+      'Authorization': `Bearer ${token}`
+    },
+    body: formData,
+  });
 
-    return await response.json();
+  if (!response.ok) {
+    throw new Error(`Error al enviar el reporte: ${response.status}`);
+  }
+
+  return await response.json();
 }
