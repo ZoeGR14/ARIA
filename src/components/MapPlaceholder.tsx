@@ -367,10 +367,12 @@ export default function MapPlaceholder({
 
       // Emoji by category
       let pinEmoji = '🗑️';
-      if (rep.category === 'Agua Contaminada' || rep.category === 'Agua') {
+      if (rep.category === 'Fuga de Agua') {
         pinEmoji = '💧';
-      } else if (rep.category === 'Calidad del Aire') {
+      } else if (rep.category === 'Contaminación del Aire') {
         pinEmoji = '🏭';
+      } else if (rep.category === 'Tala Ilegal / Áreas Verdes') {
+        pinEmoji = '🌳';
       }
 
       // Solid color bubble marker with white border in Google Maps aesthetic
@@ -994,9 +996,10 @@ export default function MapPlaceholder({
 
             <div className="p-4 flex flex-col font-sans overflow-y-auto">
               <h4 className="text-sm font-black text-[#143B20] flex items-center gap-1.5 leading-tight">
-                {(activePin.category === 'Residuos') && <Trash2 className="w-4 h-4 text-[#DC2626]" />}
-                {(activePin.category === 'Agua Contaminada' || activePin.category === 'Agua') && <Droplets className="w-4 h-4 text-[#F97316]" />}
-                {(activePin.category === 'Calidad del Aire') && <Factory className="w-4 h-4 text-[#2563EB]" />}
+                {(activePin.category === 'Acumulación de Basura') && <Trash2 className="w-4 h-4 text-[#DC2626]" />}
+                {(activePin.category === 'Fuga de Agua') && <Droplets className="w-4 h-4 text-[#F97316]" />}
+                {(activePin.category === 'Contaminación del Aire') && <Factory className="w-4 h-4 text-[#2563EB]" />}
+                {(activePin.category === 'Tala Ilegal / Áreas Verdes') && <Compass className="w-4 h-4 text-[#8B5CF6]" />}
                 <span>{activePin.title}</span>
               </h4>
 

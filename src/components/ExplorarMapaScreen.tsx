@@ -73,32 +73,32 @@ export default function ExplorarMapaScreen({
                 <div className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-full bg-[#DC2626] border border-[#EF4444] text-white flex items-center justify-center text-[10px] font-bold">🗑️</div>
                   <div className="text-xs font-semibold text-[#143B20]">
-                    <p className="font-extrabold">Residuos Clandestinos</p>
-                    <p className="text-[10px] text-red-600">Prioridad Crítica / Alta</p>
+                    <p className="font-extrabold">Acumulación de Basura</p>
+                    <p className="text-[10px] text-red-600">Prioridad Alta / Crítica</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-full bg-[#F97316] border border-[#FB923C] text-white flex items-center justify-center text-[10px] font-bold">💧</div>
                   <div className="text-xs font-semibold text-[#143B20]">
-                    <p className="font-extrabold">Agua Contaminada</p>
-                    <p className="text-[10px] text-amber-600">Investigación en progreso</p>
+                    <p className="font-extrabold">Fuga de Agua</p>
+                    <p className="text-[10px] text-amber-600">Severidad Media</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-full bg-[#2563EB] border border-[#60A5FA] text-white flex items-center justify-center text-[10px] font-bold">🏭</div>
                   <div className="text-xs font-semibold text-[#143B20]">
-                    <p className="font-extrabold">Calidad del Aire</p>
-                    <p className="text-[10px] text-blue-600">Monitoreo activo</p>
+                    <p className="font-extrabold">Contaminación del Aire</p>
+                    <p className="text-[10px] text-blue-600">Severidad Alta</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#8B5CF6] border border-[#A78BFA] text-white flex items-center justify-center text-[10px] font-bold font-mono">🌲</div>
+                  <div className="w-6 h-6 rounded-full bg-[#8B5CF6] border border-[#A78BFA] text-white flex items-center justify-center text-[10px] font-bold font-mono">🌳</div>
                   <div className="text-xs font-semibold text-[#143B20]">
-                    <p className="font-extrabold">Área Forestal / Reserva</p>
-                    <p className="text-[10px] text-violet-600">Soporte Conservación</p>
+                    <p className="font-extrabold">Tala Ilegal / Áreas Verdes</p>
+                    <p className="text-[10px] text-violet-600">Conservación</p>
                   </div>
                 </div>
               </div>

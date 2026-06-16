@@ -79,11 +79,13 @@ export default function DashboardScreen({
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'resuelto':
+      case 'atendido':
         return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'en progreso':
-      case 'validando':
-        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'en revisión':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'descartado':
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+      case 'recibido':
       default:
         return 'bg-slate-50 text-slate-700 border-slate-200';
     }
@@ -91,19 +93,34 @@ export default function DashboardScreen({
 
   const getIncidentIcon = (category: string) => {
     if (!category) return <Wind className="w-5 h-5" />;
-    if (category.toLowerCase().includes('residuo') || category.toLowerCase().includes('basura')) {
+    const catLow = category.toLowerCase();
+    if (catLow.includes('basura') || catLow.includes('residuo')) {
       return (
-        <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center text-red-600">
+        <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+        </div>
+      );
+    }
+    if (catLow.includes('agua')) {
+      return (
+        <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
           <Droplets className="w-5 h-5" />
         </div>
       );
     }
-    if (category.toLowerCase().includes('tala') || category.toLowerCase().includes('agua')) {
+    if (catLow.includes('tala') || catLow.includes('verde')) {
       return (
         <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
           <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
             <path d="M12 2L4 18h6v4h4v-4h6L12 2z" />
           </svg>
+        </div>
+      );
+    }
+    if (catLow.includes('aire')) {
+      return (
+        <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
+          <Wind className="w-5 h-5" />
         </div>
       );
     }
@@ -407,12 +424,12 @@ export default function DashboardScreen({
 
                   <div className="flex items-center space-x-6">
                     <div className="hidden sm:flex items-center space-x-1.5 text-xs text-[#557B5E] font-medium">
-                      {report.status?.toLowerCase() === 'resuelto' ? (
-                        <><ShieldCheck className="w-4 h-4 text-emerald-600" /><span>Acción tomada</span></>
-                      ) : report.status?.toLowerCase() === 'validando' ? (
-                        <><Clock className="w-4 h-4 text-slate-400" /><span>Esperando datos</span></>
+                      {report.estado_puntos === 'Otorgado' ? (
+                        <><Award className="w-4 h-4 text-[#10B981]" /><span className="text-[#10B981] font-bold">+{report.puntos_asignados || 0} PTS</span></>
+                      ) : report.estado_puntos === 'Rechazado' ? (
+                        <><AlertCircle className="w-4 h-4 text-rose-500" /><span>Sin recompensa</span></>
                       ) : (
-                        <><Eye className="w-4 h-4 text-slate-400" /><span>{report.views || 0} visualizaciones</span></>
+                        <><Clock className="w-4 h-4 text-amber-500" /><span>Revisión de puntos</span></>
                       )}
                     </div>
 
