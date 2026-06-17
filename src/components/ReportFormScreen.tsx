@@ -421,6 +421,14 @@ export default function ReportFormScreen({
     e.preventDefault();
     if (!description.trim()) return;
 
+    if (!rawFile) {
+      setLocationModalTitle("Fotografía Obligatoria");
+      setLocationModalMessage("Es estrictamente necesario adjuntar una evidencia fotográfica para poder enviar tu reporte ambiental.");
+      setLocationModalIcon("error");
+      setShowLocationModal(true);
+      return;
+    }
+
     setIsSubmitting(true);
 
     const formData = new FormData();
@@ -757,7 +765,7 @@ export default function ReportFormScreen({
             {/* Drag Drop Image Uploader (Screen 5 Bottom) */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-[#143B20] uppercase tracking-wider block">
-                Adjuntar Fotografías (Opcional)
+                Adjuntar Fotografía <span className="text-rose-500">*</span>
               </label>
 
               <div

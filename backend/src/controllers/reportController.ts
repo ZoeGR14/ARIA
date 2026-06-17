@@ -166,8 +166,8 @@ export const crearReporte = async (req: Request, res: Response): Promise<void> =
         const file = req.file;
 
         // Validaciones básicas
-        if (!descripcion || latitude === undefined || longitude === undefined) {
-            res.status(400).json({ mensaje: "Faltan campos obligatorios" });
+        if (!descripcion || latitude === undefined || longitude === undefined || !file) {
+            res.status(400).json({ mensaje: "Faltan campos obligatorios o fotografía de evidencia" });
             return;
         }
 
