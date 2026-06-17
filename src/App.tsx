@@ -119,7 +119,7 @@ export default function App() {
     if (isLoggedIn) {
       const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
       if (token) {
-        fetch('http://localhost:3001/api/notificaciones', {
+        fetch('/api/notificaciones', {
           headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => res.json())
@@ -246,8 +246,9 @@ export default function App() {
         }
 
         console.log("Token FCM obtenido: ", fcmToken);
+        localStorage.setItem('aria_fcm_token', fcmToken);
 
-        const devicesRes = await fetch('http://localhost:3001/api/fcm/mis-dispositivos', {
+        const devicesRes = await fetch('/api/fcm/mis-dispositivos', {
           headers: {
             'Authorization': `Bearer ${tokenJwt}`
           }
@@ -263,7 +264,7 @@ export default function App() {
         }
 
         const deviceInfo = getDeviceInfo();
-        const registerRes = await fetch('http://localhost:3001/api/fcm/fcm-token', {
+        const registerRes = await fetch('/api/fcm/fcm-token', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -425,7 +426,7 @@ export default function App() {
                             onClick={() => {
                               setNotifications(prev => prev.map(n => ({ ...n, read: true })));
                               const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
-                              fetch('http://localhost:3001/api/notificaciones/leer-todas', {
+                              fetch('/api/notificaciones/leer-todas', {
                                 method: 'PATCH',
                                 headers: { 'Authorization': `Bearer ${token}` }
                               }).catch(console.error);
@@ -452,7 +453,7 @@ export default function App() {
                                 setShowNotificationsDropdown(false);
                                 if (!n.read && !n.id.toString().startsWith('n-')) {
                                   const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
-                                  fetch(`http://localhost:3001/api/notificaciones/${n.id}/leer`, {
+                                  fetch(`/api/notificaciones/${n.id}/leer`, {
                                     method: 'PATCH',
                                     headers: { 'Authorization': `Bearer ${token}` }
                                   }).catch(console.error);
@@ -517,13 +518,11 @@ export default function App() {
                   try {
                     const currentToken = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
                     if (currentToken && await isSupported()) {
-                      const fcmToken = await getToken(messaging, {
-                        vapidKey: "BIB4QGDhC2lIgmT_MkMSWiumWu4d4e34XDzekN8VOxPRHJzNyiNbnGpM_3_OSj7gAeqPWjm2IdLnNGxqR_gyW-I"
-                      }).catch(() => null);
+                      const fcmToken = localStorage.getItem('aria_fcm_token');
 
                       if (fcmToken) {
                         // Notificamos al backend para que lo borre de sus registros
-                        await fetch('http://localhost:3001/api/fcm/fcm-token', {
+                        await fetch('/api/fcm/fcm-token', {
                           method: 'DELETE',
                           headers: {
                             'Content-Type': 'application/json',
@@ -541,6 +540,7 @@ export default function App() {
                   } finally {
                     localStorage.removeItem('aria_token');
                     localStorage.removeItem('aria_user');
+                    localStorage.removeItem('aria_fcm_token');
                     sessionStorage.removeItem('aria_token');
                     sessionStorage.removeItem('aria_user');
                     setIsLoggedIn(false);

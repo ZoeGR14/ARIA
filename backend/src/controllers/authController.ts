@@ -87,7 +87,8 @@ export const register = async (
         });
 
         try {
-            const url = "http://localhost:3000/verificar-correo/"+token;
+            const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+            const url = `${frontendUrl}/verificar-correo/${token}`;
             const html = verificationEmailTemplate(
                 usuario.nombre_completo,
                 url
@@ -269,7 +270,7 @@ export const verificarCorreo = async (
 
             where: {
 
-                token,
+                token: token as string,
 
                 tipo: "VERIFICACION_CORREO"
 
@@ -404,7 +405,8 @@ export const solicitarRecuperacion = async (
     });
 
     try {
-        const url = "http://localhost:3000/reset-password?token="+token;
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        const url = `${frontendUrl}/reset-password?token=${token}`;
         const html = recoverEmailTemplate(
             usuario.nombre_completo,
             url

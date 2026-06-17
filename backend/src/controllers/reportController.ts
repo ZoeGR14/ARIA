@@ -166,8 +166,8 @@ export const crearReporte = async (req: Request, res: Response): Promise<void> =
         const file = req.file;
 
         // Validaciones básicas
-        if (!descripcion || latitude === undefined || longitude === undefined) {
-            res.status(400).json({ mensaje: "Faltan campos obligatorios" });
+        if (!descripcion || latitude === undefined || longitude === undefined || !file) {
+            res.status(400).json({ mensaje: "Faltan campos obligatorios o fotografía de evidencia" });
             return;
         }
 
@@ -510,12 +510,13 @@ export const actualizarReporte = async (req: Request, res: Response): Promise<vo
             });
 
             // Actualizar nivel_ranking basado en puntos totales
+            const puntosTotales = usuarioUpdate.puntos_totales ?? 0;
             let nuevoNivel = "Novato";
-            if (usuarioUpdate.puntos_totales >= 1000) {
+            if (puntosTotales >= 1000) {
                 nuevoNivel = "Experto";
-            } else if (usuarioUpdate.puntos_totales >= 500) {
+            } else if (puntosTotales >= 500) {
                 nuevoNivel = "Protector";
-            } else if (usuarioUpdate.puntos_totales >= 100) {
+            } else if (puntosTotales >= 100) {
                 nuevoNivel = "Colaborador";
             }
 
@@ -533,7 +534,7 @@ export const actualizarReporte = async (req: Request, res: Response): Promise<vo
                 });
             }
 
-            const mensajePuntos = `¡Has ganado ${puntosAgregados} puntos por tu reporte! Tu puntaje total es ahora de ${usuarioUpdate.puntos_totales} puntos.`;
+            const mensajePuntos = `¡Has ganado ${puntosAgregados} puntos por tu reporte! Tu puntaje total es ahora de ${puntosTotales} puntos.`;
             notificacionesACrear.push({
                 usuario_id: usuarioId,
                 mensaje: mensajePuntos,

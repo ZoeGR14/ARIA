@@ -50,7 +50,7 @@ export default function EditProfileScreen({
         formData.append("avatar", selectedFile);
       }
 
-      const response = await fetch("http://localhost:3001/api/auth/perfil", {
+      const response = await fetch("/api/auth/perfil", {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`
@@ -79,12 +79,10 @@ export default function EditProfileScreen({
           const currentToken = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
 
           if (currentToken && await isSupported()) {
-            const fcmToken = await getToken(messaging, {
-              vapidKey: "BIB4QGDhC2lIgmT_MkMSWiumWu4d4e34XDzekN8VOxPRHJzNyiNbnGpM_3_OSj7gAeqPWjm2IdLnNGxqR_gyW-I"
-            }).catch(() => null);
+            const fcmToken = localStorage.getItem('aria_fcm_token');
 
             if (fcmToken) {
-              await fetch('http://localhost:3001/api/fcm/fcm-token', {
+              await fetch('/api/fcm/fcm-token', {
                 method: 'DELETE',
                 headers: {
                   'Content-Type': 'application/json',
@@ -101,6 +99,7 @@ export default function EditProfileScreen({
         } finally {
           localStorage.removeItem('aria_token');
           localStorage.removeItem('aria_user');
+          localStorage.removeItem('aria_fcm_token');
           sessionStorage.removeItem('aria_token');
           sessionStorage.removeItem('aria_user');
 
