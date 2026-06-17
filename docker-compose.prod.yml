@@ -27,6 +27,8 @@ services:
     volumes:
       # Persistencia de los archivos de evidencias subidos
       - ./backend/uploads:/app/uploads
+      # Montaje de la cuenta de servicio de Firebase para rotaciones rápidas sin recompilar la imagen
+      - ./backend/firebase-adminsdk.json:/app/firebase-adminsdk.json
     depends_on:
       - db
 
