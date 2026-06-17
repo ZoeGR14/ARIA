@@ -270,7 +270,7 @@ export const verificarCorreo = async (
 
             where: {
 
-                token,
+                token: token as string,
 
                 tipo: "VERIFICACION_CORREO"
 
