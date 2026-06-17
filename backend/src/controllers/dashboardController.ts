@@ -12,11 +12,7 @@ export const getAdminStats = async (
         // Reportes pendientes de validación
         const pendientesValidacion = await prisma.reporte.count({
             where: {
-                estado: {
-                    nombre: {
-                        in: ['Reportado', 'En Progreso', 'En progreso', 'Validando']
-                    }
-                }
+                estado_puntos: 'Pendiente'
             }
         });
 
@@ -35,7 +31,15 @@ export const getAdminStats = async (
             }
         });
 
-        // Tendencia ultimos 30 dias
+        // Tendencia ultimos 30 dias (inicializado con ceros para tener 30 puntos siempre)
+        const tendencias: Record<string, number> = {};
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            tendencias[dateStr] = 0;
+        }
+
         const fechaLimite = new Date();
         fechaLimite.setDate(fechaLimite.getDate() - 30);
         
@@ -50,13 +54,14 @@ export const getAdminStats = async (
             }
         });
 
-        const tendencias = reportesRecientes.reduce((acc: Record<string, number>, curr: any) => {
+        reportesRecientes.forEach((curr: any) => {
             if (curr.fecha_creacion) {
                 const dateStr = curr.fecha_creacion.toISOString().split('T')[0];
-                acc[dateStr] = (acc[dateStr] || 0) + 1;
+                if (tendencias[dateStr] !== undefined) {
+                    tendencias[dateStr] += 1;
+                }
             }
-            return acc;
-        }, {});
+        });
 
         res.status(200).json({
             totalUsuarios,
@@ -97,9 +102,7 @@ export const getUserStats = async (
         const reportesValidados = await prisma.reporte.count({
             where: {
                 usuario_id: usuarioId,
-                estado: {
-                    nombre: 'Resuelto'
-                }
+                estado_puntos: 'Otorgado'
             }
         });
 

@@ -79,9 +79,7 @@ export default function EditProfileScreen({
           const currentToken = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
 
           if (currentToken && await isSupported()) {
-            const fcmToken = await getToken(messaging, {
-              vapidKey: "BIB4QGDhC2lIgmT_MkMSWiumWu4d4e34XDzekN8VOxPRHJzNyiNbnGpM_3_OSj7gAeqPWjm2IdLnNGxqR_gyW-I"
-            }).catch(() => null);
+            const fcmToken = localStorage.getItem('aria_fcm_token');
 
             if (fcmToken) {
               await fetch('/api/fcm/fcm-token', {
@@ -101,6 +99,7 @@ export default function EditProfileScreen({
         } finally {
           localStorage.removeItem('aria_token');
           localStorage.removeItem('aria_user');
+          localStorage.removeItem('aria_fcm_token');
           sessionStorage.removeItem('aria_token');
           sessionStorage.removeItem('aria_user');
 

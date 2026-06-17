@@ -246,6 +246,7 @@ export default function App() {
         }
 
         console.log("Token FCM obtenido: ", fcmToken);
+        localStorage.setItem('aria_fcm_token', fcmToken);
 
         const devicesRes = await fetch('/api/fcm/mis-dispositivos', {
           headers: {
@@ -517,9 +518,7 @@ export default function App() {
                   try {
                     const currentToken = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
                     if (currentToken && await isSupported()) {
-                      const fcmToken = await getToken(messaging, {
-                        vapidKey: "BIB4QGDhC2lIgmT_MkMSWiumWu4d4e34XDzekN8VOxPRHJzNyiNbnGpM_3_OSj7gAeqPWjm2IdLnNGxqR_gyW-I"
-                      }).catch(() => null);
+                      const fcmToken = localStorage.getItem('aria_fcm_token');
 
                       if (fcmToken) {
                         // Notificamos al backend para que lo borre de sus registros
@@ -541,6 +540,7 @@ export default function App() {
                   } finally {
                     localStorage.removeItem('aria_token');
                     localStorage.removeItem('aria_user');
+                    localStorage.removeItem('aria_fcm_token');
                     sessionStorage.removeItem('aria_token');
                     sessionStorage.removeItem('aria_user');
                     setIsLoggedIn(false);

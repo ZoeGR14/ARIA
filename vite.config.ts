@@ -4,6 +4,8 @@ import path from "path";
 import { defineConfig } from "vite";
 
 export default defineConfig(() => {
+   const backendUrl = process.env.BACKEND_URL || "http://localhost:3001";
+
    return {
       plugins: [react(), tailwindcss()],
       resolve: {
@@ -21,11 +23,11 @@ export default defineConfig(() => {
          },
          proxy: {
             "/api": {
-               target: "http://localhost:3001",
+               target: backendUrl,
                changeOrigin: true,
             },
             "/uploads": {
-               target: "http://localhost:3001",
+               target: backendUrl,
                changeOrigin: true,
             },
          },
