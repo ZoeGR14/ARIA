@@ -30,16 +30,15 @@ export default function MyReportsScreen({
 
   const getStatusBadgeClass = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'abierto':
-        return 'bg-red-100 text-red-700 border-red-200';
-      case 'en progreso':
-        return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'resuelto':
-        return 'bg-emerald-100 text-emerald-700 border-[#98D4A4]';
-      case 'validando':
-        return 'bg-sky-100 text-sky-700 border-sky-200';
+      case 'descartado':
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+      case 'en revisión':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'atendido':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'recibido':
       default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+        return 'bg-slate-50 text-slate-700 border-slate-200';
     }
   };
 
@@ -159,14 +158,6 @@ export default function MyReportsScreen({
                       <span className="flex items-center gap-1 text-slate-400">
                         <Calendar className="w-3.5 h-3.5" />
                         <span>{report.date}</span>
-                      </span>
-                      <span className="flex items-center gap-1 text-slate-400">
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>{report.views} vistas</span>
-                      </span>
-                      <span className="flex items-center gap-1 text-slate-400">
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>{(report.comments || []).length} comentarios</span>
                       </span>
                     </div>
 
