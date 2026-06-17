@@ -94,6 +94,10 @@ export const register = async (
             );
             await transporter.sendMail({
 
+                from: {
+                    address: "aria@luminar.top",
+                    name: "ARIA"
+                },
                 to: usuario.correo_electronico,
 
                 subject: "Verifica tu cuenta en ARIA",
@@ -406,7 +410,10 @@ export const solicitarRecuperacion = async (
             url
         );
         await transporter.sendMail({
-
+            from: {
+                address: "aria@luminar.top",
+                name: "ARIA"
+            },
             to: usuario.correo_electronico,
 
             subject: "Recupera tu contraseña",

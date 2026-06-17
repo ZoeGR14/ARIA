@@ -1,15 +1,8 @@
-import nodemailer from "nodemailer";
+import Nodemailer from "nodemailer";
+import { MailtrapTransport } from "mailtrap";
 
-export const transporter = nodemailer.createTransport({
-
-    service: "gmail",
-
-    auth: {
-
-        user: process.env.EMAIL_USER,
-
-        pass: process.env.EMAIL_PASSWORD
-
-    }
-
-});
+export const transporter = Nodemailer.createTransport(
+    MailtrapTransport({
+        token: process.env.MAILTRAP_TOKEN!
+    })
+);
