@@ -68,13 +68,21 @@ export default function LandingScreen({
   const recentReports = reports.slice(0, 3);
 
   const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'Residuos': return <Trash2 className="w-4 h-4 text-[#DC2626]" />;
-      case 'Agua':
-      case 'Agua Contaminada': return <Droplets className="w-4 h-4 text-[#FAF23C] text-orange-500" />;
-      case 'Calidad del Aire': return <Factory className="w-4 h-4 text-[#2563EB]" />;
-      default: return <ClipboardList className="w-4 h-4" />;
+    const catLow = category.toLowerCase();
+    if (catLow.includes('basura') || catLow.includes('residuo')) {
+      return <Trash2 className="w-4 h-4 text-[#DC2626]" />;
     }
+    if (catLow.includes('agua')) {
+      return <Droplets className="w-4 h-4 text-sky-600" />;
+    }
+    if (catLow.includes('tala') || catLow.includes('verde')) {
+      return (
+        <svg className="w-4 h-4 fill-[#059669]" viewBox="0 0 24 24">
+          <path d="M12 2L4 18h6v4h4v-4h6L12 2z" />
+        </svg>
+      );
+    }
+    return <Factory className="w-4 h-4 text-[#2563EB]" />;
   };
 
   const getSeverityBadgeClass = (severity: string) => {

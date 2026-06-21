@@ -43,11 +43,19 @@ export default function MyReportsScreen({
   };
 
   const getCategoryIcon = (category: string) => {
-    if (category.toLowerCase().includes('residuo')) {
+    const catLow = category.toLowerCase();
+    if (catLow.includes('basura') || catLow.includes('residuo')) {
       return <Trash2 className="w-4 h-4 text-[#C2410C]" />;
     }
-    if (category.toLowerCase().includes('agua')) {
+    if (catLow.includes('agua')) {
       return <Droplets className="w-4 h-4 text-sky-600" />;
+    }
+    if (catLow.includes('tala') || catLow.includes('verde')) {
+      return (
+        <svg className="w-4 h-4 fill-[#059669]" viewBox="0 0 24 24">
+          <path d="M12 2L4 18h6v4h4v-4h6L12 2z" />
+        </svg>
+      );
     }
     return <Wind className="w-4 h-4 text-[#0F766E]" />;
   };
