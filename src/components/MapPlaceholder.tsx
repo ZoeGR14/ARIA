@@ -969,7 +969,7 @@ export default function MapPlaceholder({
             : '#EAB308';
 
         return (
-          <div className="absolute right-4 top-4 w-[300px] bg-white rounded-2xl shadow-2xl border border-[#CBDCD0] overflow-hidden z-20 sm:block hidden transition-all max-h-[480px] flex flex-col animate-slide-up">
+          <div className="absolute top-20 sm:top-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-[300px] bg-white rounded-2xl shadow-2xl border border-[#CBDCD0] overflow-hidden z-20 flex flex-col transition-all max-h-[420px] sm:max-h-[480px] animate-slide-up">
             <div className="p-1 relative shrink-0">
               {/* Dismiss Close Pin button */}
               <button
