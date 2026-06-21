@@ -64,7 +64,7 @@ export default function Sidebar({
   // Render the menus inside a re-usable elements block
   const renderSidebarContent = () => {
     return (
-      <div className="flex flex-col h-full justify-between">
+      <div className="flex flex-col min-h-full justify-between">
         {/* Upper Brand & Navigation menus */}
         <div className="space-y-7">
           {/* Brand Logo Header */}
@@ -122,8 +122,8 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* Lower Account Area block info (Only shown for guest users to login) */}
-        {!isLoggedIn && (
+        {/* Lower Account Area block info */}
+        {!isLoggedIn ? (
           <div className="pt-5 border-t border-[#E1ECE3] mt-8">
             <button
               onClick={() => navigate('/login')}
@@ -133,6 +133,35 @@ export default function Sidebar({
               <span>Iniciar Sesión</span>
             </button>
           </div>
+        ) : (
+          userProfile && (
+            <div className="md:hidden pt-4 border-t border-[#E1ECE3] mt-auto flex flex-col space-y-3">
+              {/* User Profile Info Card in Sidebar */}
+              <div 
+                onClick={() => handleNav('editar-perfil')}
+                className="flex items-center space-x-3 p-2 rounded-xl hover:bg-[#F3FAF4] transition-all cursor-pointer"
+              >
+                <img
+                  src={userProfile.avatar}
+                  alt={userProfile.name}
+                  className="w-9 h-9 rounded-full object-cover border border-[#C5DDCB]"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-extrabold text-[#143B20] truncate">{userProfile.name}</p>
+                  <p className="text-[10px] text-[#557B5E] font-semibold uppercase tracking-wider truncate">{userProfile.level}</p>
+                </div>
+              </div>
+              {/* Logout button in Sidebar */}
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center space-x-2 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-700 font-bold py-2.5 px-4 rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                <LogOut className="w-4 h-4 text-rose-600" />
+                <span>Cerrar Sesión</span>
+              </button>
+            </div>
+          )
         )}
       </div>
     );
@@ -141,10 +170,10 @@ export default function Sidebar({
   return (
     <>
       {/* 1. Mobile Menu Floating Trigger Button - Avoids standard complete top bar completely */}
-      <div className="md:hidden fixed top-4 left-4 z-50">
+      <div className="md:hidden fixed top-3 left-4 z-50">
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="p-3 bg-white text-[#143B20] rounded-full border border-[#DDE7DE] shadow-md focus:outline-none hover:bg-[#F3FAF4] transition-all flex items-center justify-center cursor-pointer"
+          className="p-2 bg-white text-[#143B20] rounded-full border border-[#DDE7DE] shadow-sm focus:outline-none hover:bg-[#F3FAF4] transition-all flex items-center justify-center cursor-pointer"
           aria-label={mobileOpen ? 'Cerrar Menú' : 'Abrir Menú'}
         >
           {mobileOpen ? <X className="w-5 h-5 text-red-600" /> : <Menu className="w-5 h-5 text-[#1E8344]" />}
@@ -161,7 +190,7 @@ export default function Sidebar({
 
       {/* 3. Mobile Navigation Drawer Slide Box */}
       <div 
-        className={`md:hidden fixed top-0 bottom-0 left-0 w-72 bg-[#FCFDFB] border-r border-[#E1ECE3] z-40 p-5 pt-20 transition-transform duration-300 ease-in-out transform ${
+        className={`md:hidden fixed top-0 bottom-0 left-0 w-72 bg-[#FCFDFB] border-r border-[#E1ECE3] z-40 p-5 pt-20 transition-transform duration-300 ease-in-out transform overflow-y-auto ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

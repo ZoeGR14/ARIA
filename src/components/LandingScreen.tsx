@@ -68,13 +68,21 @@ export default function LandingScreen({
   const recentReports = reports.slice(0, 3);
 
   const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'Residuos': return <Trash2 className="w-4 h-4 text-[#DC2626]" />;
-      case 'Agua':
-      case 'Agua Contaminada': return <Droplets className="w-4 h-4 text-[#FAF23C] text-orange-500" />;
-      case 'Calidad del Aire': return <Factory className="w-4 h-4 text-[#2563EB]" />;
-      default: return <ClipboardList className="w-4 h-4" />;
+    const catLow = category.toLowerCase();
+    if (catLow.includes('basura') || catLow.includes('residuo')) {
+      return <Trash2 className="w-4 h-4 text-[#DC2626]" />;
     }
+    if (catLow.includes('agua')) {
+      return <Droplets className="w-4 h-4 text-sky-600" />;
+    }
+    if (catLow.includes('tala') || catLow.includes('verde')) {
+      return (
+        <svg className="w-4 h-4 fill-[#059669]" viewBox="0 0 24 24">
+          <path d="M12 2L4 18h6v4h4v-4h6L12 2z" />
+        </svg>
+      );
+    }
+    return <Factory className="w-4 h-4 text-[#2563EB]" />;
   };
 
   const getSeverityBadgeClass = (severity: string) => {
@@ -215,19 +223,25 @@ export default function LandingScreen({
               <div
                 key={report.id}
                 onClick={() => navigate('/reporte/' + report.id)}
-                className="p-5 flex items-start space-x-4 hover:bg-[#FAFDFC] transition-all cursor-pointer group"
+                className="p-4 sm:p-5 flex items-start space-x-3 sm:space-x-4 hover:bg-[#FAFDFC] transition-all cursor-pointer group"
               >
                 <img
                   src={report.imageUrl}
                   alt={report.title}
-                  className="w-16 h-16 object-cover rounded-xl border border-[#C5DDCB] flex-shrink-0"
+                  className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-xl border border-[#C5DDCB] flex-shrink-0"
                   referrerPolicy="no-referrer"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    {getCategoryIcon(report.category)}
-                    <span className="text-[11px] font-bold text-[#557C5E] uppercase bg-[#F0F6F1] px-2 py-0.5 rounded-full tracking-wider">
-                      {report.category}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {getCategoryIcon(report.category)}
+                      <span className="text-[11px] font-bold text-[#557C5E] uppercase bg-[#F0F6F1] px-2 py-0.5 rounded-full tracking-wider">
+                        {report.category}
+                      </span>
+                    </div>
+                    {/* Inline severity badge for mobile devices */}
+                    <span className={`sm:hidden text-[9px] font-bold px-2 py-0.5 border rounded-full uppercase tracking-tight ${getSeverityBadgeClass(report.severity)}`}>
+                      {report.severity.replace(' Severidad', '')}
                     </span>
                     <span className="text-xs text-slate-400 font-medium">• {report.timeAgo}</span>
                   </div>
@@ -236,7 +250,8 @@ export default function LandingScreen({
                   </h4>
                   <p className="text-xs text-[#557B5E] mt-0.5 font-medium">📍 {report.location}</p>
                 </div>
-                <span className={`text-[10px] font-bold px-2.5 py-1 border rounded-full uppercase tracking-tight ${getSeverityBadgeClass(report.severity)}`}>
+                {/* Desktop-only right side severity badge */}
+                <span className={`hidden sm:inline-block text-[10px] font-bold px-2.5 py-1 border rounded-full uppercase tracking-tight ${getSeverityBadgeClass(report.severity)}`}>
                   {report.severity.replace(' Severidad', '')}
                 </span>
               </div>

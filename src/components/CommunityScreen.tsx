@@ -402,9 +402,9 @@ export default function CommunityScreen({
                             : 'border-[#F0F6F1]'
                         }`}
                       >
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
                           {/* Rank Index Placement */}
-                          <div className="w-8 flex items-center justify-center">
+                          <div className="w-6 sm:w-8 shrink-0 flex items-center justify-center">
                             {getRankBadge(contrib.rank)}
                           </div>
 
@@ -413,43 +413,43 @@ export default function CommunityScreen({
                             <img
                               src={contrib.avatar}
                               alt={contrib.name}
-                              className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-xs group-hover:scale-105 transition-transform"
+                              className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-full object-cover border-2 border-white shadow-xs group-hover:scale-105 transition-transform"
                               referrerPolicy="no-referrer"
                             />
                           ) : (
-                            <UserCircle className="w-11 h-11 text-slate-300" />
+                            <UserCircle className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 text-slate-300" />
                           )}
 
                           {/* Info block */}
-                          <div className="space-y-0.5">
+                          <div className="space-y-0.5 flex-1 min-w-0 pr-2">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-sm font-black text-[#143B20] group-hover:text-[#1E8344] transition-colors">
+                              <span className="text-sm font-black text-[#143B20] group-hover:text-[#1E8344] transition-colors truncate">
                                 {contrib.name}
                               </span>
                               {contrib.verified && (
-                                <span className="inline-flex bg-emerald-100 text-emerald-800 p-0.5 rounded-full" title="Ciudadano Verificado">
+                                <span className="inline-flex bg-emerald-100 text-emerald-800 p-0.5 rounded-full shrink-0" title="Ciudadano Verificado">
                                   <ShieldCheck className="w-3.5 h-3.5" />
                                 </span>
                               )}
                               {isActiveUser && (
-                                <span className="text-[9px] font-bold bg-[#1E8344] text-white px-1.5 py-0.2 rounded-full uppercase">
+                                <span className="text-[9px] font-bold bg-[#1E8344] text-white px-1.5 py-0.2 rounded-full uppercase shrink-0">
                                   Tú
                                 </span>
                               )}
                             </div>
-                            <p className="text-[10.5px] text-[#557B5E] font-bold">
+                            <p className="text-[10.5px] text-[#557B5E] font-bold truncate">
                               {contrib.nivel_ranking || 'Novato'}
                             </p>
                           </div>
                         </div>
 
                         {/* Points Total & Action Arrow hover */}
-                        <div className="flex items-center space-x-3 text-right">
+                        <div className="flex items-center space-x-1 sm:space-x-3 text-right shrink-0">
                           <div>
                             <span className="text-sm font-black text-[#143B20] block">{contrib.points.toLocaleString()}</span>
                             <span className="text-[9px] text-[#557B5E] font-black uppercase tracking-widest leading-none block">puntos</span>
                           </div>
-                          <span className="text-[#1E8344] opacity-0 group-hover:opacity-100 transition-opacity font-bold text-xs pl-1">
+                          <span className="text-[#1E8344] opacity-0 group-hover:opacity-100 transition-opacity font-bold text-xs pl-1 hidden sm:inline-block">
                             Ver Perfil →
                           </span>
                         </div>
