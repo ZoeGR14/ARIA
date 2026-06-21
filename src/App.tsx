@@ -378,14 +378,14 @@ export default function App() {
         {isLoggedIn && !isAuthScreen && (
           <header className="bg-white border-b border-[#E1ECE3] pl-16 md:pl-8 pr-4 md:pr-8 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
             {/* Left contextual tag */}
-            <div className="flex items-center space-x-2">
+            <div className="hidden sm:flex items-center space-x-2">
               <span className="text-[10px] sm:text-xs font-mono font-black text-[#1E8344] uppercase tracking-wider bg-[#EBF7EE] px-2.5 py-1 rounded-lg">
                 Ciudadano Activo
               </span>
             </div>
 
             {/* Right quick actions: View profile & Logout */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 ml-auto">
               {/* Notifications bell dropdown */}
               <div className="relative">
                 <button
@@ -414,7 +414,7 @@ export default function App() {
                     />
 
                     {/* Popover dropdown container */}
-                    <div className="absolute right-0 mt-2.5 w-[280px] sm:w-[320px] bg-white rounded-2xl shadow-2xl border border-[#CBDCD0] overflow-hidden z-50 animate-slide-up flex flex-col max-h-[440px]">
+                    <div className="absolute right-0 sm:right-0 mt-2.5 w-[280px] sm:w-[320px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-[#CBDCD0] overflow-hidden z-50 animate-slide-up flex flex-col max-h-[440px]">
                       {/* Header */}
                       <div className="bg-[#FAFDF9] border-b border-[#CBDCD0]/50 px-4 py-3 flex items-center justify-between shrink-0">
                         <span className="text-xs font-black text-[#143B20] uppercase tracking-wider flex items-center gap-1.5">
@@ -491,7 +491,7 @@ export default function App() {
               {/* Profile card link */}
               <button
                 onClick={() => navigate('/editar-perfil')}
-                className="flex items-center space-x-2 p-0.5 px-2.5 bg-[#FAFDF9] border border-[#CDE1D1] hover:border-[#1E8344] rounded-full transition-all cursor-pointer group text-left shadow-xs"
+                className="flex items-center space-x-0 sm:space-x-2 p-0 sm:p-0.5 sm:px-2.5 bg-transparent sm:bg-[#FAFDF9] border-0 sm:border border-[#CDE1D1] hover:border-[#1E8344] rounded-full transition-all cursor-pointer group text-left shadow-none sm:shadow-xs"
                 title="Modificar mi Perfil"
               >
                 <img
@@ -500,7 +500,7 @@ export default function App() {
                   className="w-7 h-7 rounded-full object-cover border border-[#C5DDCB] group-hover:scale-105 transition-transform"
                   referrerPolicy="no-referrer"
                 />
-                <div className="text-[10.5px]">
+                <div className="hidden sm:block text-[10px]">
                   <p className="font-extrabold text-[#143B20] leading-none group-hover:text-[#1E8344] transition-colors">
                     {userProfile.name}
                   </p>
@@ -552,11 +552,11 @@ export default function App() {
                   }
                 }}
                 disabled={isLoggingOut}
-                className="flex items-center space-x-1.5 px-3 py-1.5 bg-rose-50 border border-rose-100 font-bold hover:bg-rose-100 hover:border-rose-200 text-rose-700 rounded-full text-[11px] transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-0 sm:space-x-1.5 p-2 sm:px-3 sm:py-1.5 bg-rose-50 border border-rose-100 font-bold hover:bg-rose-100 hover:border-rose-200 text-rose-700 rounded-full text-[11px] transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Cerrar Sesión"
               >
                 <LogOut className="w-3.5 h-3.5 text-rose-600" />
-                <span className="hidden xs:inline">Cerrar Sesión</span>
+                <span className="hidden sm:inline">Cerrar Sesión</span>
               </button>
             </div>
           </header>
