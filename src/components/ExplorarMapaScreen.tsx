@@ -12,13 +12,19 @@ import { Target, MapPin, Compass, Info, ShieldCheck } from 'lucide-react';
 interface ExplorarMapaScreenProps {
   reports: IncidentReport[];
   onReportLocation?: (address: string, coordinates: string) => void;
+  userProfile?: {
+    role: string;
+  };
 }
 
 export default function ExplorarMapaScreen({
   reports,
   onReportLocation,
+    userProfile,
 }: ExplorarMapaScreenProps) {
   const navigate = useNavigate();
+  const isAdmin = userProfile?.role === 'Administrador';
+  const filteredReports = reports.filter(r => isAdmin || (r.estado_puntos !== 'Pendiente' && r.estado_puntos !== 'Rechazado'));
   return (
     <div className="bg-[#FAFDF9] py-8 px-4 md:px-8 min-h-[calc(100vh-68px)]">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -54,7 +60,7 @@ export default function ExplorarMapaScreen({
             </div>
             
             <MapPlaceholder
-              reports={reports}
+              reports={filteredReports}
               onReportLocation={onReportLocation}
             />
           </div>

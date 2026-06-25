@@ -92,7 +92,6 @@ export async function getReportePorId(id: string): Promise<IncidentReport | null
       throw new Error(`HTTP ${response.status}`);
     }
     const data = await response.json();
-    console.log(data);
     return adaptarReporte(data);
   } catch {
     return INITIAL_REPORTS.find(r => String(r.id) === String(id)) ?? null;

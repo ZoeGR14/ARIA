@@ -786,3 +786,29 @@ export const eliminarUsuario = async (
     }
 
 };
+
+export const obtenerUsuarios = async (req: Request, res: Response) => {
+    try {
+        const usuarios = await prisma.usuario.findMany({
+            // Usamos 'select' para evitar traer la contraseña (password) y otros datos sensibles
+            select: {
+                id: true,
+                nombre_completo: true,
+                correo_electronico: true,
+                avatar_url: true,
+                // Puedes agregar más campos aquí si los necesitas en el futuro, como fecha_creacion, etc.
+            },
+            orderBy: {
+                // Ordenar por los más recientes primero (ajusta el nombre del campo a tu schema)
+                id: 'desc'
+            }
+        });
+
+        return res.status(200).json(usuarios);
+    } catch (error) {
+        console.error("Error al obtener los usuarios:", error);
+        return res.status(500).json({
+            mensaje: "Error interno del servidor al intentar obtener la lista de usuarios."
+        });
+    }
+};
