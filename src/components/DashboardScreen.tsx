@@ -286,6 +286,36 @@ export default function DashboardScreen({
     if (!userStats) return null;
 
     const userReports = userStats.reportesRecientes || [];
+    const pts = userStats.puntosTotales || 0;
+    
+    let nextMilestone = 100;
+    let prevMilestone = 0;
+    let nextRankName = "Colaborador";
+    let isMaxLevel = false;
+
+    if (pts >= 1000) {
+      isMaxLevel = true;
+      nextMilestone = 1000;
+      prevMilestone = 1000;
+      nextRankName = "";
+    } else if (pts >= 500) {
+      prevMilestone = 500;
+      nextMilestone = 1000;
+      nextRankName = "Experto";
+    } else if (pts >= 100) {
+      prevMilestone = 100;
+      nextMilestone = 500;
+      nextRankName = "Protector";
+    } else {
+      prevMilestone = 0;
+      nextMilestone = 100;
+      nextRankName = "Colaborador";
+    }
+
+    const range = nextMilestone - prevMilestone;
+    const progressInTier = isMaxLevel ? range : (pts - prevMilestone);
+    const percentage = isMaxLevel ? 100 : Math.max(0, Math.min(100, (progressInTier / range) * 100));
+    const remaining = nextMilestone - pts;
 
     return (
       <div className="space-y-6 animate-fade-in">
@@ -334,26 +364,34 @@ export default function DashboardScreen({
           {/* Environmental Impact Index Card */}
           <div className="bg-white rounded-3xl border border-[#DDE7DE] p-6 md:col-span-4 flex flex-col justify-between items-center text-center">
             <div className="w-full text-left">
-              <span className="text-xs font-bold text-[#55705B] uppercase tracking-wider block">Índice de Impacto</span>
+              <span className="text-xs font-bold text-[#55705B] uppercase tracking-wider block">Progreso de Rango</span>
             </div>
 
             {/* Circular chart visualizer */}
-            <div className="relative w-32 h-32 flex items-center justify-center my-4">
+            <div className="relative w-32 h-32 flex items-center justify-center mt-4">
               <svg className="w-full h-full transform -rotate-90">
                 <circle cx="64" cy="64" r="50" stroke="#F0F5F2" strokeWidth="10" fill="transparent" />
                 <circle 
                   cx="64" cy="64" r="50" 
                   stroke="#05682C" strokeWidth="10" 
                   strokeDasharray={2 * Math.PI * 50}
-                  strokeDashoffset={2 * Math.PI * 50 * (1 - Math.min(userStats.puntosTotales, 100) / 100)}
+                  strokeDashoffset={2 * Math.PI * 50 * (1 - percentage / 100)}
                   fill="transparent"
                   strokeLinecap="round" 
                 />
               </svg>
               <div className="absolute flex flex-col justify-center items-center">
-                <span className="text-3xl font-extrabold text-[#143B20] leading-none mb-0.5">{userStats.puntosTotales}</span>
+                <span className="text-3xl font-extrabold text-[#143B20] leading-none mb-0.5">{pts}</span>
                 <span className="text-[10px] text-slate-400 font-bold">PTS</span>
               </div>
+            </div>
+
+            <div className="text-[11px] text-[#55705B] font-semibold mt-1">
+              {isMaxLevel ? (
+                <span className="text-[#05682C] font-bold">🎉 ¡Rango Máximo Alcanzado!</span>
+              ) : (
+                <span>Faltan <strong className="text-[#05682C]">{remaining} pts</strong> para ser <strong>{nextRankName}</strong></span>
+              )}
             </div>
           </div>
         </div>

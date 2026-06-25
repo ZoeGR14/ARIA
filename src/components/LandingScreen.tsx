@@ -113,7 +113,7 @@ export default function LandingScreen({
             </h1>
 
             <p className="text-sm md:text-base text-[#4F6C56] leading-relaxed max-w-lg">
-              Reporta problemas ambientales en tu comunidad y ayuda a construir un futuro sostenible. Únete a miles de ciudadanos que ya están haciendo la diferencia en tiempo real.
+              Reporta problemas ambientales en tu comunidad y ayuda a construir un futuro sostenible. Únete a la creciente red de ciudadanos que ya están haciendo la diferencia en tiempo real.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">
@@ -136,7 +136,7 @@ export default function LandingScreen({
 
             <div className="flex items-center space-x-2 text-xs text-[#557B5E] pt-2 font-medium">
               <Users className="w-4 h-4" />
-              <span>Únete a miles de ciudadanos que ya están haciendo la diferencia</span>
+              <span>Únete a la creciente comunidad que ya está haciendo la diferencia</span>
             </div>
           </div>
 

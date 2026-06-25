@@ -133,7 +133,9 @@ export const getUserStats = async (
                 status: r.estado.nombre,
                 location: "Ubicación", // Simplifying location for now or parse it
                 timeAgo: r.fecha_creacion ? r.fecha_creacion.toLocaleDateString() : "",
-                views: 0
+                views: 0,
+                puntos_asignados: r.puntos_asignados || 0,
+                estado_puntos: r.estado_puntos || 'Pendiente'
             }))
         });
 

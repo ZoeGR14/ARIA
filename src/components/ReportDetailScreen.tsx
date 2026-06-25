@@ -27,6 +27,7 @@ const REPORT_COORDINATES: Record<string, [number, number]> = {
 interface ReportDetailScreenProps {
   reports: IncidentReport[];
   onAddComment: (reportId: string, comment: Comment) => void;
+  onUpdateReport?: (reportId: string, updatedFields: Partial<IncidentReport>) => void;
   currentUser: {
     name: string;
     avatar: string;
@@ -37,6 +38,7 @@ interface ReportDetailScreenProps {
 export default function ReportDetailScreen({
   reports,
   onAddComment,
+  onUpdateReport,
   currentUser,
 }: ReportDetailScreenProps) {
   const navigate = useNavigate();
@@ -80,12 +82,20 @@ export default function ReportDetailScreen({
 
       await actualizarReporte(report.id, updateData, token);
       
-      setReport({
-        ...report,
+      const updatedFields: Partial<IncidentReport> = {
         status: adminStatus as any,
         estado_puntos: adminPointsStatus as any,
         puntos_asignados: adminPoints
+      };
+
+      setReport({
+        ...report,
+        ...updatedFields
       });
+
+      if (onUpdateReport) {
+        onUpdateReport(report.id, updatedFields);
+      }
       setShowSuccessModal(true);
     } catch (error) {
       console.error(error);
@@ -101,6 +111,13 @@ export default function ReportDetailScreen({
       if (r) setReport(r);
     });
   }, [id]);
+
+  useEffect(() => {
+    const matched = reports.find(r => String(r.id) === String(id));
+    if (matched) {
+      setReport(matched);
+    }
+  }, [reports, id]);
 
   useEffect(() => {
     if (report && report.latitude && report.longitude && !direccionLegible) {
@@ -263,10 +280,6 @@ export default function ReportDetailScreen({
                 <span className="text-xs font-bold text-[#557B5E] font-mono select-all">
                   ID: #{report.id}
                 </span>
-
-                <button className="ml-auto text-xs font-bold text-[#1E8344] bg-[#EBF7EE] border border-[#CBDCD0] px-4 py-1.5 rounded-lg hover:bg-[#DCE7DD]">
-                  🔔 Seguir este reporte
-                </button>
               </div>
 
               <h1 className="text-3xl md:text-4xl font-extrabold text-[#143B20] tracking-tight leading-tight">

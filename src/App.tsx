@@ -299,6 +299,13 @@ export default function App() {
 
   useEffect(() => {
     getReportesActivos().then(setReports);
+
+    // Poll active reports every 10 seconds to sync updates across different sessions in real-time
+    const interval = setInterval(() => {
+      getReportesActivos().then(setReports);
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleReportAtLocation = (address: string, coordinates: string) => {
@@ -345,6 +352,13 @@ export default function App() {
         }
         return rep;
       })
+    );
+  };
+
+  // Handle updating report status/points globally
+  const handleUpdateReport = (reportId: string, updatedFields: Partial<IncidentReport>) => {
+    setReports((prev) =>
+      prev.map((rep) => (rep.id === reportId ? { ...rep, ...updatedFields } : rep))
     );
   };
 
@@ -628,7 +642,12 @@ export default function App() {
                  } />
                 <Route path="/reporte/:id" element={
                   <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para poder explorar e inspeccionar el mapa de incidencias.">
-                    <ReportDetailScreen reports={reports} onAddComment={handleAddComment} currentUser={userProfile} />
+                    <ReportDetailScreen 
+                      reports={reports} 
+                      onAddComment={handleAddComment} 
+                      onUpdateReport={handleUpdateReport}
+                      currentUser={userProfile} 
+                    />
                   </PrivateRoute>
                 } />
                 <Route path="*" element={<Navigate to="/" replace />} />
