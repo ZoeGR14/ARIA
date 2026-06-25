@@ -14,12 +14,12 @@ function adaptarContribuidor(raw: any, index: number): Contributor {
   };
 }
 
-export async function getContributores(): Promise<Contributor[]> {
-  const apiUrl = import.meta.env.VITE_API_URL;
+function getApiUrl(): string {
+  return import.meta.env.VITE_API_URL || '/api';
+}
 
-  if (!apiUrl) {
-    return INITIAL_CONTRIBUTORS;
-  }
+export async function getContributores(): Promise<Contributor[]> {
+  const apiUrl = getApiUrl();
 
   try {
     const response = await fetch(`${apiUrl}/ranking/contributors`);

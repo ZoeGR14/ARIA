@@ -1,6 +1,15 @@
 import { IncidentReport } from '../types';
 import { INITIAL_REPORTS } from '../data/mockData';
 
+/**
+ * Devuelve la URL base de la API.
+ * - En desarrollo: usa VITE_API_URL (ej. http://localhost:3001/api)
+ * - En producción (VPS): usa /api — Nginx ya hace el proxy al backend
+ */
+function getApiUrl(): string {
+  return import.meta.env.VITE_API_URL || '/api';
+}
+
 function calcularTimeAgo(fechaIso: string): string {
   const diff = Date.now() - new Date(fechaIso).getTime();
   const mins = Math.floor(diff / 60000);
@@ -74,11 +83,7 @@ function adaptarReporte(raw: any): IncidentReport {
 }
 
 export async function getReportesActivos(): Promise<IncidentReport[]> {
-  const apiUrl = import.meta.env.VITE_API_URL;
-
-  if (!apiUrl) {
-    return INITIAL_REPORTS;
-  }
+  const apiUrl = getApiUrl();
 
   try {
     const response = await fetch(`${apiUrl}/reportes/activos`);
@@ -92,11 +97,7 @@ export async function getReportesActivos(): Promise<IncidentReport[]> {
   }
 }
 export async function getReportePorId(id: string): Promise<IncidentReport | null> {
-  const apiUrl = import.meta.env.VITE_API_URL;
-
-  if (!apiUrl) {
-    return INITIAL_REPORTS.find(r => String(r.id) === String(id)) ?? null;
-  }
+  const apiUrl = getApiUrl();
 
   try {
     const response = await fetch(`${apiUrl}/reportes/${id}`);
@@ -111,7 +112,7 @@ export async function getReportePorId(id: string): Promise<IncidentReport | null
 }
 
 export async function crearReporte(formData: FormData, token: string) {
-  const apiUrl = import.meta.env.VITE_API_URL;
+  const apiUrl = getApiUrl();
 
   const response = await fetch(`${apiUrl}/reportes`, {
     method: 'POST',
@@ -134,8 +135,7 @@ export async function actualizarReporte(
   },
   token: string
 ) {
-  const apiUrl = import.meta.env.VITE_API_URL;
-  if (!apiUrl) return null;
+  const apiUrl = getApiUrl();
 
   const response = await fetch(`${apiUrl}/reportes/${id}`, {
     method: 'PATCH',
