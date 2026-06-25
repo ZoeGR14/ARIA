@@ -4,11 +4,12 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MAP_PINS } from '../data/mockData';
 import { IncidentReport } from '../types';
 import { getReportesActivos } from '../services/reportesService';
-import { 
-  Trash2, Droplets, Factory, Plus, Minus, Target, X, 
+import {
+  Trash2, Droplets, Factory, Plus, Minus, Target, X,
   Search, Layers, Share2, Copy, Check, Info, Compass, Loader2, MapPinOff, MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -119,19 +120,18 @@ export const parseCoordinates = (str: string | undefined): [number, number] => {
 
 interface MapPlaceholderProps {
   reports?: IncidentReport[];
-  onSelectReportId: (id: string) => void;
   focusedReportId?: string;
   onReportLocation?: (address: string, coordinates: string) => void;
 }
 
-export default function MapPlaceholder({ 
-  reports, 
-  onSelectReportId, 
-  focusedReportId, 
-  onReportLocation 
+export default function MapPlaceholder({
+  reports,
+  focusedReportId,
+  onReportLocation
 }: MapPlaceholderProps) {
+  const navigate = useNavigate();
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
-  
+
   // Custom states matching maps
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -173,12 +173,12 @@ export default function MapPlaceholder({
       setDynamicSuggestions([]);
       return;
     }
-    
+
     setIsSearchingSuggestions(true);
     try {
       const isCdmx = queryText.toLowerCase().includes('cdmx') || queryText.toLowerCase().includes('mexico');
       const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText + (isCdmx ? '' : ', CDMX, Mexico'))}&limit=5&addressdetails=1`;
-      
+
       const response = await fetch(searchUrl, {
         headers: {
           'Accept-Language': 'es'
@@ -263,12 +263,12 @@ export default function MapPlaceholder({
         initialZoom = 14;
       }
     }
-    
+
     const map = L.map(mapContainerRef.current, {
       center: initialCenter,
       zoom: initialZoom,
-      zoomControl: false, 
-      attributionControl: false, 
+      zoomControl: false,
+      attributionControl: false,
     });
 
     mapInstanceRef.current = map;
@@ -367,10 +367,12 @@ export default function MapPlaceholder({
 
       // Emoji by category
       let pinEmoji = '🗑️';
-      if (rep.category === 'Agua Contaminada' || rep.category === 'Agua') {
+      if (rep.category === 'Fuga de Agua') {
         pinEmoji = '💧';
-      } else if (rep.category === 'Calidad del Aire') {
+      } else if (rep.category === 'Contaminación del Aire') {
         pinEmoji = '🏭';
+      } else if (rep.category === 'Tala Ilegal / Áreas Verdes') {
+        pinEmoji = '🌳';
       }
 
       // Solid color bubble marker with white border in Google Maps aesthetic
@@ -410,7 +412,7 @@ export default function MapPlaceholder({
   // Handle address searches mimicking Google Maps search queries
   const handleCalculateRoute = () => {
     if (!mapInstanceRef.current || !searchedLocationDetails) return;
-    
+
     // Clear old route
     if (routePolylineRef.current) {
       routePolylineRef.current.remove();
@@ -438,7 +440,7 @@ export default function MapPlaceholder({
     // Zoom map out to fit coordinates
     const bounds = L.latLngBounds([startPoint, endPoint]);
     mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
-    
+
     setShowShareNotification(`Trayecto trazado desde puesto de monitoreo central hasta ${searchedLocationDetails.name} en color azul.`);
   };
 
@@ -472,8 +474,8 @@ export default function MapPlaceholder({
     } else {
       try {
         // Free OpenStreetMap Nominatim Live Geocoding API
-        const searchContext = lowerQuery.includes('mexico') || lowerQuery.includes('cdmx') 
-          ? query 
+        const searchContext = lowerQuery.includes('mexico') || lowerQuery.includes('cdmx')
+          ? query
           : `${query}, CDMX, Mexico`;
 
         const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchContext)}&limit=1&addressdetails=1`, {
@@ -489,11 +491,11 @@ export default function MapPlaceholder({
             targetCoords = [parseFloat(first.lat), parseFloat(first.lon)];
             label = first.name || first.display_name.split(',')[0];
             addressStr = first.display_name;
-            
-            categoryStr = first.type 
+
+            categoryStr = first.type
               ? `Zona OSM: CDMX (${first.class || 'Lugar'} - ${first.type})`
               : 'Ubicación Georeferenciada Libre';
-              
+
             const seedValue = first.place_id || 12345;
             ratingNum = parseFloat((4.5 + (Math.abs(Math.sin(seedValue)) * 0.49)).toFixed(1));
 
@@ -661,7 +663,7 @@ export default function MapPlaceholder({
   };
   const handleLocateUser = () => {
     if (!mapInstanceRef.current) return;
-    
+
     if (!navigator.geolocation) {
       setLocationModalTitle("Geolocalización No Soportada");
       setLocationModalMessage("Tu navegador no soporta geolocalización. Por favor, intenta usar otro navegador.");
@@ -690,11 +692,11 @@ export default function MapPlaceholder({
   const handleCopyShareLink = (pinId: string) => {
     const coords = REAL_COORDINATES[pinId] || [19.4150, -99.1620];
     const generatedUrl = `${window.location.origin}/?page=explorar-mapa&pinId=${pinId}&lat=${coords[0]}&lng=${coords[1]}`;
-    
+
     navigator.clipboard.writeText(generatedUrl).then(() => {
       setShareCopied(true);
       setShowShareNotification(`Enlace copiado para: ${MAP_PINS.find(p => p.id === pinId)?.title}`);
-      
+
       setTimeout(() => {
         setShareCopied(false);
         setShowShareNotification(null);
@@ -704,18 +706,18 @@ export default function MapPlaceholder({
 
   return (
     <div className="relative w-full h-[540px] rounded-2xl overflow-hidden border border-[#CDE1D1] bg-[#FAFDF9] shadow-inner drop-shadow-sm flex flex-col">
-      
+
       {/* 📍 GOOGLE MAPS STYLE FLOATING INTERACTIVE HEADER SEARCH BAR */}
       <div className="absolute top-4 left-4 z-20 w-[280px] xs:w-[320px] md:w-[360px] flex flex-col gap-2">
         {/* Search Input Bar Pill */}
-        <form 
-          onSubmit={handleSearchSubmit} 
+        <form
+          onSubmit={handleSearchSubmit}
           className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-[#CBDCD0] flex items-center px-3.5 py-2.5 h-12 w-full transition-all focus-within:ring-2 focus-within:ring-[#1E8344]/30"
         >
           <Search className="w-4 h-4 text-[#557B5E] shrink-0 mr-2.5" />
-          <input 
-            type="text" 
-            placeholder="Buscar colonia, dirección exacta, o PIN..." 
+          <input
+            type="text"
+            placeholder="Buscar colonia, dirección exacta, o PIN..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -732,8 +734,8 @@ export default function MapPlaceholder({
             className="w-full text-xs font-semibold text-[#143B20] bg-transparent outline-none border-none placeholder-[#7C9B83]"
           />
           {searchQuery && (
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => {
                 setSearchQuery('');
                 setDynamicSuggestions([]);
@@ -744,8 +746,8 @@ export default function MapPlaceholder({
             </button>
           )}
           <div className="h-4 w-[1px] bg-slate-200 mx-1"></div>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={isSearching}
             title="Buscar ubicación"
             className="text-[#1E8344] hover:text-[#0b5425] p-1.5 font-bold text-xs cursor-pointer flex items-center justify-center shrink-0 min-w-8"
@@ -770,33 +772,33 @@ export default function MapPlaceholder({
             )}
 
             {/* Offline Default suggestions */}
-            {SUGGESTIONS.filter(item => 
-              item.address.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            {SUGGESTIONS.filter(item =>
+              item.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
               item.title.toLowerCase().includes(searchQuery.toLowerCase())
             ).length > 0 && (
-              <div className="flex flex-col shrink-0">
-                <div className="bg-[#FAFDF9] px-4 py-1.5 border-b border-[#CBDCD0]/50 text-[9px] font-black uppercase text-[#557B5E] tracking-wider">
-                  Puntos de Interés CDMX Guardados
+                <div className="flex flex-col shrink-0">
+                  <div className="bg-[#FAFDF9] px-4 py-1.5 border-b border-[#CBDCD0]/50 text-[9px] font-black uppercase text-[#557B5E] tracking-wider">
+                    Puntos de Interés CDMX Guardados
+                  </div>
+                  {SUGGESTIONS.filter(item =>
+                    item.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    item.title.toLowerCase().includes(searchQuery.toLowerCase())
+                  ).map((s, idx) => (
+                    <button
+                      key={`static-${idx}`}
+                      type="button"
+                      onClick={() => handleSelectSuggestion(s)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-[#EBF7EE] border-b border-[#CBDCD0]/20 flex items-start space-x-2.5 transition-colors cursor-pointer"
+                    >
+                      <span className="text-sm shrink-0">📍</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-extrabold text-[#143B20] truncate">{s.title}</p>
+                        <p className="text-[10px] text-[#557B5E] font-medium truncate">{s.address}</p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
-                {SUGGESTIONS.filter(item => 
-                  item.address.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                  item.title.toLowerCase().includes(searchQuery.toLowerCase())
-                ).map((s, idx) => (
-                  <button
-                    key={`static-${idx}`}
-                    type="button"
-                    onClick={() => handleSelectSuggestion(s)}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#EBF7EE] border-b border-[#CBDCD0]/20 flex items-start space-x-2.5 transition-colors cursor-pointer"
-                  >
-                    <span className="text-sm shrink-0">📍</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-extrabold text-[#143B20] truncate">{s.title}</p>
-                      <p className="text-[10px] text-[#557B5E] font-medium truncate">{s.address}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+              )}
 
             {/* Live OpenStreetMap Nominatim suggestions */}
             {dynamicSuggestions.length > 0 && (
@@ -822,34 +824,33 @@ export default function MapPlaceholder({
             )}
 
             {/* No suggestions at all */}
-            {SUGGESTIONS.filter(item => 
-              item.address.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            {SUGGESTIONS.filter(item =>
+              item.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
               item.title.toLowerCase().includes(searchQuery.toLowerCase())
             ).length === 0 && dynamicSuggestions.length === 0 && !isSearchingSuggestions && (
-              <div className="p-3 text-[11px] text-slate-400 font-bold text-center">
-                Ninguna sugerencia guardada. Elige otra búsqueda o continúa escribiendo la dirección libre.
-              </div>
-            )}
+                <div className="p-3 text-[11px] text-slate-400 font-bold text-center">
+                  Ninguna sugerencia guardada. Elige otra búsqueda o continúa escribiendo la dirección libre.
+                </div>
+              )}
           </div>
         )}
       </div>
 
       {/* Dynamic Quick Badges to Toggle layers */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          {/* Layer Street Map Toggle Button */}
-          <button 
-            type="button"
-            onClick={() => setActiveLayer(activeLayer === 'streets' ? 'satellite' : 'streets')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md transition-all border cursor-pointer ${
-              activeLayer === 'satellite' 
-                ? 'bg-[#1E8344] border-[#13592D] text-white' 
-                : 'bg-white border-[#CBDCD0] text-[#143B20] hover:bg-slate-50'
+      <div className="flex flex-wrap items-center gap-1.5">
+        {/* Layer Street Map Toggle Button */}
+        <button
+          type="button"
+          onClick={() => setActiveLayer(activeLayer === 'streets' ? 'satellite' : 'streets')}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md transition-all border cursor-pointer ${activeLayer === 'satellite'
+              ? 'bg-[#1E8344] border-[#13592D] text-white'
+              : 'bg-white border-[#CBDCD0] text-[#143B20] hover:bg-slate-50'
             }`}
-          >
-            <Layers className="w-3 h-3" />
-            <span>{activeLayer === 'streets' ? 'Satelital' : 'Calles'}</span>
-          </button>
-        </div>
+        >
+          <Layers className="w-3 h-3" />
+          <span>{activeLayer === 'streets' ? 'Satelital' : 'Calles'}</span>
+        </button>
+      </div>
 
       {/* Dynamic Toast Notification for Route and Clipboard actions */}
       {showShareNotification && (
@@ -882,9 +883,9 @@ export default function MapPlaceholder({
             >
               <X className="w-4 h-4 text-white" />
             </button>
-            <img 
-              src={searchedLocationDetails.image} 
-              alt={searchedLocationDetails.name} 
+            <img
+              src={searchedLocationDetails.image}
+              alt={searchedLocationDetails.name}
               className="w-full h-28 object-cover rounded-t-xl"
               referrerPolicy="no-referrer"
             />
@@ -943,8 +944,8 @@ export default function MapPlaceholder({
       )}
 
       {/* Live Leaflet Div Container */}
-      <div 
-        ref={mapContainerRef} 
+      <div
+        ref={mapContainerRef}
         className="w-full h-full z-10"
         style={{ outline: 'none' }}
       />
@@ -964,11 +965,11 @@ export default function MapPlaceholder({
         const pinSeverityColor = activePin.severity.toLowerCase().includes('alta')
           ? '#DC2626'
           : activePin.severity.toLowerCase().includes('media')
-          ? '#F97316'
-          : '#EAB308';
+            ? '#F97316'
+            : '#EAB308';
 
         return (
-          <div className="absolute right-4 top-4 w-[300px] bg-white rounded-2xl shadow-2xl border border-[#CBDCD0] overflow-hidden z-20 sm:block hidden transition-all max-h-[480px] flex flex-col animate-slide-up">
+          <div className="absolute top-20 sm:top-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-[300px] bg-white rounded-2xl shadow-2xl border border-[#CBDCD0] overflow-hidden z-20 flex flex-col transition-all max-h-[420px] sm:max-h-[480px] animate-slide-up">
             <div className="p-1 relative shrink-0">
               {/* Dismiss Close Pin button */}
               <button
@@ -981,9 +982,9 @@ export default function MapPlaceholder({
               >
                 <X className="w-4 h-4 text-[#1E8344]" />
               </button>
-              <img 
-                src={activePin.imageUrl} 
-                alt={activePin.title} 
+              <img
+                src={activePin.imageUrl}
+                alt={activePin.title}
                 className="w-full h-36 object-cover rounded-t-xl"
                 referrerPolicy="no-referrer"
               />
@@ -995,9 +996,10 @@ export default function MapPlaceholder({
 
             <div className="p-4 flex flex-col font-sans overflow-y-auto">
               <h4 className="text-sm font-black text-[#143B20] flex items-center gap-1.5 leading-tight">
-                {(activePin.category === 'Residuos') && <Trash2 className="w-4 h-4 text-[#DC2626]" />}
-                {(activePin.category === 'Agua Contaminada' || activePin.category === 'Agua') && <Droplets className="w-4 h-4 text-[#F97316]" />}
-                {(activePin.category === 'Calidad del Aire') && <Factory className="w-4 h-4 text-[#2563EB]" />}
+                {(activePin.category === 'Acumulación de Basura') && <Trash2 className="w-4 h-4 text-[#DC2626]" />}
+                {(activePin.category === 'Fuga de Agua') && <Droplets className="w-4 h-4 text-[#F97316]" />}
+                {(activePin.category === 'Contaminación del Aire') && <Factory className="w-4 h-4 text-[#2563EB]" />}
+                {(activePin.category === 'Tala Ilegal / Áreas Verdes') && <Compass className="w-4 h-4 text-[#8B5CF6]" />}
                 <span>{activePin.title}</span>
               </h4>
 
@@ -1046,7 +1048,7 @@ export default function MapPlaceholder({
                 <button
                   type="button"
                   onClick={() => {
-                    onSelectReportId(activePin.id);
+                    navigate('/reporte/' + activePin.id);
                   }}
                   className="flex items-center justify-center bg-[#05682C] hover:bg-[#045524] text-white rounded-xl py-2 px-2 text-[10.5px] font-black transition-colors cursor-pointer shadow-xs active:scale-95"
                 >
@@ -1060,30 +1062,30 @@ export default function MapPlaceholder({
 
       {/* Control Gizmos (Upper Left Target, Zoom button pillars) */}
       <div className="absolute left-4 bottom-4 flex flex-col gap-2 z-20">
-        <button 
+        <button
           onClick={handleZoomIn}
-          title="Acercar mapa" 
+          title="Acercar mapa"
           className="w-10 h-10 bg-white rounded-lg shadow-md hover:bg-[#F3FAF4] font-bold text-lg text-[#143B20] border border-[#CBDCD0] flex items-center justify-center transition-colors pb-0.5 cursor-pointer"
         >
           <Plus className="w-5 h-5 text-[#1E8344]" />
         </button>
-        <button 
+        <button
           onClick={handleZoomOut}
-          title="Alejar mapa" 
+          title="Alejar mapa"
           className="w-10 h-10 bg-white rounded-lg shadow-md hover:bg-[#F3FAF4] font-bold text-lg text-[#143B20] border border-[#CBDCD0] flex items-center justify-center transition-colors pb-0.5 cursor-pointer"
         >
           <Minus className="w-5 h-5 text-[#1E8344]" />
         </button>
-        <button 
+        <button
           onClick={handleRecenter}
-          title="Restaurar y Centrar" 
+          title="Restaurar y Centrar"
           className="w-10 h-10 bg-white rounded-lg shadow-md hover:bg-[#F3FAF4] font-semibold text-[#143B20] border border-[#CBDCD0] flex items-center justify-center transition-colors cursor-pointer"
         >
           <Target className="w-5 h-5 text-[#1E8344]" />
         </button>
       </div>
 
-<button 
+      <button
         onClick={handleLocateUser}
         className="absolute bottom-6 right-6 z-[999] bg-white text-[#1E8344] font-bold px-4 py-2 rounded-full shadow-lg border border-[#1E8344] hover:bg-emerald-50 transition-all flex items-center gap-2 text-xs"
         title="Centrar en mi ubicación"
@@ -1112,7 +1114,7 @@ export default function MapPlaceholder({
               className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-[#CDE1D1]"
             >
               <div className="bg-gradient-to-tr from-[#E1ECE3] to-[#F3FAF4] p-6 text-center border-b border-[#CDE1D1] relative">
-                <button 
+                <button
                   onClick={() => setShowLocationModal(false)}
                   className="absolute top-4 right-4 p-1 rounded-full text-[#557B5E] hover:bg-white hover:text-[#143B20] transition-colors cursor-pointer"
                 >

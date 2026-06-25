@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type ReportCategory = 'Residuos' | 'Agua Contaminada' | 'Calidad del Aire' | 'Agua';
+export type ReportCategory = 'Acumulación de Basura' | 'Fuga de Agua' | 'Tala Ilegal / Áreas Verdes' | 'Contaminación del Aire';
 
-export type SeverityLevel = 'Alta' | 'Media' | 'Baja' | 'Alta Severidad' | 'Media Severidad' | 'Baja Severidad';
+export type SeverityLevel = 'Baja' | 'Media' | 'Alta' | 'Critica';
 
-export type ReportStatus = 'Abierto' | 'En progreso' | 'En Progreso' | 'Resuelto' | 'Validando';
+export type ReportStatus = 'Recibido' | 'En Revisión' | 'Atendido' | 'Descartado';
 
 export interface Comment {
   id: string;
@@ -29,6 +29,10 @@ export interface IncidentReport {
   status: ReportStatus;
   location: string;
   coordinates?: string;
+  latitude?: number;
+  longitude?: number;
+  puntos_asignados?: number;
+  estado_puntos?: 'Pendiente' | 'Otorgado' | 'Rechazado';
   date: string;
   timeAgo: string;
   views: number;
@@ -36,6 +40,7 @@ export interface IncidentReport {
   authorName: string;
   authorAvatar: string;
   authorRole: string;
+  authorLevel?: string;
   actionTaken?: string;
   severityIndex?: number;
   impactedUsers?: number;
@@ -54,4 +59,6 @@ export interface Contributor {
   points: number;
   avatar: string;
   verified: boolean;
+  nivel_ranking: string;
+  reportCount: number;
 }

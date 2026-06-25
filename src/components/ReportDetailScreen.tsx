@@ -6,9 +6,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { IncidentReport, Comment } from '../types';
+import { getReportePorId, actualizarReporte } from '../services/reportesService';
 import {
   ArrowLeft, Clock, Calendar, CheckCircle2, ShieldAlert, Users,
-  MapPin, Compass, Play, Send, Shield, User
+  MapPin, Compass, Play, Send, Shield, User, X, Loader2, Save
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -40,8 +41,83 @@ export default function ReportDetailScreen({
 }: ReportDetailScreenProps) {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const report = reports.find(r => r.id === id) ?? null;
-  const [commentText, setCommentText] = useState('');
+  const [report, setReport] = useState<IncidentReport | null>(
+    reports.find(r => String(r.id) === String(id)) ?? null
+  );
+  const [direccionLegible, setDireccionLegible] = useState<string>('');
+
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [adminStatus, setAdminStatus] = useState<string>(report?.status || 'Recibido');
+  const [adminPointsStatus, setAdminPointsStatus] = useState<string>(report?.estado_puntos || 'Pendiente');
+  const [adminPoints, setAdminPoints] = useState<number>(report?.puntos_asignados || 0);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  useEffect(() => {
+    if (report) {
+      setAdminStatus(report.status);
+      setAdminPointsStatus(report.estado_puntos || 'Pendiente');
+      setAdminPoints(report.puntos_asignados || 0);
+    }
+  }, [report]);
+
+  const handleAdminUpdate = async () => {
+    if (!report) return;
+    setIsUpdating(true);
+    try {
+      const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token') || '';
+      const statusMap: Record<string, number> = {
+        'Recibido': 1,
+        'En Revisión': 2,
+        'Atendido': 3,
+        'Descartado': 4
+      };
+      
+      const updateData = {
+        estado_id: statusMap[adminStatus] || 1,
+        estado_puntos: adminPointsStatus as any,
+        puntos_asignados: adminPoints
+      };
+
+      await actualizarReporte(report.id, updateData, token);
+      
+      setReport({
+        ...report,
+        status: adminStatus as any,
+        estado_puntos: adminPointsStatus as any,
+        puntos_asignados: adminPoints
+      });
+      setShowSuccessModal(true);
+    } catch (error) {
+      console.error(error);
+      alert('Error al actualizar el reporte');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!id) return;
+    getReportePorId(id).then(r => {
+      if (r) setReport(r);
+    });
+  }, [id]);
+
+  useEffect(() => {
+    if (report && report.latitude && report.longitude && !direccionLegible) {
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${report.latitude}&lon=${report.longitude}&addressdetails=1`, {
+        headers: { 'Accept-Language': 'es' }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.address) {
+          const town = data.address.suburb || data.address.neighbourhood || data.address.city || data.address.town || '';
+          const state = data.address.state || '';
+          setDireccionLegible(town ? `${town}, ${state}` : data.display_name.split(',')[0]);
+        }
+      })
+      .catch(() => setDireccionLegible('Ubicación Desconocida'));
+    }
+  }, [report?.latitude, report?.longitude]);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
@@ -50,7 +126,9 @@ export default function ReportDetailScreen({
     if (!report || !mapContainerRef.current) return;
 
     // Get coordinates from map or fallback to CDMX center
-    const coords: [number, number] = REPORT_COORDINATES[report.id] || [19.4150, -99.1620];
+    const coords: [number, number] = (report.latitude && report.longitude) 
+      ? [report.latitude, report.longitude] 
+      : (REPORT_COORDINATES[report.id] || [19.4150, -99.1620]);
 
     // If map does not exist, build it
     if (!mapInstanceRef.current) {
@@ -78,13 +156,13 @@ export default function ReportDetailScreen({
 
     let pinColor = '#DC2626'; // High severity
     let pinEmoji = '⚠️';
-    if (report.category === 'Residuos') {
+    if (report.category === 'Acumulación de Basura') {
       pinEmoji = '🗑️';
       pinColor = '#DC2626';
-    } else if (report.category === 'Agua Contaminada' || report.category === 'Agua') {
+    } else if (report.category === 'Fuga de Agua') {
       pinEmoji = '💧';
       pinColor = '#F97316';
-    } else if (report.category === 'Calidad del Aire') {
+    } else if (report.category === 'Contaminación del Aire') {
       pinEmoji = '🏭';
       pinColor = '#2563EB';
     }
@@ -145,23 +223,7 @@ export default function ReportDetailScreen({
     );
   }
 
-  const handleCommentSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!commentText.trim()) return;
-
-    const newComment: Comment = {
-      id: `comm-${Date.now()}`,
-      authorName: currentUser.name,
-      authorAvatar: currentUser.avatar,
-      authorRole: currentUser.role,
-      isOfficial: currentUser.name.includes('Oficial') || currentUser.role.includes('Agencia'),
-      timeAgo: 'Hace unos instantes',
-      content: commentText.trim()
-    };
-
-    onAddComment(report.id, newComment);
-    setCommentText('');
-  };
+  // Comment submit removed
 
   const getPriorityColor = (severity: string) => {
     if (severity.toLowerCase().includes('alta')) {
@@ -208,7 +270,9 @@ export default function ReportDetailScreen({
               </div>
 
               <h1 className="text-3xl md:text-4xl font-extrabold text-[#143B20] tracking-tight leading-tight">
-                {report.title}
+                {direccionLegible 
+                  ? `${report.category} en ${direccionLegible} - ${report.title.split(' - ')[1] || ''}` 
+                  : report.title}
               </h1>
 
               {/* Time stats */}
@@ -270,94 +334,12 @@ export default function ReportDetailScreen({
                       {report.authorName}
                     </h4>
                     <span className="text-[10px] text-[#557B5E] font-medium block mt-1">
-                      {report.authorRole} • {report.authorName.includes('Elena') ? '42 Reportes' : 'Nivel 3'}
+                      {report.authorRole} • Nivel: {report.authorLevel || 'Novato'}
                     </span>
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Activity Stream Comment Thread list (Screen 6 Lower Section) */}
-            <div className="bg-white rounded-3xl border border-[#DDE7DE] p-6 lg:p-8 space-y-6 shadow-xs">
-              <h3 className="text-xs font-bold text-[#143B20] uppercase tracking-wider flex items-center gap-1.5">
-                <Shield className="w-4 h-4 text-[#1E8344]" />
-                <span>Actualizaciones y Comentarios</span>
-              </h3>
-
-              {/* Feed Text Area Input Form */}
-              <form onSubmit={handleCommentSubmit} className="flex gap-4">
-                <img 
-                  src={currentUser.avatar} 
-                  alt={currentUser.name} 
-                  className="w-10 h-10 rounded-full object-cover border border-[#CDE1D1] hidden sm:block"
-                />
-                
-                <div className="flex-1 space-y-3">
-                  <textarea
-                    rows={2}
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Añadir una actualización o comentario..."
-                    className="w-full bg-[#FAFDFC] border border-[#CDE1D1] rounded-2xl p-4 text-xs text-[#143B20] focus:outline-none focus:ring-2 focus:ring-[#1E8344]/20 focus:border-[#1E8344]"
-                  />
-                  
-                  <div className="flex justify-end">
-                    <button
-                      type="submit"
-                      className="bg-[#05682C] text-white font-bold py-2.5 px-6 rounded-xl hover:bg-[#045524] transition-all text-xs flex items-center space-x-1.5 shadow-sm shadow-[#05682C]/10 cursor-pointer"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Comentar</span>
-                    </button>
-                  </div>
-                </div>
-              </form>
-
-              {/* Comments Feed list */}
-              <div className="space-y-4 pt-4 border-t border-[#F0F6F1]">
-                {report.comments && report.comments.length > 0 ? (
-                  report.comments.map((comment) => (
-                    <div 
-                      key={comment.id}
-                      className={`p-4 rounded-2xl border flex gap-4 ${
-                        comment.isOfficial 
-                          ? 'bg-[#F2F8F3] border-[#97D4A4] text-[#143B20]' 
-                          : 'bg-white border-[#FAFDFC] text-[#557B5E]'
-                      }`}
-                    >
-                      {/* Avatar */}
-                      <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center border border-[#CDE1D1] flex-shrink-0 relative overflow-hidden">
-                        {comment.authorAvatar ? (
-                          <img src={comment.authorAvatar} alt="Comment Author" className="w-full h-full object-cover" />
-                        ) : (
-                          <User className="w-5 h-5 text-slate-400" />
-                        )}
-                      </div>
-
-                      <div className="space-y-1.5 flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-xs font-bold text-[#143B20]">{comment.authorName}</span>
-                          
-                          {comment.isOfficial && (
-                            <span className="bg-[#1E8344] text-white text-[9px] font-black tracking-wide uppercase px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                              <Shield className="w-2.5 h-2.5" />
-                              OFICIAL
-                            </span>
-                          )}
-
-                          <span className="text-[10px] text-slate-400">• {comment.timeAgo}</span>
-                        </div>
-
-                        <p className="text-xs text-[#304134] leading-relaxed">
-                          {comment.content}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-center text-slate-400 py-6">No hay actualizaciones en este reporte todavía.</p>
-                )}
-              </div>
+             {/* Comments Section Removed */}
             </div>
 
           </div>
@@ -386,7 +368,7 @@ export default function ReportDetailScreen({
               <div className="space-y-1 text-xs">
                 <span className="text-slate-400 font-bold block uppercase text-[10px]">DIRECCIÓN DETALLADA</span>
                 <p className="text-[#143B20] font-semibold leading-relaxed">
-                  {report.location}
+                  {direccionLegible || report.location}
                 </p>
               </div>
 
@@ -406,104 +388,189 @@ export default function ReportDetailScreen({
                 Estado del Reporte
               </h3>
 
-              {report.timeline && (
-                <div className="relative pl-6 space-y-6 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#E1ECE3]">
-                  {/* Step 1 Received */}
-                  <div className="relative">
-                    <span className={`absolute -left-6 top-0.5 w-6 h-6 rounded-full flex items-center justify-center border-2 bg-white ${
-                      report.timeline.received.checked 
-                        ? 'border-[#1E8344] text-[#1E8344] fill-[#1E8344]' 
-                        : 'border-slate-300 text-slate-300'
-                    }`}>
-                      <CheckCircle2 className="w-5 h-5" />
-                    </span>
-                    <div className="space-y-0.5 pl-2">
-                      <p className="text-xs font-bold text-[#143B20]">Reporte Recibido</p>
-                      <p className="text-[10px] text-slate-400 font-medium">{report.timeline.received.date}</p>
-                    </div>
-                  </div>
-
-                  {/* Step 2 Reviewing */}
-                  <div className="relative">
-                    <span className={`absolute -left-6 top-0.5 w-6 h-6 rounded-full flex items-center justify-center border-2 bg-white ${
-                      report.timeline.reviewing.checked 
-                        ? 'border-[#3B82F6] text-[#3B82F6]' 
-                        : 'border-slate-300 text-slate-300'
-                    }`}>
-                      {report.timeline.reviewing.checked ? (
-                        <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6] animate-pulse" />
-                      ) : (
-                        <div className="w-2 h-2 rounded-full bg-slate-300" />
-                      )}
-                    </span>
-                    <div className="space-y-0.5 pl-2">
-                      <p className="text-xs font-bold text-[#143B20]">En Revisión por Autoridad</p>
-                      <p className="text-[10px] text-[#2563EB] font-bold leading-normal italic">
-                        {report.timeline.reviewing.note}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Step 3 Resolved */}
-                  <div className="relative">
-                    <span className={`absolute -left-6 top-0.5 w-6 h-6 rounded-full flex items-center justify-center border-2 bg-white ${
-                      report.timeline.resolved.checked 
-                        ? 'border-[#10B981] text-[#10B981]' 
-                        : 'border-slate-300 text-slate-300'
-                    }`}>
-                      {report.timeline.resolved.checked && <CheckCircle2 className="w-5 h-5 text-[#10B981]" />}
-                    </span>
-                    <div className="space-y-0.5 pl-2">
-                      <p className="text-xs font-bold text-[#143B20]">Acción Resolutiva</p>
-                      <p className="text-[10px] text-slate-400 font-medium">
-                        {report.timeline.resolved.checked ? report.timeline.resolved.date : 'Pendiente'}
-                      </p>
-                    </div>
+              <div className="relative pl-6 space-y-6 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#E1ECE3]">
+                {/* Step 1 Received */}
+                <div className="relative">
+                  <span className="absolute -left-6 top-0.5 w-6 h-6 rounded-full flex items-center justify-center border-2 bg-white border-[#1E8344] text-[#1E8344] fill-[#1E8344]">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </span>
+                  <div className="space-y-0.5 pl-2">
+                    <p className="text-xs font-bold text-[#143B20]">Reporte Recibido</p>
+                    <p className="text-[10px] text-slate-400 font-medium">Completado</p>
                   </div>
                 </div>
-              )}
+
+                {/* Step 2 Reviewing */}
+                <div className="relative">
+                  <span className={`absolute -left-6 top-0.5 w-6 h-6 rounded-full flex items-center justify-center border-2 bg-white ${
+                    ['En Revisión', 'Atendido', 'Descartado'].includes(report.status)
+                      ? 'border-[#3B82F6] text-[#3B82F6]' 
+                      : 'border-slate-300 text-slate-300'
+                  }`}>
+                    {report.status === 'En Revisión' ? (
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6] animate-pulse" />
+                    ) : ['Atendido', 'Descartado'].includes(report.status) ? (
+                      <CheckCircle2 className="w-5 h-5" />
+                    ) : (
+                      <div className="w-2 h-2 rounded-full bg-slate-300" />
+                    )}
+                  </span>
+                  <div className="space-y-0.5 pl-2">
+                    <p className="text-xs font-bold text-[#143B20]">En Revisión por Autoridad</p>
+                    <p className="text-[10px] text-[#2563EB] font-bold leading-normal italic">
+                      {report.status === 'En Revisión' ? 'Actual: Análisis en proceso' : ['Atendido', 'Descartado'].includes(report.status) ? 'Revisión Finalizada' : 'Pendiente'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 3 Resolved / Descartado */}
+                <div className="relative">
+                  <span className={`absolute -left-6 top-0.5 w-6 h-6 rounded-full flex items-center justify-center border-2 bg-white ${
+                    report.status === 'Atendido' 
+                      ? 'border-[#10B981] text-[#10B981]' 
+                      : report.status === 'Descartado' 
+                      ? 'border-red-500 text-red-500'
+                      : 'border-slate-300 text-slate-300'
+                  }`}>
+                    {report.status === 'Atendido' && <CheckCircle2 className="w-5 h-5 text-[#10B981]" />}
+                    {report.status === 'Descartado' && <X className="w-5 h-5 text-red-500" />}
+                  </span>
+                  <div className="space-y-0.5 pl-2">
+                    <p className={`text-xs font-bold ${report.status === 'Descartado' ? 'text-red-600' : 'text-[#143B20]'}`}>
+                      {report.status === 'Descartado' ? 'Reporte Descartado' : 'Acción Resolutiva'}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-medium">
+                      {report.status === 'Atendido' ? 'Resolución exitosa' : report.status === 'Descartado' ? 'El reporte no procedió' : 'Pendiente'}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Impact Metric Blocks Cards dual group */}
             <div className="grid grid-cols-2 gap-4">
-              {/* Severity Card index rating */}
+              {/* Puntos Asignados */}
               <div className="bg-white rounded-2xl border border-[#DDE7DE] p-4 text-center flex flex-col justify-between h-28">
                 <span className="text-[11px] font-bold text-[#55705B] uppercase block">
-                  Índice Severidad
+                  Puntos Asignados
                 </span>
                 
-                <h3 className="text-3xl font-black text-rose-600 leading-none">
-                  {report.severityIndex || '8.5'}
+                <h3 className="text-3xl font-black text-[#05682C] leading-none">
+                  +{report.puntos_asignados || 0}
                 </h3>
 
-                <div className="flex items-center justify-center space-x-1 text-[10px] text-rose-500 font-extrabold">
+                <div className="flex items-center justify-center space-x-1 text-[10px] text-[#1E8344] font-extrabold">
                   <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>Crítica</span>
+                  <span>Gamificación</span>
                 </div>
               </div>
 
-              {/* Impacted Citizen stats count */}
+              {/* Estado de Puntos */}
               <div className="bg-white rounded-2xl border border-[#DDE7DE] p-4 text-center flex flex-col justify-between h-28">
                 <span className="text-[11px] font-bold text-[#55705B] uppercase block">
-                  Afectados
+                  Estado de Puntos
                 </span>
                 
-                <h3 className="text-3xl font-black text-[#05682C] leading-none animate-pulse">
-                  {report.impactedUsers || '124'}
+                <h3 className={`text-xl font-black leading-none mt-2 ${
+                  report.estado_puntos === 'Otorgado' ? 'text-[#10B981]' : 
+                  report.estado_puntos === 'Rechazado' ? 'text-red-500' : 'text-amber-500'
+                }`}>
+                  {report.estado_puntos || 'Pendiente'}
                 </h3>
 
-                <div className="flex items-center justify-center space-x-1 text-[10px] text-emerald-600 font-extrabold">
+                <div className="flex items-center justify-center space-x-1 text-[10px] text-slate-500 font-extrabold">
                   <Users className="w-3.5 h-3.5" />
-                  <span>Vecinos</span>
+                  <span>Revisión de Recompensa</span>
                 </div>
               </div>
             </div>
 
-          </div>
+            {/* Admin Panel */}
+            {currentUser.role === 'Administrador' && (
+              <div className="bg-[#FAFDFC] rounded-3xl border-2 border-indigo-100 p-6 space-y-5 shadow-xs relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500"></div>
+                <h3 className="text-sm font-black text-indigo-900 uppercase tracking-wider flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-indigo-500" />
+                  Acciones de Administrador
+                </h3>
 
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Estado del Reporte</label>
+                    <select 
+                      value={adminStatus} 
+                      onChange={(e) => setAdminStatus(e.target.value)}
+                      className="w-full bg-white border border-indigo-100 rounded-xl py-2 px-3 text-xs font-bold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
+                    >
+                      <option value="Recibido">Recibido</option>
+                      <option value="En Revisión">En Revisión</option>
+                      <option value="Atendido">Atendido</option>
+                      <option value="Descartado">Descartado</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Estado de Puntos</label>
+                      <select 
+                        value={adminPointsStatus} 
+                        onChange={(e) => setAdminPointsStatus(e.target.value)}
+                        className="w-full bg-white border border-indigo-100 rounded-xl py-2 px-3 text-xs font-bold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
+                      >
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Otorgado">Otorgado</option>
+                        <option value="Rechazado">Rechazado</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Puntos a Asignar</label>
+                      <input 
+                        type="number" 
+                        value={adminPoints} 
+                        onChange={(e) => setAdminPoints(parseInt(e.target.value) || 0)}
+                        className="w-full bg-white border border-indigo-100 rounded-xl py-2 px-3 text-xs font-bold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      />
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={handleAdminUpdate}
+                    disabled={isUpdating}
+                    className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    <span>{isUpdating ? 'Guardando...' : 'Guardar Cambios'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+          </div>
         </div>
 
       </div>
+      
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-[#143B20]/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-xl border border-[#DDE7DE] animate-in fade-in zoom-in duration-300">
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-[#EBF7EE] mb-6">
+              <CheckCircle2 className="h-10 w-10 text-[#1E8344]" />
+            </div>
+            <h3 className="text-xl font-extrabold text-[#143B20] mb-2">¡Reporte Actualizado!</h3>
+            <p className="text-sm text-[#4F6C56] font-medium mb-8">
+              Los puntos y el estado del reporte han sido guardados exitosamente.
+            </p>
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full bg-[#05682C] text-white font-bold py-3.5 px-4 rounded-xl hover:bg-[#045524] transition-all cursor-pointer shadow-md"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

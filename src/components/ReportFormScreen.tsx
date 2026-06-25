@@ -77,16 +77,16 @@ export default function ReportFormScreen({
   onClearPrefilledLocation,
 }: ReportFormScreenProps) {
   const navigate = useNavigate();
-  const [category, setCategory] = useState<ReportCategory>('Residuos');
+  const [category, setCategory] = useState<ReportCategory>('Acumulación de Basura');
+  const [severity, setSeverity] = useState<'Baja' | 'Media' | 'Alta' | 'Critica'>('Media');
   const [address, setAddress] = useState(prefilledLocation?.address || '');
   const [description, setDescription] = useState('');
   const [localCoordinates, setLocalCoordinates] = useState(prefilledLocation?.coordinates || '19.4150 N, 99.1620 W');
   const [isLocating, setIsLocating] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  
-  // Estado para guardar el archivo real para enviarlo por fetch
-  const [rawFile, setRawFile] = useState<File | null>(null); 
 
+  // Estado para guardar el archivo real para enviarlo por fetch
+  const [rawFile, setRawFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [dynamicSuggestions, setDynamicSuggestions] = useState<typeof SUGGESTIONS>([]);
@@ -104,23 +104,29 @@ export default function ReportFormScreen({
   const markerRef = useRef<L.Marker | null>(null);
 
   const categories: { id: ReportCategory; label: string; icon: React.ReactNode; desc: string }[] = [
-    { 
-      id: 'Residuos', 
-      label: 'Residuos', 
-      icon: <Trash2 className="w-6 h-6" />, 
-      desc: 'Basura acumulada, vertederos clandestinos, residuos tóxicos.' 
+    {
+      id: 'Acumulación de Basura',
+      label: 'Acumulación de Basura',
+      icon: <Trash2 className="w-6 h-6" />,
+      desc: 'Basura acumulada, vertederos clandestinos, residuos tóxicos.'
     },
-    { 
-      id: 'Agua Contaminada', 
-      label: 'Agua Contaminada', 
-      icon: <Droplets className="w-6 h-6" />, 
-      desc: 'Fugas de agua potable, vertidos industriales en ríos, espuma, aguas negras.' 
+    {
+      id: 'Fuga de Agua',
+      label: 'Fuga de Agua',
+      icon: <Droplets className="w-6 h-6" />,
+      desc: 'Fugas de agua potable, tuberías rotas o desperdicio masivo.'
     },
-    { 
-      id: 'Calidad del Aire', 
-      label: 'Calidad del Aire', 
-      icon: <Wind className="w-6 h-6" />, 
-      desc: 'Emisiones de humo negro, gases tóxicos, polvo olores nocivos persistentes.' 
+    {
+      id: 'Tala Ilegal / Áreas Verdes',
+      label: 'Tala Ilegal / Áreas Verdes',
+      icon: <Compass className="w-6 h-6" />,
+      desc: 'Tala de árboles no autorizada o daño severo a parques.'
+    },
+    {
+      id: 'Contaminación del Aire',
+      label: 'Contaminación del Aire',
+      icon: <Wind className="w-6 h-6" />,
+      desc: 'Emisiones de humo negro, gases tóxicos o quema de basura.'
     },
   ];
 
@@ -145,7 +151,7 @@ export default function ReportFormScreen({
     if (prefilledLocation) {
       setAddress(prefilledLocation.address);
       setLocalCoordinates(prefilledLocation.coordinates);
-      
+
       if (onClearPrefilledLocation) {
         onClearPrefilledLocation();
       }
@@ -184,7 +190,7 @@ export default function ReportFormScreen({
       iconAnchor: [20, 20],
     });
 
-    const marker = L.marker(initialCoords, { 
+    const marker = L.marker(initialCoords, {
       icon: customPinIcon,
       draggable: true
     }).addTo(map);
@@ -192,21 +198,21 @@ export default function ReportFormScreen({
     const updateLocationFromCoords = (lat: number, lng: number) => {
       const formattedCoords = `${lat.toFixed(6)} N, ${Math.abs(lng).toFixed(6)} W`;
       setLocalCoordinates(formattedCoords);
-      
+
       fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`, {
         headers: {
           'Accept-Language': 'es'
         }
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.display_name) {
-          setAddress(data.display_name);
-        }
-      })
-      .catch(err => {
-        console.warn('Reverse geocoding error:', err);
-      });
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.display_name) {
+            setAddress(data.display_name);
+          }
+        })
+        .catch(err => {
+          console.warn('Reverse geocoding error:', err);
+        });
     };
 
     marker.on('dragend', () => {
@@ -258,12 +264,12 @@ export default function ReportFormScreen({
       setDynamicSuggestions([]);
       return;
     }
-    
+
     setIsSearchingSuggestions(true);
     try {
       const isCdmx = queryText.toLowerCase().includes('cdmx') || queryText.toLowerCase().includes('mexico');
       const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText + (isCdmx ? '' : ', CDMX, Mexico'))}&limit=5&addressdetails=1`;
-      
+
       const response = await fetch(searchUrl, {
         headers: {
           'Accept-Language': 'es'
@@ -311,9 +317,9 @@ export default function ReportFormScreen({
     setShowSuggestions(false);
   };
 
-  
+
   //  GPS NATIVO
-  
+
   const handleMyLocation = () => {
     setIsLocating(true);
     setAddress('Buscando señal de satélite GPS...');
@@ -332,23 +338,23 @@ export default function ReportFormScreen({
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         const formattedCoords = `${lat.toFixed(6)} N, ${Math.abs(lng).toFixed(6)} W`;
-        
+
         setLocalCoordinates(formattedCoords);
-        
+
         // Hacemos reverse geocoding para que también actualice el texto de la calle
         fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`, {
           headers: { 'Accept-Language': 'es' }
         })
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.display_name) {
-            setAddress(data.display_name);
-          } else {
-            setAddress(`Ubicación GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-          }
-        })
-        .catch(() => setAddress(`Ubicación GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`))
-        .finally(() => setIsLocating(false));
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.display_name) {
+              setAddress(data.display_name);
+            } else {
+              setAddress(`Ubicación GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+            }
+          })
+          .catch(() => setAddress(`Ubicación GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`))
+          .finally(() => setIsLocating(false));
       },
       (error) => {
         console.error("Error GPS:", error);
@@ -366,7 +372,7 @@ export default function ReportFormScreen({
     e.preventDefault();
   };
 
- 
+
   // VALIDACIÓN ESTRICA Y GUARDADO DE ARCHIVOS
 
   const processFile = (file: File) => {
@@ -386,7 +392,7 @@ export default function ReportFormScreen({
     }
 
     setRawFile(file); // Guardamos el File real para el FormData
-    
+
     // Generamos la miniatura visual para la UI
     const reader = new FileReader();
     reader.onload = () => {
@@ -408,98 +414,115 @@ export default function ReportFormScreen({
     }
   };
 
-// ------------------------------------------------------------------
+  // ------------------------------------------------------------------
   // PARCHE PARA EL ERROR 500 (NOT NULL VIOLATION)
   // ------------------------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) return;
 
+    if (!rawFile) {
+      setLocationModalTitle("Fotografía Obligatoria");
+      setLocationModalMessage("Es estrictamente necesario adjuntar una evidencia fotográfica para poder enviar tu reporte ambiental.");
+      setLocationModalIcon("error");
+      setShowLocationModal(true);
+      return;
+    }
+
     setIsSubmitting(true);
 
     const formData = new FormData();
     formData.append('descripcion', description);
-    
-    // AQUÍ ESTÁ EL PARCHE: Forzamos el envío de un valor válido aunque esté vacío
-    formData.append('categoria_id', (category && category.trim() !== '') ? category : '1');
-    formData.append('subcategoria_id', '1'); 
-    formData.append('severidad', 'Media'); 
 
-    const [lat, lng] = typeof localCoordinates === 'string' ? localCoordinates.split(',') : ['19.4150', '-99.1620'];
-    formData.append('latitude', lat ? lat.trim() : '19.4150');
-    formData.append('longitude', lng ? lng.trim() : '-99.1620');
+    // AQUÍ ESTÁ EL PARCHE: Forzamos el envío de un valor válido aunque esté vacío
+    let catId = '1';
+    if (category === 'Fuga de Agua') catId = '2';
+    else if (category === 'Tala Ilegal / Áreas Verdes') catId = '3';
+    else if (category === 'Contaminación del Aire') catId = '4';
+
+    formData.append('categoria_id', catId);
+    formData.append('subcategoria_id', '1');
+    formData.append('severidad', severity);
+
+    const [latVal, lngVal] = parseCoordinatesStr(localCoordinates);
+    formData.append('latitude', latVal.toString());
+    formData.append('longitude', lngVal.toString());
 
     if (rawFile) {
-        formData.append('foto', rawFile);
+      formData.append('foto', rawFile);
     }
 
     try {
-        const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token') || '';
-        const dataDelBackend = await crearReporte(formData, token);
+      const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token') || '';
+      const dataDelBackend = await crearReporte(formData, token);
 
-        console.log("¡Reporte guardado en BD!", dataDelBackend);
-        setLocationModalTitle("¡Reporte Enviado!");
-        setLocationModalMessage("Tu reporte ha sido enviado y guardado exitosamente.");
-        setLocationModalIcon("success");
-        setShowLocationModal(true);
+      console.log("¡Reporte guardado en BD!", dataDelBackend);
+      setLocationModalTitle("¡Reporte Enviado!");
+      setLocationModalMessage("Tu reporte ha sido enviado y guardado exitosamente.");
+      setLocationModalIcon("success");
+      setShowLocationModal(true);
 
-        const newId = dataDelBackend.id || `ENV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-        
-        const reportImage = uploadedImage || (
-            category === 'Residuos' 
-            ? 'https://plus.unsplash.com/premium_photo-1661962386121-7221f7ed43ff?auto=format&fit=crop&w=600&q=80'
-            : category === 'Agua Contaminada'
-                ? 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?auto=format&fit=crop&w=600&q=80'
-                : 'https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&w=600&q=80'
-        );
+      const newId = dataDelBackend.id || `ENV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
 
-        const computedReport: IncidentReport = {
-            id: newId,
-            title: `${category === 'Residuos' ? 'Acumulación de Desechos' : category === 'Agua Contaminada' ? 'Fuga/Vertido de Agua' : 'Emisión de Gases'} - ${address.split(',')[0] || 'Nueva Ubicación'}`,
-            description: description.substring(0, 100) + '...',
-            detailedDescription: description,
-            category: category || 'General',
-            severity: 'Media Severidad',
-            status: 'Abierto',
-            location: address || 'Zona Metropolitana Central',
-            coordinates: localCoordinates,
-            date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
-            timeAgo: 'Hace unos instantes',
-            views: 1,
-            imageUrl: reportImage,
-            authorName: currentUser.name,
-            authorAvatar: currentUser.avatar,
-            authorRole: currentUser.role,
-            severityIndex: 6.5,
-            impactedUsers: 25,
-            timeline: {
-                received: { date: 'Hoy, Recién ingresado', checked: true },
-                reviewing: { note: 'Pendiente de asignación de autoridad', checked: false },
-                resolved: { checked: false }
-            },
-            comments: []
-        };
+      const reportImage = uploadedImage || (
+        category === 'Acumulación de Basura'
+          ? 'https://plus.unsplash.com/premium_photo-1661962386121-7221f7ed43ff?auto=format&fit=crop&w=600&q=80'
+          : category === 'Fuga de Agua'
+            ? 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?auto=format&fit=crop&w=600&q=80'
+            : 'https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&w=600&q=80'
+      );
 
-        onAddReport(computedReport);
+      const computedReport: IncidentReport = {
+        id: newId,
+        title: `${category} - ${address.split(',')[0] || 'Nueva Ubicación'}`,
+        description: description.substring(0, 100) + '...',
+        detailedDescription: description,
+        category: category,
+        severity: severity,
+        status: 'Recibido',
+        location: address || 'Zona Metropolitana Central',
+        coordinates: localCoordinates,
+        latitude: latVal,
+        longitude: lngVal,
+        puntos_asignados: 0,
+        estado_puntos: 'Pendiente',
+        date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+        timeAgo: 'Hace unos instantes',
+        views: 1,
+        imageUrl: reportImage,
+        authorName: currentUser.name,
+        authorAvatar: currentUser.avatar,
+        authorRole: currentUser.role,
+        severityIndex: 5.0,
+        impactedUsers: 10,
+        timeline: {
+          received: { date: 'Hoy, Recién ingresado', checked: true },
+          reviewing: { note: 'Pendiente de asignación de autoridad', checked: false },
+          resolved: { checked: false }
+        },
+        comments: []
+      };
 
-        setTimeout(() => {
-            navigate('/reporte/' + newId);
-        }, 2000);
+      onAddReport(computedReport);
+
+      setTimeout(() => {
+        navigate('/mis-reportes');
+      }, 2000);
 
     } catch (error) {
-        console.error("Error de envío:", error);
-        setLocationModalTitle("Error de Envío");
-        setLocationModalMessage("Hubo un problema conectando con el servidor. Por favor, intenta de nuevo.");
-        setLocationModalIcon("error");
-        setShowLocationModal(true);
+      console.error("Error de envío:", error);
+      setLocationModalTitle("Error de Envío");
+      setLocationModalMessage("Hubo un problema conectando con el servidor. Por favor, intenta de nuevo.");
+      setLocationModalIcon("error");
+      setShowLocationModal(true);
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
-};
+  };
   return (
     <div className="bg-[#FAFDF9] py-8 px-4 md:px-8">
       <div className="max-w-3xl mx-auto space-y-8">
-        
+
         {/* Title */}
         <div className="space-y-2">
           <h1 className="text-3xl font-extrabold text-[#143B20] tracking-tight">Reportar incidencia</h1>
@@ -516,7 +539,7 @@ export default function ReportFormScreen({
               1. Categoría del Problema
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {categories.map((cat) => {
                 const isSelected = category === cat.id;
                 return (
@@ -524,15 +547,13 @@ export default function ReportFormScreen({
                     key={cat.id}
                     type="button"
                     onClick={() => setCategory(cat.id)}
-                    className={`p-5 rounded-2xl border text-center flex flex-col items-center justify-center space-y-3 transition-all cursor-pointer ${
-                      isSelected 
-                        ? 'bg-[#EBF7EE] border-[#1E8344] text-[#1E8344] ring-2 ring-[#1E8344]/10' 
-                        : 'bg-[#FAFDFC] border-[#CDE1D1] hover:border-[#1E8344]/50 text-[#557B5E]'
-                    }`}
+                    className={`p-5 rounded-2xl border text-center flex flex-col items-center justify-center space-y-3 transition-all cursor-pointer ${isSelected
+                      ? 'bg-[#EBF7EE] border-[#1E8344] text-[#1E8344] ring-2 ring-[#1E8344]/10'
+                      : 'bg-[#FAFDFC] border-[#CDE1D1] hover:border-[#1E8344]/50 text-[#557B5E]'
+                      }`}
                   >
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-                      isSelected ? 'bg-[#1E8344] text-white' : 'bg-[#EDF2EE] text-[#557B5E]'
-                    }`}>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${isSelected ? 'bg-[#1E8344] text-white' : 'bg-[#EDF2EE] text-[#557B5E]'
+                      }`}>
                       {cat.icon}
                     </div>
 
@@ -545,6 +566,27 @@ export default function ReportFormScreen({
                   </button>
                 );
               })}
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-[#F0F6F1] space-y-1.5">
+              <label className="text-xs font-bold text-[#143B20] uppercase tracking-wider block mb-2">
+                Nivel de Severidad
+              </label>
+              <div className="flex gap-2">
+                {['Baja', 'Media', 'Alta', 'Critica'].map(sev => (
+                  <button
+                    key={sev}
+                    type="button"
+                    onClick={() => setSeverity(sev as any)}
+                    className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${severity === sev
+                      ? (sev === 'Critica' || sev === 'Alta' ? 'bg-rose-50 border-rose-500 text-rose-700' : 'bg-[#1E8344] border-[#1E8344] text-white')
+                      : 'bg-white border-[#CDE1D1] text-[#557B5E] hover:bg-slate-50'
+                      }`}
+                  >
+                    {sev}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -562,7 +604,7 @@ export default function ReportFormScreen({
             {/* Embedded Live Interactive Leaflet Map Pointer */}
             <div className="relative h-64 rounded-2xl border border-[#CBDCD0] overflow-hidden bg-[#FAFDF9] shadow-inner">
               <div ref={mapContainerRef} className="w-full h-full z-10" />
-              
+
               {/* Compass Watermark Badge */}
               <div className="absolute right-3 bottom-3 z-20 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-[#CBDCD0]/60 shadow-sm flex items-center space-x-1.5 pointer-events-none">
                 <Compass className="w-3.5 h-3.5 text-[#1E8344]" />
@@ -590,7 +632,7 @@ export default function ReportFormScreen({
                     }}
                     className="w-full bg-[#FAFDFC] border border-[#CDE1D1] rounded-xl py-3 pl-11 pr-4 text-xs font-bold text-[#143B20] focus:outline-none focus:ring-2 focus:ring-[#1E8344]/20 focus:border-[#1E8344] transition-all"
                   />
-                  
+
                   {/* Floating suggestions dropdown list */}
                   {showSuggestions && (
                     <div className="absolute top-13 left-0 right-0 bg-white border border-[#CBDCD0] shadow-2xl rounded-2xl overflow-hidden z-50 animate-slide-up max-h-64 overflow-y-auto">
@@ -603,33 +645,33 @@ export default function ReportFormScreen({
                       )}
 
                       {/* Offline Default suggestions */}
-                      {SUGGESTIONS.filter(item => 
-                        item.address.toLowerCase().includes(address.toLowerCase()) || 
+                      {SUGGESTIONS.filter(item =>
+                        item.address.toLowerCase().includes(address.toLowerCase()) ||
                         item.title.toLowerCase().includes(address.toLowerCase())
                       ).length > 0 && (
-                        <>
-                          <div className="bg-[#FAFDF9] px-4 py-1.5 border-b border-[#CBDCD0]/50 text-[9px] font-black uppercase text-[#557B5E] tracking-wider">
-                            Puntos de Interés CDMX Guardados
-                          </div>
-                          {SUGGESTIONS.filter(item => 
-                            item.address.toLowerCase().includes(address.toLowerCase()) || 
-                            item.title.toLowerCase().includes(address.toLowerCase())
-                          ).map((s, idx) => (
-                            <button
-                              key={`static-${idx}`}
-                              type="button"
-                              onClick={() => handleSelectSuggestion(s)}
-                              className="w-full text-left px-4 py-2.5 hover:bg-[#EBF7EE] border-b border-slate-50 flex items-start space-x-3 transition-colors cursor-pointer"
-                            >
-                              <MapPin className="w-4 h-4 text-[#1E8344] shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-xs font-extrabold text-[#143B20]">{s.title}</p>
-                                <p className="text-[10px] text-[#557B5E] font-medium truncate max-w-[320px]">{s.address}</p>
-                              </div>
-                            </button>
-                          ))}
-                        </>
-                      )}
+                          <>
+                            <div className="bg-[#FAFDF9] px-4 py-1.5 border-b border-[#CBDCD0]/50 text-[9px] font-black uppercase text-[#557B5E] tracking-wider">
+                              Puntos de Interés CDMX Guardados
+                            </div>
+                            {SUGGESTIONS.filter(item =>
+                              item.address.toLowerCase().includes(address.toLowerCase()) ||
+                              item.title.toLowerCase().includes(address.toLowerCase())
+                            ).map((s, idx) => (
+                              <button
+                                key={`static-${idx}`}
+                                type="button"
+                                onClick={() => handleSelectSuggestion(s)}
+                                className="w-full text-left px-4 py-2.5 hover:bg-[#EBF7EE] border-b border-slate-50 flex items-start space-x-3 transition-colors cursor-pointer"
+                              >
+                                <MapPin className="w-4 h-4 text-[#1E8344] shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="text-xs font-extrabold text-[#143B20]">{s.title}</p>
+                                  <p className="text-[10px] text-[#557B5E] font-medium truncate max-w-[320px]">{s.address}</p>
+                                </div>
+                              </button>
+                            ))}
+                          </>
+                        )}
 
                       {/* Live OpenStreetMap Nominatim suggestions */}
                       {dynamicSuggestions.length > 0 && (
@@ -655,14 +697,14 @@ export default function ReportFormScreen({
                       )}
 
                       {/* No suggestions at all */}
-                      {SUGGESTIONS.filter(item => 
-                        item.address.toLowerCase().includes(address.toLowerCase()) || 
+                      {SUGGESTIONS.filter(item =>
+                        item.address.toLowerCase().includes(address.toLowerCase()) ||
                         item.title.toLowerCase().includes(address.toLowerCase())
                       ).length === 0 && dynamicSuggestions.length === 0 && !isSearchingSuggestions && (
-                        <div className="p-4 text-xs text-slate-400 font-bold text-center">
-                          Ninguna sugerencia guardada. Elige otra búsqueda o continúa escribiendo la dirección libre.
-                        </div>
-                      )}
+                          <div className="p-4 text-xs text-slate-400 font-bold text-center">
+                            Ninguna sugerencia guardada. Elige otra búsqueda o continúa escribiendo la dirección libre.
+                          </div>
+                        )}
                     </div>
                   )}
                 </div>
@@ -687,12 +729,13 @@ export default function ReportFormScreen({
                 <span className="text-[10px] text-[#557B5E] font-bold uppercase tracking-wider whitespace-nowrap shrink-0">
                   Coordenadas GPS:
                 </span>
-                <input 
+                <input
                   type="text"
                   value={localCoordinates}
                   onChange={(e) => setLocalCoordinates(e.target.value)}
                   placeholder="E.g., 19.4150 N, 99.1620 W"
-                  className="w-full bg-[#FAFDFC] border border-[#CDE1D1]/60 rounded-lg px-2.5 py-1 text-[11px] font-bold text-[#143B20] focus:outline-none focus:ring-1 focus:ring-[#1E8344]/30"
+                  className="w-full bg-[#FAFDFC] border border-[#CDE1D1]/60 rounded-lg px-2.5 py-1 text-[11px] font-bold text-[#143B20] focus:outline-none focus:ring-1 focus:ring-[#1E8344]/30 disabled:bg-gray-100 disabled:text-gray-500 cursor-not-allowed"
+                  disabled
                 />
               </div>
             </div>
@@ -722,28 +765,28 @@ export default function ReportFormScreen({
             {/* Drag Drop Image Uploader (Screen 5 Bottom) */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-[#143B20] uppercase tracking-wider block">
-                Adjuntar Fotografías (Opcional)
+                Adjuntar Fotografía <span className="text-rose-500">*</span>
               </label>
-              
+
               <div
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
                 className="border-2 border-dashed border-[#CDE1D1] rounded-2xl p-8 hover:bg-[#F3FAF4] hover:border-[#143B20]/40 transition-all text-center flex flex-col items-center justify-center space-y-3 cursor-pointer relative overflow-hidden h-44"
               >
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileSelect} 
-                  accept="image/jpeg, image/png" 
-                  className="hidden" 
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="image/jpeg, image/png"
+                  className="hidden"
                 />
 
                 {uploadedImage ? (
                   <div className="absolute inset-0">
-                    <img 
-                      src={uploadedImage} 
-                      alt="Uploaded Evidencia" 
+                    <img
+                      src={uploadedImage}
+                      alt="Uploaded Evidencia"
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
                     />
@@ -812,7 +855,7 @@ export default function ReportFormScreen({
               className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-[#CDE1D1]"
             >
               <div className="bg-gradient-to-tr from-[#E1ECE3] to-[#F3FAF4] p-6 text-center border-b border-[#CDE1D1] relative">
-                <button 
+                <button
                   onClick={() => setShowLocationModal(false)}
                   className="absolute top-4 right-4 p-1 rounded-full text-[#557B5E] hover:bg-white hover:text-[#143B20] transition-colors cursor-pointer"
                 >

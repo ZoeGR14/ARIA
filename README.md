@@ -13,8 +13,18 @@ ARIA es una plataforma web innovadora diseñada para el reporte y monitoreo de i
 
 ---
 
-## 🛑 El Problema
+## 📌 Índice de Etapas de Configuración y Desarrollo
 
+1. [Etapa 1: Comprensión del Sistema (Problema, Solución y Arquitectura)](#etapa-1-comprensión-del-sistema)
+2. [Etapa 2: Configuración del Entorno de Desarrollo (Puesta en Marcha)](#etapa-2-configuración-del-entorno-de-desarrollo)
+3. [Etapa 3: Flujo de Trabajo y Colaboración (Git & PRs)](#etapa-3-flujo-de-trabajo-y-colaboración)
+4. [Etapa 4: Documentación de la API y Pruebas (Endpoints & Postman)](#etapa-4-documentación-de-la-api-y-pruebas)
+
+---
+
+## Etapa 1: Comprensión del Sistema
+
+### 🛑 El Problema
 Diariamente es común observar problemas ambientales en las colonias urbanas, tales como basura acumulada, fugas de agua, tala de árboles o áreas verdes abandonadas. Aunque estos problemas afectan constantemente a la comunidad, muchas veces no son atendidos de manera oportuna debido a la falta de una herramienta accesible y práctica para reportarlos ante las autoridades.
 
 En la mayoría de los casos, la apatía ciudadana triunfa debido a:
@@ -24,10 +34,7 @@ En la mayoría de los casos, la apatía ciudadana triunfa debido a:
 
 La ausencia de herramientas tecnológicas y de incentivos provoca que numerosos reportes queden inconclusos, ocasionando el deterioro del entorno, aumento de la contaminación visual y ambiental, y una afectación directa en la calidad de vida de los habitantes, especialmente en zonas densamente pobladas como la Ciudad de México.
 
----
-
-## 💡 Propuesta de Solución
-
+### 💡 Propuesta de Solución
 Para resolver esta problemática, ARIA proporciona una plataforma web interactiva que simplifica el proceso de denuncia y motiva la participación activa de la comunidad. 
 
 A través de la plataforma, los usuarios pueden:
@@ -37,157 +44,177 @@ A través de la plataforma, los usuarios pueden:
 * **Ganar puntos (Gamificación):** Combatir la apatía mediante un sistema de recompensas, insignias y un ranking público (Leaderboard) que reconoce a los ciudadanos más activos.
 * **Ayudar a tomar decisiones:** Proveer a las autoridades y líderes vecinales de un panel (Dashboard) con gráficas, tendencias y alertas en tiempo real para actuar de forma más inteligente.
 
+### 🏗️ Arquitectura y Tecnologías
+El sistema utiliza una arquitectura escalable orientada a servicios para garantizar el procesamiento de datos espaciales, notificaciones push, integración de IA y una experiencia de usuario responsiva.
+
+<details>
+<summary>💻 Detalle del Stack Tecnológico</summary>
+
+* **Frontend (Capa de Presentación):**
+  * **Framework:** React 19 (SPA) + Vite 8
+  * **Estilos:** Tailwind CSS v4
+  * **Mapas:** Leaflet
+  * **Animaciones:** Motion
+  * **Iconografía:** Lucide React
+  * **Enrutamiento:** React Router v7
+* **Backend (Lógica de Negocio):**
+  * **Entorno & Framework:** Node.js + Express 5 (TypeScript)
+  * **Base de Datos & ORM:** Prisma ORM 6
+  * **Autenticación & Seguridad:** JWT (`jsonwebtoken`) y encriptación con `bcrypt`
+  * **Notificaciones Push:** Firebase Admin SDK (FCM)
+  * **Envío de Correos:** Nodemailer + Mailtrap
+  * **Subida de Archivos:** Multer (para imágenes de evidencia)
+* **Base de Datos (Persistencia y Geodatos):**
+  * **Motor:** PostgreSQL
+  * **Extensión Espacial:** PostGIS (coordenadas geográficas, radios y consultas espaciales nativas)
+</details>
+
 ---
 
-## 🏗️ Arquitectura y Tecnologías
+## Etapa 2: Configuración del Entorno de Desarrollo
 
-El sistema utiliza una arquitectura escalable orientada a servicios para garantizar el procesamiento eficiente de datos espaciales y la accesibilidad multiplataforma.
+Sigue estos pasos en orden para levantar el entorno de desarrollo local.
 
-### Frontend (Capa de Presentación)
-* **Framework:** React.js (Single Page Application).
-* **Mapas:** React Leaflet / Google Maps API.
-* **Gráficas:** Recharts / Chart.js.
+### 📋 Requisitos Previos
+*   Tener instalado [Docker Desktop](https://www.docker.com/products/docker-desktop/) (con Docker Compose).
+*   Node.js v22+ (opcional, solo para desarrollo local fuera de Docker).
 
-### Backend (Lógica de Negocio)
-* **Framework:** Node.js / Spring Boot.
-* **Seguridad:** JSON Web Tokens (JWT) y encriptación de contraseñas.
-* **Servicios Externos:** Firebase Cloud Messaging (FCM) para notificaciones Push.
-
-### Base de Datos (Persistencia y Geodatos)
-* **Motor:** PostgreSQL.
-* **Extensión Espacial:** PostGIS (Manejo de coordenadas, radios y geometría).
-
-## 🚀 Instalación y Despliegue Local
-
-Sigue estos pasos para levantar el entorno de desarrollo en tu máquina local:
-
-### 1. Clonar el repositorio
+### Paso 1: Clonar el Repositorio
 ```bash
 git clone https://github.com/ZoeGR14/ARIA.git
 cd ARIA
 ```
 
-### 2. Levantar web
+### Paso 2: Configurar Variables de Entorno (`.env`)
+Debes crear los archivos `.env` necesarios para el correcto funcionamiento del frontend y del backend.
 
+1. **Raíz del proyecto (Frontend/Global)**: Crea un archivo `.env` en la raíz del proyecto:
+    ```env
+    POSTGRES_USER=<user>
+    POSTGRES_PASSWORD=<password>
+    POSTGRES_DB=<database_name>
+    POSTGRES_PORT=<port>
+    POSTGRES_HOST=<host>
+    VITE_API_URL=<url>
+    ```
+
+2. **Backend**: Crea un archivo `.env` dentro de la carpeta `backend`:
+    ```env
+    PORT=<port>
+    JWT_SECRET=<secret>
+    DATABASE_URL=postgresql://<user>:<password>@<host>:<port>/<database_name>
+    EMAIL_USER=<user>
+    MAILTRAP_TOKEN=<token>
+    ``` 
+
+### Paso 3: Inicializar Base de Datos y Levantar Contenedores
+
+Abre una terminal en la raíz del proyecto y ejecuta:
+```powershell
+docker compose up --build
+```
+Esto levantará los siguientes servicios:
+* **Frontend (React/Vite):** Disponible en [http://localhost:3000](http://localhost:3000) (Hot Reload habilitado).
+* **Backend (Node.js/Express):** Disponible en [http://localhost:3001](http://localhost:3001).
+* **Base de datos (PostgreSQL/PostGIS):** Expuesta en el puerto `5432`.
+
+> [!NOTE]
+> Para ejecutar los contenedores en segundo plano, añade la bandera `-d`: `docker compose up -d --build`.
+> Para ver los logs en tiempo real, usa: `docker compose logs -f`.
+
+### Paso 4: Sincronizar Prisma
+Una vez levantada la base de datos y con el contenedor de backend en ejecución, sincroniza el esquema de Prisma y genera el cliente ejecutando:
 ```bash
-npm install
-npm run dev
+# Obtener el esquema desde la base de datos
+docker compose exec backend npx prisma db pull
+
+# Generar Prisma Client
+docker compose exec backend npx prisma generate
+```
+> [!IMPORTANT]
+> Debes ejecutar estos comandos cada vez que realices cambios estructurales en la base de datos (`.sql`).
+
+#### 🗺️ Nota sobre PostGIS y Prisma
+<details>
+<summary>🗺️ Detalles de Integración de PostGIS con Prisma</summary>
+
+La tabla `REPORTE` utiliza el tipo espacial `GEOGRAPHY(POINT, 4326)`. Como Prisma no lo soporta de forma nativa, en `schema.prisma` aparecerá como:
+`ubicacion Unsupported("geography")`
+
+**No modifiques esta línea.** Las operaciones que involucren coordenadas geográficas deben realizarse mediante SQL nativo usando:
+* `prisma.$queryRaw(...)`
+* `prisma.$executeRaw(...)`
+
+**Ejemplo para crear un punto geográfico:**
+```sql
+ST_SetSRID(ST_MakePoint(longitud, latitud), 4326)::geography
 ```
 
-## Flujo de trabajo con Pull Requests
+**Ejemplo para recuperar coordenadas:**
+```sql
+ST_X(ubicacion::geometry)
+ST_Y(ubicacion::geometry)
+```
+</details>
 
-### Objetivo
-
-Mantener la rama `main` estable y evitar que código sin revisar o sin probar llegue al repositorio principal.
+### Paso 5: Gestión de Base de Datos (Limpieza y Reseteo)
+Si realizas modificaciones en los archivos SQL y deseas reiniciar la base de datos por completo:
+```powershell
+docker compose down -v
+docker compose up --build
+```
+*(La bandera `-v` elimina los volúmenes para realizar una carga limpia desde cero).*
 
 ---
 
-### Reglas generales
+## Etapa 3: Flujo de Trabajo y Colaboración
 
-#### ❌ No hacer push directo a `main`
+Para mantener la estabilidad de la rama `main` y asegurar la calidad del código, se debe seguir estrictamente este flujo de trabajo.
 
-Todos los cambios deben pasar por un Pull Request (PR).
+### 🚫 Regla de Oro
+**No hacer push directo a `main`.** Todos los cambios deben pasar obligatoriamente por un Pull Request (PR).
 
----
-
-#### ✅ Trabajar siempre en una rama propia
-
-Crear una rama a partir de `main` para cada tarea:
-
+### Paso 1: Trabajar en una Rama de Tarea
+Crea una rama a partir de `main` siguiendo la nomenclatura correcta:
 ```bash
 git checkout main
 git pull origin main
-
 git checkout -b feature/nombre-funcionalidad
 ```
+**Nomenclatura recomendada:**
+* `feature/nombre-funcionalidad` (ej. `feature/login`, `feature/mapa`)
+* `fix/error-resuelto` (ej. `fix/error-autenticacion`)
 
-Ejemplos:
-
-```text
-feature/login
-feature/mapa-rutas
-feature/notificaciones
-fix/error-autenticacion
-```
-
----
-
-#### ✅ Hacer commits pequeños y descriptivos
-
-Ejemplos:
-
-```text
-feat: agregar pantalla de inicio de sesión
-fix: corregir error al cargar rutas
-refactor: simplificar lógica de navegación
-```
-
-Evitar mensajes como:
-
-```text
-cambios
-arreglo
-update
-aaaa
-```
-
----
-
-### Proceso de desarrollo
-
-#### 1. Desarrollar en la rama de trabajo
-
-Realizar los cambios necesarios y hacer commits regularmente.
-
+### Paso 2: Confirmar Cambios (Commits)
+Realiza commits pequeños, limpios y descriptivos:
 ```bash
 git add .
-git commit -m "feat: agregar autenticación con correo"
+git commit -m "feat: agregar pantalla de inicio de sesión"
 ```
+*Evita mensajes genéricos como "cambios", "fix", "update", "aaaa".*
 
----
-
-#### 2. Actualizar la rama con cambios recientes
-
-Antes de abrir un Pull Request:
-
+### Paso 3: Mantener la Rama Actualizada
+Antes de abrir un PR, integra los últimos cambios de `main` en tu rama para resolver posibles conflictos localmente:
 ```bash
 git checkout main
 git pull origin main
-
 git checkout feature/nombre-funcionalidad
 git merge main
 ```
 
-Resolver conflictos si existen.
-
----
-
-#### 3. Subir la rama al repositorio
-
+### Paso 4: Subir Rama y Crear Pull Request
+Sube tu rama al repositorio remoto:
 ```bash
 git push origin feature/nombre-funcionalidad
 ```
+Abre el PR en GitHub hacia `main`. Completa la plantilla de descripción detallando qué se cambió y cómo probarlo.
 
----
+<details>
+<summary>📝 Ejemplo de Estructura de Pull Request</summary>
 
-#### 4. Crear Pull Request
+La descripción del Pull Request debe estructurarse de la siguiente manera:
 
-Abrir un Pull Request hacia:
-
-```text
-feature/... → main
-```
-
-La descripción debe incluir:
-
-* Qué se cambió.
-* Por qué se hizo.
-* Cómo probarlo.
-* Capturas de pantalla si aplica.
-
-Ejemplo:
-
-```text
+```markdown
 ## Cambios realizados
 
 - Agregada pantalla de inicio de sesión.
@@ -200,621 +227,234 @@ Ejemplo:
 2. Ingresar credenciales válidas.
 3. Verificar acceso correcto.
 ```
+</details>
+
+### Paso 5: Revisión de Código y Fusión
+* Al menos **un integrante del equipo** debe revisar y aprobar el PR.
+* Resuelve todos los comentarios y asegúrate de pasar los checks.
+* Al fusionar, utiliza la opción **Squash and Merge** para mantener un historial de commits limpio en `main`.
 
 ---
 
-#### 5. Revisión de código
+## Etapa 4: Documentación de la API y Pruebas
 
-El Pull Request debe ser revisado por al menos otro integrante del equipo.
-
-Durante la revisión se pueden solicitar cambios.
-
-No debe hacerse merge hasta que:
-
-* Existan las aprobaciones necesarias.
-* Las pruebas automáticas hayan pasado.
-* Todos los comentarios estén resueltos.
-
----
-
-#### 6. Merge
-
-Una vez aprobado:
-
-* Utilizar **Squash and Merge**.
-* Mantener un historial limpio y fácil de leer.
-
-Ejemplo del historial esperado:
-
-```text
-Agregar autenticación (#12)
-Corregir error de rutas (#13)
-Implementar notificaciones (#14)
-```
-
----
-
-*ARIA - Tu voz en el mapa, tu huella en el futuro.*
-
----
-
-## 🚀 Guía de Configuración y Ejecución con Docker
-
-Sigue estos pasos para levantar el entorno de desarrollo local con React y la base de datos con PostGIS.
-
-### 📋 Requisitos Previos
-*   Tener instalado [Docker Desktop](https://www.docker.com/products/docker-desktop/) (que incluye Docker Compose).
-
-### ⚙️ Paso 1: Configurar Variables de Entorno
-Crea o edita el archivo [.env](file:///d:/PC/Documents/Universidad/04%20Ingenieria/ARIA/.env) en la raíz del proyecto para definir las credenciales de la base de datos:
-```env
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=aria_db
-POSTGRES_PORT=5432
-POSTGRES_HOST=db
-```
-
-### 🗄️ Paso 2: Inicializar el Esquema y Datos de Prueba
-Los scripts de inicialización están en la carpeta [database](file:///d:/PC/Documents/Universidad/04%20Ingenieria/ARIA/database):
-1.  **[01-schema.sql](file:///d:/PC/Documents/Universidad/04%20Ingenieria/ARIA/database/01-schema.sql):** Contiene la creación de extensiones (`postgis`), tablas, enums e índices.
-2.  **[02-data.sql](file:///d:/PC/Documents/Universidad/04%20Ingenieria/ARIA/database/02-data.sql):** Inserta datos iniciales de prueba (usuarios, categorías, estados y reportes con geolocalización).
-
-### 🛠️ Paso 3: Levantar la Aplicación
-Abre una terminal en la raíz del proyecto y ejecuta:
-```powershell
-docker compose up --build
-```
-Esto creará las imágenes, instalará las dependencias de Node y levantará los servicios:
-*   **Frontend (React/Vite):** Disponible en [http://localhost:3000](http://localhost:3000) (con **Hot Reload** activo, los cambios que guardes localmente se verán al instante).
-*   **Base de datos (PostgreSQL/PostGIS):** Expuesta en `localhost:5432`.
-
-### 🔄 Reiniciar / Limpiar la Base de Datos
-Si realizas modificaciones en los archivos de la carpeta `database` y deseas aplicarlas limpiando la base de datos por completo, ejecuta:
-```powershell
-docker compose down -v
-docker compose up --build
-```
-*(La bandera `-v` elimina los volúmenes antiguos de datos para forzar la ejecución limpia de tus scripts `.sql`)*.
-
-# Backend (Node.js + Prisma + PostgreSQL/PostGIS)
-
-## Requisitos
-
-* Docker
-* Docker Compose
-* Node.js 22+ (solo para desarrollo local)
-* PostgreSQL con extensión PostGIS (incluido en Docker)
-
----
-
-## Variables de entorno
-
-Además del archivo `.env` utilizado por el frontend, es necesario crear un archivo `.env` dentro de la carpeta `backend`.
-
-
-```env
-PORT=3000
-
-JWT_SECRET=super_secret
-
-DATABASE_URL=postgresql://postgres:postgres@db:5432/aria_db
-
-EMAIL_USER=aria.tnt.6cv1@gmail.com
-EMAIL_PASSWORD=deuf cdiu anwq gvjq
-```
-
----
-
-## Levantar el proyecto
-
-Desde la raíz del proyecto:
-
-```bash
-docker compose up --build
-```
-
-Este comando iniciará:
-
-* Frontend React/Vite
-* Backend Node.js/Express
-* PostgreSQL + PostGIS
-
-Para ejecutar en segundo plano:
-
-```bash
-docker compose up -d --build
-```
-
-Verificar contenedores:
-
-```bash
-docker compose ps
-```
-
-Ver logs:
-
-```bash
-docker compose logs -f
-```
-
----
-
-## Prisma
-
-Una vez que la base de datos haya sido creada y el contenedor del backend esté ejecutándose, es necesario sincronizar Prisma con PostgreSQL.
-
-### Obtener el esquema desde la base de datos
-
-```bash
-docker compose exec backend npx prisma db pull
-```
-
-### Generar Prisma Client
-
-```bash
-docker compose exec backend npx prisma generate
-```
-
-Estos comandos deben ejecutarse cada vez que se modifique la estructura de la base de datos.
-
----
-
-## PostGIS y Prisma
-
-La tabla `REPORTE` utiliza el tipo espacial:
-
-```sql
-GEOGRAPHY(POINT, 4326)
-```
-
-Actualmente Prisma no soporta completamente los tipos geográficos de PostGIS.
-
-Por esta razón, los campos geográficos aparecerán en el archivo `schema.prisma` como:
-
-```prisma
-ubicacion Unsupported("geography")
-```
-
-Esto es normal y no debe modificarse.
-
-Las operaciones que involucren coordenadas geográficas deben realizarse mediante SQL nativo usando:
-
-```ts
-prisma.$queryRaw(...)
-prisma.$executeRaw(...)
-```
-
-Ejemplo para crear un punto geográfico:
-
-```sql
-ST_SetSRID(
-    ST_MakePoint(longitud, latitud),
-    4326
-)::geography
-```
-
-Ejemplo para recuperar coordenadas:
-
-```sql
-ST_X(ubicacion::geometry)
-ST_Y(ubicacion::geometry)
-```
-
----
-
-# Endpoints
-
-Base URL:
-
+La URL base para consumir los servicios del backend es:
 ```text
 http://localhost:3001/api
 ```
-## Usuarios de prueba
 
-```text
-Usuario: juan.perez@example.com
-Password: hashed_pwd_123
-```
-
-```text
-Usuario: maria.gomez@example.com 
-Password: hashed_pwd_456
-```
-
-```text
-Usuario: admin@ariaplataforma.org
-Password: hashed_admin_pwd
-```
-
-### Si quieres probar el correo debes crear un usuario con un correo al que puedas acceder.
-### Debes abrir el enlace del correo en la pc donde tengas la aplicación corriendo, si no lo haces así, deberás copiar el token que te arroje y validarlo con el Postman con el endpoint de verificar correo.
-### Lo mismo para restablecer la contraseña
-### Tabién lo puedes obtener desde la base de datos, accediendo con este comando:
-
-```bash
-docker compose exec db psql -U postgres -d aria_db
-select * from token_autenticacion;
-```
+### 👥 Usuarios de Prueba Registrados
+* **Ciudadano 1:** `juan.perez@example.com` / `hashed_pwd_123`
+* **Ciudadano 2:** `maria.gomez@example.com` / `hashed_pwd_456`
+* **Administrador:** `admin@ariaplataforma.org` / `hashed_admin_pwd`
 
 ---
 
-## Registro de usuario
+### 📡 Listado de Endpoints
 
-### Endpoint
+<details>
+<summary>🔑 Autenticación y Cuentas</summary>
 
-```http
-POST /auth/register
-```
-
-### Body
-
-```json
-{
-  "nombreCompleto": "Juan Pérez",
-  "correoElectronico": "juan@gmail.com",
-  "password": "Password123!"
-}
-```
-
-### Respuesta
-
-```json
-{
-  "mensaje": "Usuario registrado correctamente"
-}
-```
-
----
-
-## Inicio de sesión
-
-### Endpoint
-
-```http
-POST /auth/login
-```
-
-### Body
-
-```json
-{
-  "correoElectronico": "juan@gmail.com",
-  "password": "Password123!"
-}
-```
-
-### Respuesta
-
-```json
-{
-  "token": "eyJhbGc...",
-  "usuario": {
-    "id": 1,
+#### Registro de Usuario
+* **POST** `/auth/register`
+* **Body (JSON):**
+  ```json
+  {
     "nombreCompleto": "Juan Pérez",
     "correoElectronico": "juan@gmail.com",
-    "rol": "CIUDADANO"
+    "password": "Password123!"
   }
-}
-```
+  ```
+* **Respuesta (200 OK):**
+  ```json
+  { "mensaje": "Usuario registrado correctamente" }
+  ```
 
----
-
-## Verificar correo
-
-### Endpoint
-
-```http
-GET /auth/verificar/:token
-```
-
-Ejemplo:
-
-```http
-GET /auth/verificar/abc123
-```
-
----
-
-## Solicitar recuperación de contraseña
-
-### Endpoint
-
-```http
-POST /auth/solicitar-recuperacion
-```
-
-### Body
-
-```json
-{
-  "correoElectronico": "juan@gmail.com"
-}
-```
-
----
-
-## Restablecer contraseña
-
-### Endpoint
-
-```http
-POST /auth/restablecer-password
-```
-
-### Body
-
-```json
-{
-  "token": "abc123",
-  "password": "NuevaPassword123!"
-}
-```
-
----
-
-## Registrar token FCM
-
-### Endpoint
-
-```http
-POST /fcm/fcm-token
-```
-
-### Headers
-
-```http
-Authorization: Bearer <JWT>
-```
-
-### Body
-
-```json
-{
-  "fcmToken": "token_dispositivo",
-  "dispositivoInfo": "Chrome Windows 11"
-}
-```
-
----
-
-## Eliminar token FCM
-
-### Endpoint
-
-```http
-DELETE /fcm/fcm-token
-```
-
-### Headers
-
-```http
-Authorization: Bearer <JWT>
-```
-
-### Body
-
-```json
-{
-  "fcmToken": "token_dispositivo"
-}
-```
-
----
-
-## Obtener mis dispositivos
-
-### Endpoint
-
-```http
-GET /fcm/mis-dispositivos
-```
-
-### Headers
-
-```http
-Authorization: Bearer <JWT>
-```
-
-### Respuesta
-
-```json
-[
+#### Inicio de Sesión
+* **POST** `/auth/login`
+* **Body (JSON):**
+  ```json
   {
-    "id": 1,
-    "fcm_token": "fcm_token_test_juan_chrome_windows",
-    "dispositivo_info": "Google Chrome en Windows 10/11 (Escritorio)",
-    "fecha_registro": "2026-06-13T19:20:14.466Z"
+    "correoElectronico": "juan@gmail.com",
+    "password": "Password123!"
   }
-]
-```
-
----
-
-## Estadísticas
-
-### Endpoint
-
-```http
-GET /dashboard/stats
-```
-
-### Headers
-
-```http
-Authorization: Bearer <JWT_ADMIN>
-```
-
-### Respuesta
-
-```json
-{
-  "totalReportes": 150,
-  "severidad": {
-    "baja": 40,
-    "media": 60,
-    "alta": 35,
-    "critica": 15
-  }
-}
-```
-
----
-
-## Reportes
-
-### Obtener reportes activos
-
-#### Endpoint
-
-```http
-GET /reportes/activos
-```
-
-#### Respuesta
-
-```json
-[
+  ```
+* **Respuesta (200 OK):**
+  ```json
   {
-    "id": 1,
-    "descripcion": "Acumulación de basura en la esquina del parque principal.",
-    "fecha_creacion": "2026-06-13T19:20:14.466Z",
-    "fecha_actualizacion": "2026-06-13T19:20:14.466Z",
-    "severidad": "Media",
-    "url_evidencia_foto": "http://localhost:3001/uploads/1718345732000-987654321.jpg",
-    "puntos_asignados": 0,
-    "estado_puntos": "Pendiente",
-    "usuario_id": 1,
-    "estado_id": 1,
-    "categoria_id": 1,
-    "latitude": 19.4150,
-    "longitude": -99.1620,
-    "categoria": {
-      "id": 1,
-      "nombre": "Residuos Sólidos",
-      "color_hex": "#FF5733"
-    },
-    "estado": {
-      "id": 1,
-      "nombre": "Recibido"
-    },
+    "token": "eyJhbGc...",
     "usuario": {
       "id": 1,
-      "nombre_completo": "Juan Pérez"
+      "nombreCompleto": "Juan Pérez",
+      "correoElectronico": "juan@gmail.com",
+      "rol": "CIUDADANO"
     }
   }
-]
-```
+  ```
 
----
+#### Verificar Correo
+* **GET** `/auth/verificar/:token`
+* **Ejemplo:** `/auth/verificar/abc123`
 
-### Obtener un reporte por ID
+#### Solicitar Recuperación de Contraseña
+* **POST** `/auth/solicitar-recuperacion`
+* **Body (JSON):**
+  ```json
+  { "correoElectronico": "juan@gmail.com" }
+  ```
 
-#### Endpoint
-
-```http
-GET /reportes/:id
-```
-
-Ejemplo:
-```http
-GET /reportes/1
-```
-
-#### Respuesta
-
-```json
-{
-  "id": 1,
-  "descripcion": "Acumulación de basura en la esquina del parque principal.",
-  "fecha_creacion": "2026-06-13T19:20:14.466Z",
-  "fecha_actualizacion": "2026-06-13T19:20:14.466Z",
-  "severidad": "Media",
-  "url_evidencia_foto": "http://localhost:3001/uploads/1718345732000-987654321.jpg",
-  "puntos_asignados": 0,
-  "estado_puntos": "Pendiente",
-  "usuario_id": 1,
-  "estado_id": 1,
-  "categoria_id": 1,
-  "latitude": 19.4150,
-  "longitude": -99.1620,
-  "categoria": {
-    "id": 1,
-    "nombre": "Residuos Sólidos",
-    "color_hex": "#FF5733"
-  },
-  "estado": {
-    "id": 1,
-    "nombre": "Recibido"
-  },
-  "usuario": {
-    "id": 1,
-    "nombre_completo": "Juan Pérez"
+#### Restablecer Contraseña
+* **POST** `/auth/restablecer-password`
+* **Body (JSON):**
+  ```json
+  {
+    "token": "abc123",
+    "password": "NuevaPassword123!"
   }
-}
-```
+  ```
+</details>
+
+<details>
+<summary>🔔 Notificaciones Push (Firebase Cloud Messaging - FCM)</summary>
+
+#### Registrar Token FCM
+* **POST** `/fcm/fcm-token`
+* **Headers:** `Authorization: Bearer <JWT>`
+* **Body (JSON):**
+  ```json
+  {
+    "fcmToken": "token_dispositivo",
+    "dispositivoInfo": "Chrome Windows 11"
+  }
+  ```
+
+#### Eliminar Token FCM
+* **DELETE** `/fcm/fcm-token`
+* **Headers:** `Authorization: Bearer <JWT>`
+* **Body (JSON):**
+  ```json
+  { "fcmToken": "token_dispositivo" }
+  ```
+
+#### Obtener mis Dispositivos
+* **GET** `/fcm/mis-dispositivos`
+* **Headers:** `Authorization: Bearer <JWT>`
+* **Respuesta (200 OK):**
+  ```json
+  [
+    {
+      "id": 1,
+      "fcm_token": "fcm_token_test_juan_chrome_windows",
+      "dispositivo_info": "Google Chrome en Windows 10/11 (Escritorio)",
+      "fecha_registro": "2026-06-13T19:20:14.466Z"
+    }
+  ]
+  ```
+</details>
+
+<details>
+<summary>📋 Reportes Ambientales</summary>
+
+#### Obtener Reportes Activos
+* **GET** `/reportes/activos`
+* **Respuesta (200 OK):**
+  ```json
+  [
+    {
+      "id": 1,
+      "descripcion": "Acumulación de basura en el parque.",
+      "fecha_creacion": "2026-06-13T19:20:14.466Z",
+      "severidad": "Media",
+      "url_evidencia_foto": "http://localhost:3001/uploads/img.jpg",
+      "latitude": 19.4150,
+      "longitude": -99.1620,
+      "categoria": { "nombre": "Residuos Sólidos", "color_hex": "#FF5733" }
+    }
+  ]
+  ```
+
+#### Obtener Reporte por ID
+* **GET** `/reportes/:id`
+
+#### Crear Reporte (Subida de archivo con Multer)
+* **POST** `/reportes`
+* **Headers:** 
+  * `Authorization: Bearer <JWT>`
+  * `Content-Type: multipart/form-data`
+* **Body (form-data):**
+  * `descripcion`: Texto descriptivo.
+  * `latitude`: Latitud numérica.
+  * `longitude`: Longitud numérica.
+  * `severidad`: `Baja` | `Media` | `Alta` | `Critica`
+  * `categoria_id`: ID de la categoría (entero).
+  * `foto`: Archivo de imagen (JPG/PNG).
+
+#### Obtener mis Reportes
+* **GET** `/reportes/mis-reportes`
+* **Headers:** `Authorization: Bearer <JWT>`
+
+#### Obtener Reportes de un Usuario Específico
+* **GET** `/reportes/usuario/:userId`
+
+#### Actualizar Estado o Puntos de Reporte (Admin)
+* **PATCH** `/reportes/:id`
+* **Headers:** `Authorization: Bearer <JWT_ADMIN>`
+* **Body (JSON):**
+  ```json
+  {
+    "estado_id": 3,
+    "estado_puntos": "Otorgado",
+    "puntos_asignados": 100
+  }
+  ```
+</details>
+
+<details>
+<summary>📊 Estadísticas del Dashboard (Admin)</summary>
+
+#### Obtener Estadísticas
+* **GET** `/dashboard/stats`
+* **Headers:** `Authorization: Bearer <JWT_ADMIN>`
+* **Respuesta (200 OK):**
+  ```json
+  {
+    "totalReportes": 150,
+    "severidad": {
+      "baja": 40,
+      "media": 60,
+      "alta": 35,
+      "critica": 15
+    }
+  }
+  ```
+</details>
 
 ---
 
-### Crear reporte (Subida de imagen con Multer)
+### 🧪 Guía Práctica de Pruebas (Postman / Thunder Client)
 
-#### Endpoint
-
-```http
-POST /reportes
-```
-
-#### Headers
-
-```http
-Authorization: Bearer <JWT>
-Content-Type: multipart/form-data
-```
-
-#### Body (form-data)
-
-- **`descripcion`**: `Fuga de agua en banqueta pública` (texto)
-- **`latitude`**: `19.4150` (número/texto)
-- **`longitude`**: `-99.1620` (número/texto)
-- **`severidad`**: `Media` (debe ser: `Baja`, `Media`, `Alta` o `Critica`)
-- **`categoria_id`**: `2` (ID entero de la categoría)
-- **`foto`**: `[Archivo de Imagen]` (campo de tipo archivo/file)
-
-#### Respuesta
-
-```json
-{
-  "mensaje": "Reporte creado exitosamente",
-  "id": 2,
-  "url_evidencia_foto": "http://localhost:3001/uploads/1718345732000-987654321.jpg"
-}
-```
-
----
-
-### Cómo probar los reportes con Postman o Thunder Client
-
-1. **Iniciar Sesión**: Envía un `POST` a `/auth/login` con las credenciales de prueba para obtener el token `JWT`.
-2. **Consultar Reportes Activos**: Envía un `GET` a `/reportes/activos`.
-3. **Enviar Nuevo Reporte con Imagen**:
-   - Configura una petición `POST` a `/reportes`.
-   - Agrega la cabecera `Authorization` con valor `Bearer <TU_JWT_TOKEN>`.
+1. **Iniciar Sesión:** Envía un `POST` a `/auth/login` con credenciales de prueba para obtener el token `JWT`.
+2. **Consultar Reportes Activos:** Envía un `GET` a `/reportes/activos`.
+3. **Enviar Nuevo Reporte con Imagen:**
+   - Crea una petición `POST` a `/reportes`.
+   - Agrega la cabecera `Authorization` con el valor `Bearer <TU_JWT_TOKEN>`.
    - En la pestaña **Body**, selecciona **form-data** (no raw/json).
-   - Registra las claves (`descripcion`, `latitude`, `longitude`, `severidad`, `categoria_id`) como texto.
-   - Registra la clave **`foto`**, cambia su tipo a **File/Archivo** en la herramienta de pruebas, y selecciona una imagen JPG/PNG del equipo.
-   - Presiona enviar y valida que retorne la URL de acceso a la imagen subida en `url_evidencia_foto`.
+   - Registra los campos (`descripcion`, `latitude`, `longitude`, `severidad`, `categoria_id`) como campos de texto.
+   - Registra el campo `foto` y cambia su tipo a **File/Archivo**, seleccionando una imagen local.
+   - Envía y verifica la URL recibida en `url_evidencia_foto`.
+4. **Probar Restablecimiento / Verificación de Correo:**
+   - Si no tienes acceso al correo real configurado, puedes obtener el token generado directamente desde la base de datos:
+     ```bash
+     docker compose exec db psql -U postgres -d aria_db
+     # Consultar token generado
+     SELECT * FROM token_autenticacion;
+     ```
+     Luego, usa ese token en el endpoint correspondiente.
+5. **Probar Notificaciones Push (FCM):**
+   - Asegúrate de iniciar sesión en el frontend para registrar el dispositivo.
+   - Inicia sesión como administrador (`admin@ariaplataforma.org`) para obtener su token `JWT_ADMIN`.
+   - Ejecuta un `PATCH` a `/reportes/:id` cambiando el estado o los puntos.
+   - Valida que el ciudadano reciba la notificación push en su navegador o dispositivo móvil.
 
 ---
-
-## Actualizar Prisma después de cambios en la base de datos
-
-Cada vez que se modifique el script SQL oficial:
-
-```bash
-docker compose exec backend npx prisma db pull
-
-docker compose exec backend npx prisma generate
-```
-
-De esta forma el cliente Prisma permanecerá sincronizado con la base de datos PostgreSQL.
-
+*ARIA - Tu voz en el mapa, tu huella en el futuro.*

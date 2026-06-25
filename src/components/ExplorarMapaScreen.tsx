@@ -55,7 +55,6 @@ export default function ExplorarMapaScreen({
             
             <MapPlaceholder
               reports={reports}
-              onSelectReportId={(id) => navigate('/reporte/' + id)}
               onReportLocation={onReportLocation}
             />
           </div>
@@ -64,42 +63,52 @@ export default function ExplorarMapaScreen({
           <div className="lg:col-span-3 space-y-6">
             
             {/* Map Legend card */}
-            <div className="bg-white rounded-3xl border border-[#DDE7DE] p-6 shadow-xs space-y-4">
+            <div className="bg-white rounded-3xl border border-[#DDE7DE] p-6 shadow-xs space-y-5">
               <h3 className="text-sm font-black text-[#143B20] uppercase tracking-wider flex items-center gap-2">
                 <Target className="w-4.5 h-4.5 text-[#1E8344]" />
                 <span>Simbología</span>
               </h3>
               
-              <div className="space-y-3 pt-1">
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#DC2626] border border-[#EF4444] text-white flex items-center justify-center text-[10px] font-bold">🗑️</div>
-                  <div className="text-xs font-semibold text-[#143B20]">
-                    <p className="font-extrabold">Residuos Clandestinos</p>
-                    <p className="text-[10px] text-red-600">Prioridad Crítica / Alta</p>
+              {/* Severity Colors Section */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-black text-[#557B5E] uppercase tracking-wider">Severidad (Color del Pin)</p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-3.5 w-3.5 rounded-full bg-[#DC2626] border-2 border-white shadow-xs shrink-0 ring-1 ring-black/10"></span>
+                    <span className="text-xs font-bold text-[#143B20]">Alta / Crítica</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-3.5 w-3.5 rounded-full bg-[#F97316] border-2 border-white shadow-xs shrink-0 ring-1 ring-black/10"></span>
+                    <span className="text-xs font-bold text-[#143B20]">Media</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-3.5 w-3.5 rounded-full bg-[#EAB308] border-2 border-white shadow-xs shrink-0 ring-1 ring-black/10"></span>
+                    <span className="text-xs font-bold text-[#143B20]">Baja</span>
                   </div>
                 </div>
+              </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#F97316] border border-[#FB923C] text-white flex items-center justify-center text-[10px] font-bold">💧</div>
-                  <div className="text-xs font-semibold text-[#143B20]">
-                    <p className="font-extrabold">Agua Contaminada</p>
-                    <p className="text-[10px] text-amber-600">Investigación en progreso</p>
+              <hr className="border-[#F0F5F1]" />
+
+              {/* Category Icons Section */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-black text-[#557B5E] uppercase tracking-wider">Categoría (Icono del Pin)</p>
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-xs shrink-0 shadow-2xs border border-slate-200">🗑️</div>
+                    <span className="text-xs font-semibold text-[#143B20]">Acumulación de Basura</span>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#2563EB] border border-[#60A5FA] text-white flex items-center justify-center text-[10px] font-bold">🏭</div>
-                  <div className="text-xs font-semibold text-[#143B20]">
-                    <p className="font-extrabold">Calidad del Aire</p>
-                    <p className="text-[10px] text-blue-600">Monitoreo activo</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-xs shrink-0 shadow-2xs border border-slate-200">💧</div>
+                    <span className="text-xs font-semibold text-[#143B20]">Fuga de Agua</span>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#8B5CF6] border border-[#A78BFA] text-white flex items-center justify-center text-[10px] font-bold font-mono">🌲</div>
-                  <div className="text-xs font-semibold text-[#143B20]">
-                    <p className="font-extrabold">Área Forestal / Reserva</p>
-                    <p className="text-[10px] text-violet-600">Soporte Conservación</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-xs shrink-0 shadow-2xs border border-slate-200">🏭</div>
+                    <span className="text-xs font-semibold text-[#143B20]">Contaminación del Aire</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-xs shrink-0 shadow-2xs border border-slate-200">🌳</div>
+                    <span className="text-xs font-semibold text-[#143B20]">Tala Ilegal / Áreas Verdes</span>
                   </div>
                 </div>
               </div>

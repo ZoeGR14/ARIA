@@ -17,9 +17,9 @@ INSERT INTO CATEGORIA (nombre, descripcion, color_hex) VALUES
 
 -- 3. Insertar Usuarios de prueba (contraseñas son hashes simulados)
 INSERT INTO USUARIO (nombre_completo, correo_electronico, email_verificado, contrasena_hash, puntos_totales, nivel_ranking) VALUES 
-('Juan Pérez', 'juan.perez@example.com', true, '$2b$10$a/AIZoGBr0oFHJmvZV/2hu9ems90v8vLPpnTcVdH/JXnXBGIwbSX6', 150, 'Ciudadano Activo'),
+('Juan Pérez', 'juan.perez@example.com', true, '$2b$10$a/AIZoGBr0oFHJmvZV/2hu9ems90v8vLPpnTcVdH/JXnXBGIwbSX6', 150, 'Colaborador'),
 ('María Gómez', 'maria.gomez@example.com', true, '$2b$10$WPHFzOWe8bL/wQVWcABIFub0DZEle7b1J8y4mCE90htKCcSmVCyES', 50, 'Novato'),
-('Carlos Administrador', 'admin@ariaplataforma.org', true, '$2b$10$gyQFvVmHCM93r6SSBy24Y.MC9.z6VrWPsZeXx4hIgwU.HgYLts9zS', 1000, 'Guardián Ambiental');
+('Carlos Administrador', 'admin@ariaplataforma.org', true, '$2b$10$gyQFvVmHCM93r6SSBy24Y.MC9.z6VrWPsZeXx4hIgwU.HgYLts9zS', 1000, 'Experto');
 
 -- 4. Asignar rol de Administrador
 INSERT INTO ADMINISTRADOR (id, nivel_acceso, ultimo_acceso) VALUES 
@@ -33,7 +33,7 @@ INSERT INTO REPORTE (descripcion, ubicacion, severidad, url_evidencia_foto, punt
     'Gran acumulación de basura en la esquina del parque',
     ST_GeogFromText('SRID=4326;POINT(-99.1622 19.4204)'),
     'Media',
-    'https://example.com/fotos/basura1.jpg',
+    '/uploads/basura.jpg',
     50,
     'Otorgado',
     1, -- Creado por Juan Pérez
@@ -44,7 +44,7 @@ INSERT INTO REPORTE (descripcion, ubicacion, severidad, url_evidencia_foto, punt
     'Fuga de agua potable muy fuerte en la acera',
     ST_GeogFromText('SRID=4326;POINT(-99.1687 19.4056)'),
     'Critica',
-    'https://example.com/fotos/fuga1.jpg',
+    '/uploads/fuga_agua.jpeg',
     0,
     'Pendiente',
     2, -- Creado por María Gómez

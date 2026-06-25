@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { IncidentReport, Comment } from './types';
-import { INITIAL_REPORTS } from './data/mockData';
+import { getReportesActivos } from './services/reportesService';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -24,15 +24,17 @@ import MyReportsScreen from './components/MyReportsScreen';
 import ExplorarMapaScreen from './components/ExplorarMapaScreen';
 import EditProfileScreen from './components/EditProfileScreen';
 import CommunityScreen from './components/CommunityScreen';
+import ChangePasswordScreen from './components/EditPassword';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, Bell, Inbox, Check, Sparkles, Mail, Loader2 } from 'lucide-react';
-
+import PrivacyScreen from './components/PrivacyScreen';
 import { getToken, deleteToken, onMessage, isSupported } from 'firebase/messaging';
 import { messaging } from './firebase';
+import { useToast } from './contexts/ToastContext';
 
 const CARLOS_MENDOZA_PROFILE = {
   name: 'Carlos Mendoza',
-  avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+  avatar: "https://tse4.mm.bing.net/th/id/OIP.dDKYQqVBsG1tIt2uJzEJHwHaHa?cb=thfc1falcon2&rs=1&pid=ImgDetMain&o=7&rm=3",
   role: 'Investigador Nivel 3',
   bio: 'Hola, soy Carlos. Me apasiona la naturaleza y desde hace un tiempo dedico mi tiempo libre a documentar y reportar problemas ambientales en mi barrio. Creo que pequeños cambios pueden generar un gran impacto.',
   location: 'Bogotá, CO',
@@ -60,33 +62,11 @@ export default function App() {
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [userProfile, setUserProfile] = useState(CARLOS_MENDOZA_PROFILE);
-  const [reports, setReports] = useState<IncidentReport[]>(INITIAL_REPORTS);
+  const [reports, setReports] = useState<IncidentReport[]>([]);
   const [prefilledLocation, setPrefilledLocation] = useState<{ address: string; coordinates: string } | null>(null);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 'n1',
-      title: 'Oficial asignado',
-      message: 'Un inspector de Terranova Tech ha sido enviado a la Colonia Roma Norte para revisar el reporte ENV-2023-8472.',
-      time: 'Hace 1 hora',
-      read: false,
-      reportId: 'ENV-2023-8472',
-    },
-    {
-      id: 'n2',
-      title: 'Comunidad activa',
-      message: 'Se añadieron nuevos comentarios y firmas oficiales al reporte de emisiones industriales.',
-      time: 'Hace 3 horas',
-      read: true,
-      reportId: 'ENV-2023-1120',
-    },
-    {
-      id: 'n3',
-      title: '¡Te damos la bienvenida!',
-      message: 'Gracias por unirte a Terranova Tech. Comienza a registrar incidencias y cuidar el medio ambiente.',
-      time: 'Hace 1 día',
-      read: true,
-    }
-  ]);
+  const { addToast } = useToast();
+  const [notifications, setNotifications] = useState<any[]>([]);
+
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
@@ -108,7 +88,10 @@ export default function App() {
           id: user.id,
           name: user.nombre_completo,
           email: user.correo_electronico,
-          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+          avatar:
+              user.avatar_url === ''
+                  ? "https://tse4.mm.bing.net/th/id/OIP.dDKYQqVBsG1tIt2uJzEJHwHaHa?cb=thfc1falcon2&rs=1&pid=ImgDetMain&o=7&rm=3"
+                  : user.avatar_url,
           role: user.rol === 'ADMINISTRADOR' ? 'Administrador' : 'Ciudadano Activo',
           bio: `Hola, soy ${(user.nombre_completo || 'Usuario').split(' ')[0]}. Me interesa el monitoreo ambiental y registrar incidencias para cooperar de manera constructiva con mi comunidad local.`,
           location: 'CDMX, MX',
@@ -131,6 +114,42 @@ export default function App() {
     }
   }, []);
 
+  // Cargar notificaciones reales al iniciar sesión
+  useEffect(() => {
+    if (isLoggedIn) {
+      const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
+      if (token) {
+        fetch('/api/notificaciones', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(data => {
+             if (Array.isArray(data)) {
+             const mapped = data.map(n => {
+               let title = 'Notificación';
+               if (n.tipo === 'SISTEMA_ALERTA') title = 'Alerta Crítica';
+               else if (n.tipo === 'ESTADO_REPORTE') title = 'Actualización de tu reporte 📋';
+               else if (n.tipo === 'PUNTOS_OTORGADOS') title = '¡Puntos ganados! 🌟';
+               
+               return {
+                 id: String(n.id),
+                 title: title,
+                 message: n.mensaje,
+                 time: new Date(n.fecha_hora).toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }),
+                 read: n.leido,
+                 reportId: n.reporte_id ? String(n.reporte_id) : undefined
+               };
+             });
+             setNotifications(mapped);
+           }
+        })
+        .catch(console.error);
+      }
+    } else {
+      setNotifications([]);
+    }
+  }, [isLoggedIn]);
+
   // Listen for FCM messages
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
@@ -152,6 +171,18 @@ export default function App() {
               reportId: message.data?.reportId,
             };
             setNotifications((prev) => [newNotify, ...prev]);
+
+            let toastType: 'info' | 'success' | 'warning' | 'error' = 'info';
+            if (newNotify.title.includes('Alerta')) toastType = 'error';
+            else if (newNotify.title.includes('Puntos') || newNotify.title.includes('registrado')) toastType = 'success';
+            else if (newNotify.title.includes('Actualización')) toastType = 'info';
+
+            addToast({
+              title: newNotify.title,
+              message: newNotify.message,
+              type: toastType,
+              duration: 6000
+            });
           }
         });
       } catch (err) {
@@ -215,8 +246,9 @@ export default function App() {
         }
 
         console.log("Token FCM obtenido: ", fcmToken);
+        localStorage.setItem('aria_fcm_token', fcmToken);
 
-        const devicesRes = await fetch('http://localhost:3001/api/fcm/mis-dispositivos', {
+        const devicesRes = await fetch('/api/fcm/mis-dispositivos', {
           headers: {
             'Authorization': `Bearer ${tokenJwt}`
           }
@@ -232,7 +264,7 @@ export default function App() {
         }
 
         const deviceInfo = getDeviceInfo();
-        const registerRes = await fetch('http://localhost:3001/api/fcm/fcm-token', {
+        const registerRes = await fetch('/api/fcm/fcm-token', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -264,6 +296,10 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [location.pathname]);
 
+  useEffect(() => {
+    getReportesActivos().then(setReports);
+  }, []);
+
   const handleReportAtLocation = (address: string, coordinates: string) => {
     setPrefilledLocation({ address, coordinates });
     navigate('/reportar');
@@ -288,6 +324,12 @@ export default function App() {
       reportId: newReport.id,
     };
     setNotifications((prev) => [newNotify, ...prev]);
+    addToast({
+      title: newNotify.title,
+      message: newNotify.message,
+      type: 'success',
+      duration: 5000
+    });
   };
 
   // Handle appending comments on detail screen
@@ -336,14 +378,14 @@ export default function App() {
         {isLoggedIn && !isAuthScreen && (
           <header className="bg-white border-b border-[#E1ECE3] pl-16 md:pl-8 pr-4 md:pr-8 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
             {/* Left contextual tag */}
-            <div className="flex items-center space-x-2">
+            <div className="hidden sm:flex items-center space-x-2">
               <span className="text-[10px] sm:text-xs font-mono font-black text-[#1E8344] uppercase tracking-wider bg-[#EBF7EE] px-2.5 py-1 rounded-lg">
                 Ciudadano Activo
               </span>
             </div>
 
             {/* Right quick actions: View profile & Logout */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 ml-auto">
               {/* Notifications bell dropdown */}
               <div className="relative">
                 <button
@@ -372,7 +414,7 @@ export default function App() {
                     />
 
                     {/* Popover dropdown container */}
-                    <div className="absolute right-0 mt-2.5 w-[280px] sm:w-[320px] bg-white rounded-2xl shadow-2xl border border-[#CBDCD0] overflow-hidden z-50 animate-slide-up flex flex-col max-h-[440px]">
+                    <div className="absolute right-0 sm:right-0 mt-2.5 w-[280px] sm:w-[320px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-[#CBDCD0] overflow-hidden z-50 animate-slide-up flex flex-col max-h-[440px]">
                       {/* Header */}
                       <div className="bg-[#FAFDF9] border-b border-[#CBDCD0]/50 px-4 py-3 flex items-center justify-between shrink-0">
                         <span className="text-xs font-black text-[#143B20] uppercase tracking-wider flex items-center gap-1.5">
@@ -383,6 +425,11 @@ export default function App() {
                           <button
                             onClick={() => {
                               setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                              const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
+                              fetch('/api/notificaciones/leer-todas', {
+                                method: 'PATCH',
+                                headers: { 'Authorization': `Bearer ${token}` }
+                              }).catch(console.error);
                             }}
                             className="text-[10px] font-black text-[#1E8344] hover:text-[#0b5425] transition-colors cursor-pointer"
                           >
@@ -404,6 +451,13 @@ export default function App() {
                               onClick={() => {
                                 setNotifications(prev => prev.map(notif => notif.id === n.id ? { ...notif, read: true } : notif));
                                 setShowNotificationsDropdown(false);
+                                if (!n.read && !n.id.toString().startsWith('n-')) {
+                                  const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
+                                  fetch(`/api/notificaciones/${n.id}/leer`, {
+                                    method: 'PATCH',
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                  }).catch(console.error);
+                                }
                                 if (n.reportId) {
                                   navigate('/reporte/' + n.reportId);
                                 }
@@ -437,7 +491,7 @@ export default function App() {
               {/* Profile card link */}
               <button
                 onClick={() => navigate('/editar-perfil')}
-                className="flex items-center space-x-2 p-0.5 px-2.5 bg-[#FAFDF9] border border-[#CDE1D1] hover:border-[#1E8344] rounded-full transition-all cursor-pointer group text-left shadow-xs"
+                className="flex items-center space-x-0 sm:space-x-2 p-0 sm:p-0.5 sm:px-2.5 bg-transparent sm:bg-[#FAFDF9] border-0 sm:border border-[#CDE1D1] hover:border-[#1E8344] rounded-full transition-all cursor-pointer group text-left shadow-none sm:shadow-xs"
                 title="Modificar mi Perfil"
               >
                 <img
@@ -446,7 +500,7 @@ export default function App() {
                   className="w-7 h-7 rounded-full object-cover border border-[#C5DDCB] group-hover:scale-105 transition-transform"
                   referrerPolicy="no-referrer"
                 />
-                <div className="text-[10.5px]">
+                <div className="hidden sm:block text-[10px]">
                   <p className="font-extrabold text-[#143B20] leading-none group-hover:text-[#1E8344] transition-colors">
                     {userProfile.name}
                   </p>
@@ -464,13 +518,11 @@ export default function App() {
                   try {
                     const currentToken = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
                     if (currentToken && await isSupported()) {
-                      const fcmToken = await getToken(messaging, {
-                        vapidKey: "BIB4QGDhC2lIgmT_MkMSWiumWu4d4e34XDzekN8VOxPRHJzNyiNbnGpM_3_OSj7gAeqPWjm2IdLnNGxqR_gyW-I"
-                      }).catch(() => null);
+                      const fcmToken = localStorage.getItem('aria_fcm_token');
 
                       if (fcmToken) {
                         // Notificamos al backend para que lo borre de sus registros
-                        await fetch('http://localhost:3001/api/fcm/fcm-token', {
+                        await fetch('/api/fcm/fcm-token', {
                           method: 'DELETE',
                           headers: {
                             'Content-Type': 'application/json',
@@ -488,6 +540,7 @@ export default function App() {
                   } finally {
                     localStorage.removeItem('aria_token');
                     localStorage.removeItem('aria_user');
+                    localStorage.removeItem('aria_fcm_token');
                     sessionStorage.removeItem('aria_token');
                     sessionStorage.removeItem('aria_user');
                     setIsLoggedIn(false);
@@ -499,11 +552,11 @@ export default function App() {
                   }
                 }}
                 disabled={isLoggingOut}
-                className="flex items-center space-x-1.5 px-3 py-1.5 bg-rose-50 border border-rose-100 font-bold hover:bg-rose-100 hover:border-rose-200 text-rose-700 rounded-full text-[11px] transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-0 sm:space-x-1.5 p-2 sm:px-3 sm:py-1.5 bg-rose-50 border border-rose-100 font-bold hover:bg-rose-100 hover:border-rose-200 text-rose-700 rounded-full text-[11px] transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Cerrar Sesión"
               >
                 <LogOut className="w-3.5 h-3.5 text-rose-600" />
-                <span className="hidden xs:inline">Cerrar Sesión</span>
+                <span className="hidden sm:inline">Cerrar Sesión</span>
               </button>
             </div>
           </header>
@@ -520,6 +573,7 @@ export default function App() {
               transition={{ duration: 0.15, ease: 'easeOut' }}
             >
                <Routes>
+                <Route path="/privacidad" element={<PrivacyScreen />} />
                 <Route path="/" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LandingScreen reports={reports} />} />
                 <Route path="/login" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LoginScreen setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} onShowVerification={handleShowVerification} />} />
                  <Route path="/verificar-correo/:token" element={<VerifyEmailScreen />}/>
@@ -556,11 +610,16 @@ export default function App() {
                     <CommunityScreen userProfile={userProfile} isLoggedIn={isLoggedIn} reports={reports} />
                   </PrivateRoute>
                 } />
-                <Route path="/editar-perfil" element={
-                  <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para modificar tu perfil.">
-                    <EditProfileScreen userProfile={userProfile} setUserProfile={setUserProfile} />
-                  </PrivateRoute>
-                } />
+                 <Route path="/editar-perfil" element={
+                   <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para modificar tu perfil.">
+                     <EditProfileScreen userProfile={userProfile} setUserProfile={setUserProfile} setIsLoggedIn={setIsLoggedIn} />
+                   </PrivateRoute>
+                 } />
+                 <Route path="/cambiar-password" element={
+                   <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para cambiar tu contraseña.">
+                     <ChangePasswordScreen />
+                   </PrivateRoute>
+                 } />
                 <Route path="/reporte/:id" element={
                   <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para poder explorar e inspeccionar el mapa de incidencias.">
                     <ReportDetailScreen reports={reports} onAddComment={handleAddComment} currentUser={userProfile} />

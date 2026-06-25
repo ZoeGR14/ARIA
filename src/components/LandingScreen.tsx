@@ -9,7 +9,7 @@ import { IncidentReport, Contributor } from '../types';
 import MapPlaceholder from './MapPlaceholder';
 import { getContributores } from '../services/rankingService';
 import { motion, AnimatePresence } from 'motion/react';
-import { ClipboardList, ShieldCheck, Users, Globe, Trash2, Droplets, Factory, ArrowRight, Award, Target, MapPinOff, X, MapPin } from 'lucide-react';
+import { ClipboardList, ShieldCheck, Users, Globe, Trash2, Droplets, Factory, ArrowRight, Award, Target, MapPinOff, X, MapPin, Camera, Eye } from 'lucide-react';
 
 interface LandingScreenProps {
   reports: IncidentReport[];
@@ -24,9 +24,9 @@ export default function LandingScreen({
   useEffect(() => {
     getContributores().then(setContributors);
   }, []);
-  
+
   // Estado para la ubicación
-  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
 
   // Modal de alerta de permisos de ubicación
   const [showLocationModal, setShowLocationModal] = useState(false);
@@ -68,13 +68,21 @@ export default function LandingScreen({
   const recentReports = reports.slice(0, 3);
 
   const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'Residuos': return <Trash2 className="w-4 h-4 text-[#DC2626]" />;
-      case 'Agua':
-      case 'Agua Contaminada': return <Droplets className="w-4 h-4 text-[#FAF23C] text-orange-500" />;
-      case 'Calidad del Aire': return <Factory className="w-4 h-4 text-[#2563EB]" />;
-      default: return <ClipboardList className="w-4 h-4" />;
+    const catLow = category.toLowerCase();
+    if (catLow.includes('basura') || catLow.includes('residuo')) {
+      return <Trash2 className="w-4 h-4 text-[#DC2626]" />;
     }
+    if (catLow.includes('agua')) {
+      return <Droplets className="w-4 h-4 text-sky-600" />;
+    }
+    if (catLow.includes('tala') || catLow.includes('verde')) {
+      return (
+        <svg className="w-4 h-4 fill-[#059669]" viewBox="0 0 24 24">
+          <path d="M12 2L4 18h6v4h4v-4h6L12 2z" />
+        </svg>
+      );
+    }
+    return <Factory className="w-4 h-4 text-[#2563EB]" />;
   };
 
   const getSeverityBadgeClass = (severity: string) => {
@@ -141,54 +149,62 @@ export default function LandingScreen({
               </h2>
               <span className="text-xs text-[#557B5E] font-mono">En vivo</span>
             </div>
-            
-            <MapPlaceholder reports={reports} onSelectReportId={(id) => navigate('/reporte/' + id)} />
+
+            <MapPlaceholder reports={reports} />
           </div>
         </div>
       </section>
 
-      {/* Grid count ticker details */}
+      {/* Grid: Ciclo de Acción de Terranova Tech */}
       <section className="bg-white py-8 border-b border-[#E1ECE3] px-4 md:px-8">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="flex items-center space-x-3.5 border-r border-[#E1ECE3] last:border-none p-2 align-middle">
-            <div className="w-10 h-10 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
-              <ClipboardList className="w-5 h-5" />
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          {/* Paso 1 */}
+          <div className="flex items-center space-x-3.5 lg:border-r border-[#E1ECE3] lg:last:border-none p-2 align-middle">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
+              <Camera className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xl md:text-2xl font-extrabold text-[#143B20] leading-dense">2,458</p>
-              <p className="text-xs text-[#557B5E] font-medium">Reportes activos</p>
+              <p className="text-lg font-extrabold text-[#143B20] leading-dense">1. Documenta</p>
+              <p className="text-xs text-[#557B5E] font-medium mt-0.5">Evidencia fotográfica</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3.5 border-r border-[#E1ECE3] last:border-none p-2 align-middle">
-            <div className="w-10 h-10 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
+
+          {/* Paso 2 */}
+          <div className="flex items-center space-x-3.5 lg:border-r border-[#E1ECE3] lg:last:border-none p-2 align-middle">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-lg font-extrabold text-[#143B20] leading-dense">2. Localiza</p>
+              <p className="text-xs text-[#557B5E] font-medium mt-0.5">Coordenadas en el mapa</p>
+            </div>
+          </div>
+
+          {/* Paso 3 */}
+          <div className="flex items-center space-x-3.5 lg:border-r border-[#E1ECE3] lg:last:border-none p-2 align-middle">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
+              <Eye className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-lg font-extrabold text-[#143B20] leading-dense">3. Visibiliza</p>
+              <p className="text-xs text-[#557B5E] font-medium mt-0.5">Datos transparentes</p>
+            </div>
+          </div>
+
+          {/* Paso 4 */}
+          <div className="flex items-center space-x-3.5 lg:last:border-none p-2 align-middle">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xl md:text-2xl font-extrabold text-[#143B20] leading-dense">1,289</p>
-              <p className="text-xs text-[#557B5E] font-medium">Problemas resueltos</p>
+              <p className="text-lg font-extrabold text-[#143B20] leading-dense">4. Actúa</p>
+              <p className="text-xs text-[#557B5E] font-medium mt-0.5">Acción con autoridades</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3.5 border-r border-[#E1ECE3] last:border-none p-2 align-middle">
-            <div className="w-10 h-10 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xl md:text-2xl font-extrabold text-[#143B20] leading-dense">3,671</p>
-              <p className="text-xs text-[#557B5E] font-medium">Usuarios activos</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3.5 last:border-none p-2 align-middle">
-            <div className="w-10 h-10 rounded-xl bg-[#EBF7EE] border border-[#CBDCD0] flex items-center justify-center text-[#1E8344]">
-              <Globe className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xl md:text-2xl font-extrabold text-[#143B20] leading-dense">145</p>
-              <p className="text-xs text-[#557B5E] font-medium">Colonias monitoreadas</p>
-            </div>
-          </div>
+
         </div>
       </section>
-
       {/* Split Details Section */}
       <section className="px-4 py-12 md:px-8 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8">
         <div className="md:col-span-7 space-y-6">
@@ -204,22 +220,28 @@ export default function LandingScreen({
           </div>
           <div className="bg-white rounded-2xl border border-[#E1ECE3] shadow-sm divide-y divide-[#E1ECE3] overflow-hidden">
             {recentReports.map((report) => (
-              <div 
+              <div
                 key={report.id}
                 onClick={() => navigate('/reporte/' + report.id)}
-                className="p-5 flex items-start space-x-4 hover:bg-[#FAFDFC] transition-all cursor-pointer group"
+                className="p-4 sm:p-5 flex items-start space-x-3 sm:space-x-4 hover:bg-[#FAFDFC] transition-all cursor-pointer group"
               >
-                <img 
-                  src={report.imageUrl} 
-                  alt={report.title} 
-                  className="w-16 h-16 object-cover rounded-xl border border-[#C5DDCB] flex-shrink-0"
+                <img
+                  src={report.imageUrl}
+                  alt={report.title}
+                  className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-xl border border-[#C5DDCB] flex-shrink-0"
                   referrerPolicy="no-referrer"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    {getCategoryIcon(report.category)}
-                    <span className="text-[11px] font-bold text-[#557C5E] uppercase bg-[#F0F6F1] px-2 py-0.5 rounded-full tracking-wider">
-                      {report.category}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {getCategoryIcon(report.category)}
+                      <span className="text-[11px] font-bold text-[#557C5E] uppercase bg-[#F0F6F1] px-2 py-0.5 rounded-full tracking-wider">
+                        {report.category}
+                      </span>
+                    </div>
+                    {/* Inline severity badge for mobile devices */}
+                    <span className={`sm:hidden text-[9px] font-bold px-2 py-0.5 border rounded-full uppercase tracking-tight ${getSeverityBadgeClass(report.severity)}`}>
+                      {report.severity.replace(' Severidad', '')}
                     </span>
                     <span className="text-xs text-slate-400 font-medium">• {report.timeAgo}</span>
                   </div>
@@ -228,7 +250,8 @@ export default function LandingScreen({
                   </h4>
                   <p className="text-xs text-[#557B5E] mt-0.5 font-medium">📍 {report.location}</p>
                 </div>
-                <span className={`text-[10px] font-bold px-2.5 py-1 border rounded-full uppercase tracking-tight ${getSeverityBadgeClass(report.severity)}`}>
+                {/* Desktop-only right side severity badge */}
+                <span className={`hidden sm:inline-block text-[10px] font-bold px-2.5 py-1 border rounded-full uppercase tracking-tight ${getSeverityBadgeClass(report.severity)}`}>
                   {report.severity.replace(' Severidad', '')}
                 </span>
               </div>
@@ -250,19 +273,18 @@ export default function LandingScreen({
           </div>
           <div className="bg-white rounded-2xl border border-[#E1ECE3] shadow-sm p-6 space-y-4">
             {contributors.map((contrib, index) => (
-              <div 
+              <div
                 key={contrib.id}
                 className="flex items-center justify-between border-b border-[#F0F6F1] last:border-none pb-4 last:pb-0"
               >
                 <div className="flex items-center space-x-3">
-                  <span className={`text-base font-black italic w-6 text-center ${
-                    index === 0 ? 'text-[#C49B2F]' : index === 1 ? 'text-[#778B8D]' : 'text-[#A07044]'
-                  }`}>
+                  <span className={`text-base font-black italic w-6 text-center ${index === 0 ? 'text-[#C49B2F]' : index === 1 ? 'text-[#778B8D]' : 'text-[#A07044]'
+                    }`}>
                     {index + 1}
                   </span>
-                  <img 
-                    src={contrib.avatar} 
-                    alt={contrib.name} 
+                  <img
+                    src={contrib.avatar}
+                    alt={contrib.name}
                     className="w-10 h-10 rounded-full object-cover border border-[#C5DDCB]"
                     referrerPolicy="no-referrer"
                   />
@@ -272,7 +294,7 @@ export default function LandingScreen({
                       {contrib.verified && (
                         <span className="text-[#1E8344]" title="Usuario verificado">
                           <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                           </svg>
                         </span>
                       )}
@@ -305,7 +327,7 @@ export default function LandingScreen({
               className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-[#CDE1D1]"
             >
               <div className="bg-gradient-to-tr from-[#E1ECE3] to-[#F3FAF4] p-6 text-center border-b border-[#CDE1D1] relative">
-                <button 
+                <button
                   onClick={() => setShowLocationModal(false)}
                   className="absolute top-4 right-4 p-1 rounded-full text-[#557B5E] hover:bg-white hover:text-[#143B20] transition-colors cursor-pointer"
                 >

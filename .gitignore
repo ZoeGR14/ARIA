@@ -17,6 +17,8 @@ coverage/
 .env.development.local
 .env.test.local
 .env.production.local
+backend/firebase-adminsdk.json
+*firebase-adminsdk*.json
 
 # Debug Logs
 *.log

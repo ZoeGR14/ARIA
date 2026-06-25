@@ -22,20 +22,18 @@ export default function ExploreReportsScreen({
   const [currentPageNum, setCurrentPageNum] = useState<number>(1);
 
   // Filter dropdown selections
-  const statuses = ['Todos', 'Abierto', 'En progreso', 'Resuelto', 'Validando'];
-  const categories = ['Todas', 'Residuos', 'Agua', 'Calidad del Aire'];
+  const statuses = ['Todos', 'Recibido', 'En Revisión', 'Atendido', 'Descartado'];
+  const categories = ['Todas', 'Acumulación de Basura', 'Fuga de Agua', 'Tala Ilegal / Áreas Verdes', 'Contaminación del Aire'];
 
   const filteredReports = useMemo(() => {
     return reports.filter((report) => {
       // Status filter matching
       const statusMatch = selectedStatus === 'Todos' || 
-        report.status.toLowerCase() === selectedStatus.toLowerCase() ||
-        (selectedStatus === 'En progreso' && report.status === 'En Progreso');
+        report.status.toLowerCase() === selectedStatus.toLowerCase();
       
       // Category filter matching
       const categoryMatch = selectedCategory === 'Todas' || 
-        report.category.toLowerCase().includes(selectedCategory.toLowerCase()) ||
-        (selectedCategory === 'Agua' && report.category.toLowerCase().includes('agua'));
+        report.category.toLowerCase() === selectedCategory.toLowerCase();
 
       // Search match
       const queryMatch = !searchQuery.trim() ||
@@ -65,21 +63,20 @@ export default function ExploreReportsScreen({
 
   const getStatusBadgeClass = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'abierto':
-        return 'bg-red-100 text-red-700 border-red-200';
-      case 'en progreso':
-        return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'resuelto':
+      case 'atendido':
         return 'bg-emerald-100 text-emerald-700 border-[#98D4A4]';
-      case 'validando':
-        return 'bg-sky-100 text-sky-700 border-sky-200';
+      case 'en revisión':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'descartado':
+        return 'bg-rose-100 text-rose-700 border-rose-200';
+      case 'recibido':
       default:
         return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
 
   const getSeverityBadgeClass = (severity: string) => {
-    if (severity.toLowerCase().includes('alta')) {
+    if (severity.toLowerCase().includes('critica') || severity.toLowerCase().includes('alta')) {
       return 'bg-slate-900/80 text-white';
     }
     if (severity.toLowerCase().includes('media')) {
@@ -89,11 +86,19 @@ export default function ExploreReportsScreen({
   };
 
   const getCategoryIcon = (category: string) => {
-    if (category.toLowerCase().includes('residuo')) {
+    const catLow = category.toLowerCase();
+    if (catLow.includes('basura') || catLow.includes('residuo')) {
       return <Trash2 className="w-4 h-4 text-[#C2410C]" />;
     }
-    if (category.toLowerCase().includes('agua')) {
+    if (catLow.includes('agua')) {
       return <Droplets className="w-4 h-4 text-sky-600" />;
+    }
+    if (catLow.includes('tala') || catLow.includes('verde')) {
+      return (
+        <svg className="w-4 h-4 fill-[#059669]" viewBox="0 0 24 24">
+          <path d="M12 2L4 18h6v4h4v-4h6L12 2z" />
+        </svg>
+      );
     }
     return <Wind className="w-4 h-4 text-[#0F766E]" />;
   };
@@ -250,7 +255,7 @@ export default function ExploreReportsScreen({
                     </button>
                     
                     <span className="text-[10px] text-slate-400 font-mono">
-                      #{report.id.split('-').pop()}
+                      #{String(report.id).split('-').pop()}
                     </span>
                   </div>
                 </div>

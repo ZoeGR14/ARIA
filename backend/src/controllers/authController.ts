@@ -87,13 +87,18 @@ export const register = async (
         });
 
         try {
-            const url = "http://localhost:3000/verificar-correo/"+token;
+            const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+            const url = `${frontendUrl}/verificar-correo/${token}`;
             const html = verificationEmailTemplate(
                 usuario.nombre_completo,
                 url
             );
             await transporter.sendMail({
 
+                from: {
+                    address: "aria@luminar.top",
+                    name: "ARIA"
+                },
                 to: usuario.correo_electronico,
 
                 subject: "Verifica tu cuenta en ARIA",
@@ -231,7 +236,9 @@ export const login = async (
 
                 nivel_ranking: usuario.nivel_ranking,
 
-                rol
+                rol,
+
+                avatar_url: usuario.avatar_url
 
             }
 
@@ -263,7 +270,7 @@ export const verificarCorreo = async (
 
             where: {
 
-                token,
+                token: token as string,
 
                 tipo: "VERIFICACION_CORREO"
 
@@ -398,13 +405,17 @@ export const solicitarRecuperacion = async (
     });
 
     try {
-        const url = "http://localhost:3000/reset-password?token="+token;
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        const url = `${frontendUrl}/reset-password?token=${token}`;
         const html = recoverEmailTemplate(
             usuario.nombre_completo,
             url
         );
         await transporter.sendMail({
-
+            from: {
+                address: "aria@luminar.top",
+                name: "ARIA"
+            },
             to: usuario.correo_electronico,
 
             subject: "Recupera tu contraseña",
@@ -521,5 +532,257 @@ export const restablecerPassword = async (
             "Contraseña actualizada correctamente"
 
     });
+
+};
+
+export const actualizarPerfil = async (
+
+    req: Request,
+
+    res: Response
+
+): Promise<void> => {
+
+    try {
+
+        const usuarioId =
+
+            req.user?.id;
+
+        const {
+
+            nombreCompleto
+
+        } = req.body;
+
+        if (!usuarioId) {
+
+            res.status(401).json({
+
+                mensaje:
+                    "No autorizado"
+
+            });
+
+            return;
+
+        }
+
+        let avatarUrl:
+            string | undefined;
+
+        if (req.file) {
+
+            avatarUrl =
+                `${req.protocol}://${req.get(
+                    "host"
+                )}/uploads/avatars/${
+                    req.file.filename
+                }`;
+
+        }
+
+        const usuario =
+            await prisma.usuario.update({
+
+                where: {
+
+                    id: usuarioId
+
+                },
+
+                data: {
+
+                    nombre_completo:
+                    nombreCompleto,
+
+                    ...(avatarUrl && {
+
+                        avatar_url:
+                        avatarUrl
+
+                    })
+
+                }
+
+            });
+
+        res.json({
+
+            mensaje:
+                "Perfil actualizado",
+
+            usuario
+
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+
+            mensaje:
+                "Error interno"
+
+        });
+
+    }
+
+};
+
+export const cambiarPassword = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+
+    try {
+
+        const usuarioId = req.user?.id;
+
+        const {
+            passwordActual,
+            passwordNueva
+        } = req.body;
+
+        const usuario =
+            await prisma.usuario.findUnique({
+
+                where: {
+                    id: usuarioId
+                }
+
+            });
+
+        if (!usuario) {
+
+            res.status(404).json({
+                mensaje: "Usuario no encontrado"
+            });
+
+            return;
+
+        }
+
+        const valida = await bcrypt.compare(
+
+            passwordActual,
+
+            usuario.contrasena_hash
+
+        );
+
+        if (!valida) {
+
+            res.status(400).json({
+
+                mensaje:
+                    "La contraseña actual es incorrecta"
+
+            });
+
+            return;
+
+        }
+
+        const hash = await bcrypt.hash(
+            passwordNueva,
+            10
+        );
+
+        await prisma.usuario.update({
+
+            where: {
+                id: usuarioId
+            },
+
+            data: {
+                contrasena_hash: hash
+            }
+
+        });
+
+        res.json({
+
+            mensaje:
+                "Contraseña actualizada correctamente"
+
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+
+            mensaje:
+                "Error al cambiar contraseña"
+
+        });
+
+    }
+
+};
+
+export const eliminarUsuario = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+
+    try {
+
+        const usuarioId = Number(
+            req.params.id
+        );
+
+        const usuario =
+            await prisma.usuario.findUnique({
+
+                where: {
+                    id: usuarioId
+                }
+
+            });
+
+        if (!usuario) {
+
+            res.status(404).json({
+
+                mensaje:
+                    "Usuario no encontrado"
+
+            });
+
+            return;
+
+        }
+
+        await prisma.usuario.delete({
+
+            where: {
+                id: usuarioId
+            }
+
+        });
+
+        res.json({
+
+            mensaje:
+                "Usuario eliminado correctamente"
+
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+
+            mensaje:
+                "Error al eliminar usuario"
+
+        });
+
+    }
 
 };

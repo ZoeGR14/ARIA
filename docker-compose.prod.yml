@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgis/postgis:15-3.4-alpine
+    container_name: aria_postgres_prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./database:/docker-entrypoint-initdb.d
+    # Nota de seguridad: El puerto 5432 no se expone al host para evitar accesos externos a la DB.
+    # Los contenedores 'backend' y 'web' pueden comunicarse con ella internamente.
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: aria_backend_prod
+    restart: always
+    ports:
+      # Expone el puerto 3000 interno del contenedor al puerto 3001 de la VPS
+      - "3001:3000"
+    env_file:
+      - ./backend/.env
+    volumes:
+      # Persistencia de los archivos de evidencias subidos
+      - ./backend/uploads:/app/uploads
+      # Montaje de la cuenta de servicio de Firebase para rotaciones rápidas sin recompilar la imagen
+      - ./backend/firebase-adminsdk.json:/app/firebase-adminsdk.json
+    depends_on:
+      - db
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: aria_app_prod
+    restart: always
+    ports:
+      # Expone el puerto 80 interno del contenedor (Nginx) al puerto 3000 de la VPS
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data_prod:

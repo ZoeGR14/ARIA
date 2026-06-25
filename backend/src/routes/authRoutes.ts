@@ -6,9 +6,30 @@ import {
     login,
     verificarCorreo,
     solicitarRecuperacion,
-    restablecerPassword
+    restablecerPassword,
+    actualizarPerfil,
+    cambiarPassword,
+    eliminarUsuario
 
 } from "../controllers/authController";
+
+import {
+
+    authMiddleware
+
+} from "../middleware/authMiddleware";
+
+import {
+
+    adminMiddleware
+
+} from "../middleware/adminMiddleware";
+
+import {
+
+    uploadAvatar
+
+} from "../config/multer";
 
 const router = Router();
 
@@ -29,5 +50,27 @@ router.post(
 router.post(
     "/restablecer-password",
     restablecerPassword
+);
+
+router.put(
+    "/perfil",
+    authMiddleware,
+    uploadAvatar.single(
+        "avatar"
+    ),
+    actualizarPerfil
+);
+
+router.put(
+    "/password",
+    authMiddleware,
+    cambiarPassword
+);
+
+router.delete(
+    "/:id",
+    authMiddleware,
+    adminMiddleware,
+    eliminarUsuario
 );
 export default router;
