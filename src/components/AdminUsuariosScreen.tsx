@@ -21,7 +21,7 @@ export default function AdminUsuariosScreen({ userProfile }: AdminUsuariosScreen
         const fetchUsuarios = async () => {
             try {
                 const token = localStorage.getItem('aria_token') || sessionStorage.getItem('aria_token');
-                const apiUrl = import.meta.env.VITE_API_URL;
+                const apiUrl = import.meta.env.VITE_API_URL || '/api';
 
                 // NOTA: Asegúrate de tener este endpoint creado en tu backend
                 const response = await fetch(`${apiUrl}/auth/usuarios`, {

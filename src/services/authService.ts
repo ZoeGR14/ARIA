@@ -1,5 +1,9 @@
+function getApiUrl(): string {
+  return import.meta.env.VITE_API_URL || '/api';
+}
+
 export async function eliminarUsuario(id: string, token: string) {
-    const apiUrl = import.meta.env.VITE_API_URL;
+    const apiUrl = getApiUrl();
 
     const response = await fetch(`${apiUrl}/auth/${id}`, {
         method: 'DELETE',
