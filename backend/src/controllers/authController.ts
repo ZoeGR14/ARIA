@@ -568,18 +568,10 @@ export const actualizarPerfil = async (
 
         }
 
-        let avatarUrl:
-            string | undefined;
+        let avatarUrl: string | undefined;
 
         if (req.file) {
-
-            avatarUrl =
-                `${req.protocol}://${req.get(
-                    "host"
-                )}/uploads/avatars/${
-                    req.file.filename
-                }`;
-
+            avatarUrl = `/uploads/avatars/${req.file.filename}`;
         }
 
         const usuario =

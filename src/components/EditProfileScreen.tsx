@@ -27,8 +27,6 @@ export default function EditProfileScreen({
                                           }: EditProfileScreenProps) {
   const navigate = useNavigate();
   const [name, setName] = useState(userProfile.name);
-  const [role, setRole] = useState(userProfile.role);
-  const [level, setLevel] = useState(userProfile.level);
   const [avatar, setAvatar] = useState(userProfile.avatar);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showSavedMsg, setShowSavedMsg] = useState(false);
@@ -217,7 +215,7 @@ export default function EditProfileScreen({
                   </label>
                   <div className="flex items-center space-x-2 mt-2 text-[#143B20]">
                     <Briefcase className="w-4 h-4 text-[#1E8344]" />
-                    <span className="text-sm font-extrabold">{role}</span>
+                    <span className="text-sm font-extrabold">{userProfile.role}</span>
                   </div>
                   <p className="text-[10px] text-[#557B5E] font-medium mt-1 leading-tight">
                     Este es tu cargo asignado dinámicamente de acuerdo al número de intervenciones.
@@ -234,7 +232,7 @@ export default function EditProfileScreen({
                   </label>
                   <div className="flex items-center space-x-2 mt-2 text-[#143B20]">
                     <Shield className="w-4 h-4 text-[#1E8344]" />
-                    <span className="text-sm font-extrabold">{level}</span>
+                    <span className="text-sm font-extrabold">{userProfile.level}</span>
                   </div>
                   <p className="text-[10px] text-[#557B5E] font-medium mt-1 leading-tight">
                     Este rango valida la veracidad de tus testimonios en base a tus reportes aprobados.

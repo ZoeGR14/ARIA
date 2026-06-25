@@ -837,7 +837,7 @@ export default function MapPlaceholder({
       </div>
 
       {/* Dynamic Quick Badges to Toggle layers */}
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="absolute top-4 right-4 z-20 flex flex-wrap items-center gap-1.5">
         {/* Layer Street Map Toggle Button */}
         <button
           type="button"
