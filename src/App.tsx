@@ -25,6 +25,7 @@ import ExplorarMapaScreen from './components/ExplorarMapaScreen';
 import EditProfileScreen from './components/EditProfileScreen';
 import CommunityScreen from './components/CommunityScreen';
 import ChangePasswordScreen from './components/EditPassword';
+import AdminUsuariosScreen from './components/AdminUsuariosScreen';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, Bell, Inbox, Check, Sparkles, Mail, Loader2 } from 'lucide-react';
 import PrivacyScreen from './components/PrivacyScreen';
@@ -592,9 +593,14 @@ export default function App() {
                 } />
                 <Route path="/reportes" element={
                   <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para poder explorar e inspeccionar el mapa de incidencias.">
-                    <ExploreReportsScreen reports={reports} />
+                    <ExploreReportsScreen reports={reports} userProfile={userProfile}/>
                   </PrivateRoute>
                 } />
+                 <Route path="/gestionar-usuarios" element={
+                   <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para administrar usuarios.">
+                     <AdminUsuariosScreen userProfile={userProfile} />
+                   </PrivateRoute>
+                 } />
                 <Route path="/mis-reportes" element={
                   <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para ver tus reportes.">
                     <MyReportsScreen reports={reports} userProfile={userProfile} />
@@ -602,7 +608,7 @@ export default function App() {
                 } />
                 <Route path="/explorar-mapa" element={
                   <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para poder explorar e inspeccionar el mapa de incidencias.">
-                    <ExplorarMapaScreen reports={reports} onReportLocation={handleReportAtLocation} />
+                    <ExplorarMapaScreen reports={reports} onReportLocation={handleReportAtLocation} userProfile={userProfile} />
                   </PrivateRoute>
                 } />
                 <Route path="/comunidad" element={

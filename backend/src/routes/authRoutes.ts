@@ -9,7 +9,8 @@ import {
     restablecerPassword,
     actualizarPerfil,
     cambiarPassword,
-    eliminarUsuario
+    eliminarUsuario,
+    obtenerUsuarios
 
 } from "../controllers/authController";
 
@@ -65,6 +66,13 @@ router.put(
     "/password",
     authMiddleware,
     cambiarPassword
+);
+
+router.get(
+    "/usuarios",
+    authMiddleware,
+    adminMiddleware,
+    obtenerUsuarios
 );
 
 router.delete(

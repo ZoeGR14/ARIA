@@ -27,7 +27,6 @@ export async function getContributores(): Promise<Contributor[]> {
       throw new Error(`HTTP ${response.status}`);
     }
     const data = await response.json();
-    console.log(data);
     return data.map(adaptarContribuidor);
   } catch {
     return INITIAL_CONTRIBUTORS;

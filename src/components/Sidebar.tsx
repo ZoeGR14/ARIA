@@ -6,8 +6,8 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Home, Map, ClipboardList, Award, Info, LayoutDashboard, PlusCircle,
-  LogOut, LogIn, Menu, X, User, ChevronRight, FileText, UserCog
+    Home, Map, ClipboardList, Award, Info, LayoutDashboard, PlusCircle,
+    LogOut, LogIn, Menu, X, User, ChevronRight, FileText, UserCog, Users
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -22,29 +22,38 @@ interface SidebarProps {
 }
 
 export default function Sidebar({
-  isLoggedIn,
-  setIsLoggedIn,
-  userProfile,
-}: SidebarProps) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [mobileOpen, setMobileOpen] = useState(false);
+                                    isLoggedIn,
+                                    setIsLoggedIn,
+                                    userProfile,
+                                }: SidebarProps) {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [mobileOpen, setMobileOpen] = useState(false);
 
-  const menuItems = isLoggedIn
-    ? [
-        { id: 'dashboard', label: 'Inicio', icon: <Home className="w-5 h-5" /> },
-        { id: 'mis-reportes', label: 'Mis Reportes', icon: <FileText className="w-5 h-5" /> },
-        { id: 'reportes', label: 'Explorar Reportes', icon: <ClipboardList className="w-5 h-5 font-bold" /> },
-        { id: 'explorar-mapa', label: 'Explorar Mapa', icon: <Map className="w-5 h-5" /> },
-        { id: 'comunidad', label: 'Comunidad / Líderes', icon: <Award className="w-5 h-5" /> },
-        { id: 'editar-perfil', label: 'Modificar Perfil', icon: <UserCog className="w-5 h-5" /> },
-      ]
-    : [
-        { id: 'inicio', label: 'Inicio', icon: <Home className="w-5 h-5" /> },
-        { id: 'reportes', label: 'Explorar Reportes', icon: <ClipboardList className="w-5 h-5" /> },
-        { id: 'comunidad', label: 'Comunidad / Líderes', icon: <Award className="w-5 h-5" /> },
-        { id: 'acerca-de', label: 'Acerca de', icon: <Info className="w-5 h-5" /> },
-      ];
+    // Verificamos si es administrador
+    const isAdmin = userProfile?.role === 'Administrador';
+
+    // Inyectamos opciones de admin condicionalmente
+    const adminItems = isAdmin ? [
+        { id: 'gestionar-usuarios', label: 'Gestionar Usuarios', icon: <Users className="w-5 h-5 text-rose-600" /> }
+    ] : [];
+
+    const menuItems = isLoggedIn
+        ? [
+            { id: 'dashboard', label: 'Inicio', icon: <Home className="w-5 h-5" /> },
+            { id: 'mis-reportes', label: 'Mis Reportes', icon: <FileText className="w-5 h-5" /> },
+            { id: 'reportes', label: 'Explorar Reportes', icon: <ClipboardList className="w-5 h-5 font-bold" /> },
+            { id: 'explorar-mapa', label: 'Explorar Mapa', icon: <Map className="w-5 h-5" /> },
+            { id: 'comunidad', label: 'Comunidad / Líderes', icon: <Award className="w-5 h-5" /> },
+            ...adminItems, // <-- Agregamos las opciones de administrador aquí
+            { id: 'editar-perfil', label: 'Modificar Perfil', icon: <UserCog className="w-5 h-5" /> },
+        ]
+        : [
+            { id: 'inicio', label: 'Inicio', icon: <Home className="w-5 h-5" /> },
+            { id: 'reportes', label: 'Explorar Reportes', icon: <ClipboardList className="w-5 h-5" /> },
+            { id: 'comunidad', label: 'Comunidad / Líderes', icon: <Award className="w-5 h-5" /> },
+            { id: 'acerca-de', label: 'Acerca de', icon: <Info className="w-5 h-5" /> },
+        ];
 
   const handleNav = (id: string) => {
     if (id === 'inicio') {

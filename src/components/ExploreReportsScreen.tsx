@@ -10,10 +10,13 @@ import { Trash2, Droplets, Wind, Search, MapPin, Calendar, Filter, ChevronLeft, 
 
 interface ExploreReportsScreenProps {
   reports: IncidentReport[];
+  userProfile?: {
+    role: string;
+  };
 }
 
 export default function ExploreReportsScreen({
-  reports,
+  reports, userProfile,
 }: ExploreReportsScreenProps) {
   const navigate = useNavigate();
   const [selectedStatus, setSelectedStatus] = useState<string>('Todos');
@@ -24,9 +27,14 @@ export default function ExploreReportsScreen({
   // Filter dropdown selections
   const statuses = ['Todos', 'Recibido', 'En Revisión', 'Atendido', 'Descartado'];
   const categories = ['Todas', 'Acumulación de Basura', 'Fuga de Agua', 'Tala Ilegal / Áreas Verdes', 'Contaminación del Aire'];
+  const isAdmin = userProfile?.role === 'Administrador';
 
   const filteredReports = useMemo(() => {
     return reports.filter((report) => {
+      if (!isAdmin && report.estado_puntos === 'Pendiente') {
+        return false;
+      }
+
       // Status filter matching
       const statusMatch = selectedStatus === 'Todos' || 
         report.status.toLowerCase() === selectedStatus.toLowerCase();

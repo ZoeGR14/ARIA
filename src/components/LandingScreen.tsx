@@ -24,7 +24,7 @@ export default function LandingScreen({
   useEffect(() => {
     getContributores().then(setContributors);
   }, []);
-
+  const publicReports = reports.filter(r => r.estado_puntos !== 'Pendiente' && r.estado_puntos !== 'Rechazado');
   // Estado para la ubicación
   const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
 
@@ -65,7 +65,7 @@ export default function LandingScreen({
   };
 
   // Recent reports for the landing page grid
-  const recentReports = reports.slice(0, 3);
+  const recentReports = publicReports.slice(0, 3);
 
   const getCategoryIcon = (category: string) => {
     const catLow = category.toLowerCase();
@@ -150,7 +150,7 @@ export default function LandingScreen({
               <span className="text-xs text-[#557B5E] font-mono">En vivo</span>
             </div>
 
-            <MapPlaceholder reports={reports} />
+            <MapPlaceholder reports={publicReports} />
           </div>
         </div>
       </section>
