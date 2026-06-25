@@ -172,7 +172,7 @@ export const crearReporte = async (req: Request, res: Response): Promise<void> =
         }
 
         const severidadDb = ["Baja", "Media", "Alta", "Critica"].includes(severidad) ? severidad : "Baja";
-        const photoUrl = file ? `${req.protocol}://${req.get("host")}/uploads/${file.filename}` : null;
+        const photoUrl = file ? `/uploads/${file.filename}` : null;
 
         // Mapeo dinámico de categoría a ID
         let finalCategoriaId = 1;

@@ -35,6 +35,18 @@ function adaptarReporte(raw: any): IncidentReport {
   const lngStr = raw.longitude ? Number(raw.longitude).toFixed(4) : '';
   const locationStr = (latStr && lngStr) ? `${latStr}, ${lngStr}` : '';
 
+  let imageUrl = raw.url_evidencia_foto ?? '';
+  if (imageUrl.includes('/uploads/')) {
+    imageUrl = '/uploads/' + imageUrl.split('/uploads/').slice(1).join('/uploads/');
+    imageUrl = imageUrl.replace(/\/+/g, '/');
+  }
+
+  let avatarUrl = raw.usuario?.avatar_url;
+  if (avatarUrl && avatarUrl.includes('/uploads/')) {
+    avatarUrl = '/uploads/' + avatarUrl.split('/uploads/').slice(1).join('/uploads/');
+    avatarUrl = avatarUrl.replace(/\/+/g, '/');
+  }
+
   return {
     id: String(raw.id),
     title: `${category} - ${fechaFormateada}`,
@@ -47,11 +59,11 @@ function adaptarReporte(raw: any): IncidentReport {
     date: raw.fecha_creacion,
     timeAgo: raw.fecha_creacion ? calcularTimeAgo(raw.fecha_creacion) : '',
     views: 0, // Retained for compatibility but will be removed from UI
-    imageUrl: raw.url_evidencia_foto ?? '',
+    imageUrl: imageUrl,
     authorName: raw.usuario?.nombre_completo ?? 'Usuario',
-    authorAvatar: raw.usuario?.avatar_url === ''
+    authorAvatar: (!avatarUrl || avatarUrl === '')
       ? "https://tse4.mm.bing.net/th/id/OIP.dDKYQqVBsG1tIt2uJzEJHwHaHa?cb=thfc1falcon2&rs=1&pid=ImgDetMain&o=7&rm=3"
-      : raw.usuario?.avatar_url,
+      : avatarUrl,
     authorRole: raw.usuario?.rol || 'Ciudadano',
     authorLevel: raw.usuario?.nivel_ranking || 'Novato',
     latitude: raw.latitude,

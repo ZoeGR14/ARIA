@@ -29,12 +29,14 @@ interface DashboardScreenProps {
     contributionsCount: number;
   };
   setIsLoggedIn: (login: boolean) => void;
+  setUserProfile?: any;
 }
 
 export default function DashboardScreen({
   reports,
   userProfile,
   setIsLoggedIn,
+  setUserProfile,
 }: DashboardScreenProps) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'panel' | 'mapa' | 'reportes' | 'colab' | 'config'>('panel');
@@ -60,8 +62,18 @@ export default function DashboardScreen({
         
         if (res.ok) {
           const data = await res.json();
-          if (isAdmin) setAdminStats(data);
-          else setUserStats(data);
+          if (isAdmin) {
+            setAdminStats(data);
+          } else {
+            setUserStats(data);
+            if (setUserProfile && data.nivelRanking) {
+              setUserProfile((prev: any) => ({
+                ...prev,
+                level: data.nivelRanking,
+                impactScore: data.puntosTotales || prev.impactScore
+              }));
+            }
+          }
         }
       } catch (err) {
         console.error("Error fetching stats:", err);
@@ -193,23 +205,78 @@ export default function DashboardScreen({
           {/* Trend Chart */}
           <div className="bg-white rounded-3xl border border-[#DDE7DE] p-6 md:col-span-8 shadow-sm">
             <h3 className="text-sm font-bold text-[#143B20] mb-6 uppercase tracking-wider">Tendencia de Reportes (30 días)</h3>
-            <div className="relative w-full h-48 border-b border-l border-[#E1ECE3]">
-              <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 100">
-                {/* Grid lines */}
-                <line x1="0" y1="25" x2="100" y2="25" stroke="#F0F6F1" strokeWidth="0.5" />
-                <line x1="0" y1="50" x2="100" y2="50" stroke="#F0F6F1" strokeWidth="0.5" />
-                <line x1="0" y1="75" x2="100" y2="75" stroke="#F0F6F1" strokeWidth="0.5" />
-                {/* Data Path */}
-                <path d={trendPath} fill="none" stroke="#1E8344" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                {/* Area under path */}
-                <path d={`${trendPath} L 100,100 L 0,100 Z`} fill="url(#trendGradient)" opacity="0.3" />
-                <defs>
-                  <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#1E8344" />
-                    <stop offset="100%" stopColor="transparent" />
-                  </linearGradient>
-                </defs>
-              </svg>
+            
+            <div className="relative w-full h-56 flex items-stretch">
+              {/* Y-axis Labels */}
+              <div className="flex flex-col justify-between items-end pr-3 pb-8 text-[10px] font-bold text-slate-400 w-10 border-r border-[#E1ECE3]">
+                <span>{maxVal}</span>
+                <span>{Math.round(maxVal * 0.75)}</span>
+                <span>{Math.round(maxVal * 0.5)}</span>
+                <span>{Math.round(maxVal * 0.25)}</span>
+                <span>0</span>
+              </div>
+              
+              {/* Chart Area */}
+              <div className="relative flex-1 ml-3 pb-8">
+                {/* SVG Chart */}
+                <svg className="absolute inset-0 w-full h-[calc(100%-2rem)] overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 100">
+                  {/* Grid lines */}
+                  <line x1="0" y1="25" x2="100" y2="25" stroke="#F0F6F1" strokeWidth="0.5" />
+                  <line x1="0" y1="50" x2="100" y2="50" stroke="#F0F6F1" strokeWidth="0.5" />
+                  <line x1="0" y1="75" x2="100" y2="75" stroke="#F0F6F1" strokeWidth="0.5" />
+                  {/* Data Path */}
+                  <path d={trendPath} fill="none" stroke="#1E8344" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-sm" />
+                  {/* Area under path */}
+                  <path d={`${trendPath} L 100,100 L 0,100 Z`} fill="url(#trendGradient)" opacity="0.3" />
+                  <defs>
+                    <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#1E8344" />
+                      <stop offset="100%" stopColor="transparent" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+
+                {/* X-axis Labels */}
+                <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[9px] font-bold text-slate-400 pt-2 border-t border-[#E1ECE3]">
+                  <span>{trendKeys[0]?.substring(5)}</span>
+                  <span>{trendKeys[Math.floor(trendKeys.length / 2)]?.substring(5)}</span>
+                  <span>{trendKeys[trendKeys.length - 1]?.substring(5)}</span>
+                </div>
+
+                {/* Interactive Points Layer */}
+                <div className="absolute inset-0 h-[calc(100%-2rem)]">
+                  {trendValues.map((val, idx) => {
+                    const xPct = (idx / Math.max(trendValues.length - 1, 1)) * 100;
+                    const yPct = 100 - (val / maxVal) * 100;
+                    return (
+                      <div 
+                        key={idx} 
+                        className="absolute w-4 sm:w-6 h-full -ml-2 sm:-ml-3 group/point cursor-pointer z-10"
+                        style={{ left: `${xPct}%` }}
+                      >
+                        {/* Hover Column */}
+                        <div className="absolute w-full h-full bottom-0 group-hover/point:bg-[#1E8344]/5 transition-colors rounded-t-sm" />
+                        
+                        {/* Dot on the line */}
+                        <div 
+                           className="absolute left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white border-2 border-[#1E8344] rounded-full opacity-0 group-hover/point:opacity-100 transition-opacity shadow-sm"
+                           style={{ top: `calc(${yPct}% - 5px)` }}
+                        />
+                        
+                        {/* Tooltip */}
+                        <div 
+                          className="absolute bg-[#143B20] text-white text-center px-2 py-1 rounded-lg opacity-0 group-hover/point:opacity-100 transition-all whitespace-nowrap z-20 pointer-events-none shadow-lg -translate-x-1/2 left-1/2 group-hover/point:-translate-y-2"
+                          style={{ top: `calc(${yPct}% - 40px)` }}
+                        >
+                          <span className="block text-[11px] font-extrabold leading-tight">{val} rep.</span>
+                          <span className="block text-[8px] text-[#A6C4AE] font-medium leading-tight">{trendKeys[idx]}</span>
+                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-[#143B20]"></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
 

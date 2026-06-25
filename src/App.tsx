@@ -85,14 +85,20 @@ export default function App() {
     if (token && userStr) {
       try {
         const user = JSON.parse(userStr);
+        let userAvatar = user.avatar_url;
+        if (userAvatar && userAvatar.includes('/uploads/')) {
+          userAvatar = '/uploads/' + userAvatar.split('/uploads/').slice(1).join('/uploads/');
+          userAvatar = userAvatar.replace(/\/+/g, '/');
+        }
+
         const mappedProfile = {
           id: user.id,
           name: user.nombre_completo,
           email: user.correo_electronico,
           avatar:
-              user.avatar_url === ''
+              (!userAvatar || userAvatar === '')
                   ? "https://tse4.mm.bing.net/th/id/OIP.dDKYQqVBsG1tIt2uJzEJHwHaHa?cb=thfc1falcon2&rs=1&pid=ImgDetMain&o=7&rm=3"
-                  : user.avatar_url,
+                  : userAvatar,
           role: user.rol === 'ADMINISTRADOR' ? 'Administrador' : 'Ciudadano Activo',
           bio: `Hola, soy ${(user.nombre_completo || 'Usuario').split(' ')[0]}. Me interesa el monitoreo ambiental y registrar incidencias para cooperar de manera constructiva con mi comunidad local.`,
           location: 'CDMX, MX',
@@ -395,7 +401,7 @@ export default function App() {
             {/* Left contextual tag */}
             <div className="hidden sm:flex items-center space-x-2">
               <span className="text-[10px] sm:text-xs font-mono font-black text-[#1E8344] uppercase tracking-wider bg-[#EBF7EE] px-2.5 py-1 rounded-lg">
-                Ciudadano Activo
+                {userProfile.role}
               </span>
             </div>
 
@@ -597,7 +603,7 @@ export default function App() {
                 <Route path="/acerca-de" element={<AboutScreen />} />
                 <Route path="/dashboard" element={
                   <PrivateRoute isLoggedIn={isLoggedIn} message="Debes iniciar sesión para acceder a esta sección.">
-                    <DashboardScreen reports={reports} userProfile={userProfile} setIsLoggedIn={setIsLoggedIn} />
+                    <DashboardScreen reports={reports} userProfile={userProfile} setIsLoggedIn={setIsLoggedIn} setUserProfile={setUserProfile} />
                   </PrivateRoute>
                 } />
                 <Route path="/reportar" element={
